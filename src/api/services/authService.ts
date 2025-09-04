@@ -1,0 +1,91 @@
+import { apiClient } from '../apiClient';
+import type { User } from '../../types/auth';
+
+class AuthService {
+  async login(phone: string, password: string) {
+    try {
+      const response = await apiClient.post('/api/auth/login', {
+        phone,
+        password,
+      });
+      
+      console.log('Login API response:', response.data);
+      
+      // Check the actual API response success field
+      if (response.data.success === true) {
+        const userData = response.data.message as User;
+        const token = userData.token || '';
+        
+        // Store both token and phone in localStorage
+        localStorage.setItem('token', token);
+        localStorage.setItem('phone', phone);
+        
+        return {
+          success: true,
+          user: userData,
+          token: token,
+        };
+      } else {
+        // API returned success: false
+        return {
+          success: false,
+          error: response.data.message || 'Login failed',
+        };
+      }
+    } catch (error) {
+      console.error('Login error:', error);
+      return {
+        success: false,
+        error: 'Network error: ' + (error as Error).message,
+      };
+    }
+  }
+
+  async getCurrentUser() {
+    try {
+      console.log('Calling getCurrentUser API...');
+      
+      const response = await apiClient.get('/api/auth/me');
+      console.log('getCurrentUser API response:', response.data);
+      
+      if (response.data.success === true) {
+        const userData = response.data.message || response.data.user || response.data.data;
+        
+        if (userData) {
+          return {
+            success: true,
+            user: userData as User,
+          };
+        }
+      }
+      
+      return {
+        success: false,
+        error: response.data.message || 'Failed to get user info',
+      };
+    } catch (error) {
+      console.error('Get current user error:', error);
+      return {
+        success: false,
+        error: 'Failed to get user info: ' + (error as Error).message,
+      };
+    }
+  }
+
+  async logout() {
+    try {
+      await apiClient.post('/api/auth/logout');
+      // Clear both token and phone on logout
+      localStorage.removeItem('token');
+      localStorage.removeItem('phone');
+      return { success: true };
+    } catch (error) {
+      // Even if logout fails, clear local storage
+      localStorage.removeItem('token');
+      localStorage.removeItem('phone');
+      return { success: false, error: error };
+    }
+  }
+}
+
+export const authService = new AuthService();
