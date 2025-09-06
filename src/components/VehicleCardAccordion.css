@@ -1,0 +1,291 @@
+/* Vehicle Card Accordion */
+.vehicle-accordion {
+  background: white;
+  border-radius: 0 0 10px 10px;
+  box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+  overflow: hidden;
+  transition: all 0.3s ease;
+}
+
+.accordion-header {
+  padding: 8px 0;
+  cursor: pointer;
+  display: flex;
+  justify-content: center;
+  background: #f8f9fa;
+  border-top: 1px solid #e9ecef;
+}
+
+.accordion-handle {
+  width: 40px;
+  height: 4px;
+  background: #dee2e6;
+  border-radius: 2px;
+  transition: all 0.2s ease;
+}
+
+.accordion-header:hover .accordion-handle {
+  background: #adb5bd;
+}
+
+.accordion-content {
+  padding: 10px;
+  animation: slideDown 0.3s ease;
+}
+
+@keyframes slideDown {
+  from {
+    opacity: 0;
+    transform: translateY(-10px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+/* Vehicle Details Section */
+.vehicle-details-section {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 10px;
+  padding-bottom: 10px;
+  border-bottom: 1px solid #e9ecef;
+}
+
+.vehicle-info {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.vehicle-image {
+  width: 60px;
+  height: 60px;
+  object-fit: contain;
+}
+
+.vehicle-text {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.vehicle-name {
+  font-size: 10px;
+  color: #6c757d;
+  font-weight: 500;
+}
+
+.vehicle-number {
+  font-size: 12px;
+  color: #212529;
+  font-weight: bold;
+  max-width: 130px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+/* Top Row Icons */
+.top-row-icons {
+  display: flex;
+  gap: 10px;
+}
+
+.top-icon {
+  width: 40px;
+  height: 40px;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  font-size: 20px;
+}
+
+.top-icon:hover {
+  transform: scale(1.1);
+}
+
+.weather-icon {
+  background: rgba(13, 110, 253, 0.1);
+  color: #0d6efd;
+}
+
+.shield-icon {
+  background: rgba(25, 135, 84, 0.1);
+  color: #198754;
+}
+
+.relay-icon {
+  background: rgba(220, 53, 69, 0.1);
+  color: #dc3545;
+}
+
+/* Feature Grid */
+.feature-grid {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.feature-row {
+  display: flex;
+  justify-content: space-between;
+  gap: 8px;
+}
+
+.feature-card {
+  flex: 1;
+  height: 80px;
+  background: white;
+  border-radius: 10px;
+  box-shadow: 0 0 25px rgba(0,0,0,0.1);
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  min-width: 0;
+}
+
+.feature-card:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 4px 15px rgba(0,0,0,0.15);
+}
+
+.feature-card svg {
+  font-size: 25px;
+}
+
+.feature-card span {
+  font-size: 10px;
+  font-weight: bold;
+  color: #6c757d;
+  text-align: center;
+  line-height: 1.2;
+}
+
+/* Feature Card Colors */
+.feature-card.live-tracking svg {
+  color: #dc3545;
+}
+
+.feature-card.history svg {
+  color: #0d6efd;
+}
+
+.feature-card.report svg {
+  color: #198754;
+}
+
+.feature-card.vehicle-profile svg {
+  color: #6c757d;
+}
+
+.feature-card.vehicle-edit svg {
+  color: #fd7e14;
+}
+
+.feature-card.geofence svg {
+  color: #198754;
+}
+
+.feature-card.nearby svg {
+  color: #e83e8c;
+}
+
+.feature-card.find-vehicle svg {
+  color: #198754;
+}
+
+.feature-card.fleet-record svg {
+  color: #6c757d;
+}
+
+.feature-card.delete svg {
+  color: #dc3545;
+}
+
+.feature-card.monitoring svg {
+  color: #6c757d;
+}
+
+.feature-card.empty {
+  visibility: hidden;
+}
+
+/* Admin Row */
+.admin-row {
+  opacity: 0.8;
+}
+
+/* Compact Mode */
+.vehicle-accordion.compact .accordion-content {
+  padding: 6px;
+}
+
+.vehicle-accordion.compact .vehicle-details-section {
+  margin-bottom: 6px;
+  padding-bottom: 6px;
+}
+
+.vehicle-accordion.compact .vehicle-image {
+  width: 40px;
+  height: 40px;
+}
+
+.vehicle-accordion.compact .vehicle-name {
+  font-size: 8px;
+}
+
+.vehicle-accordion.compact .vehicle-number {
+  font-size: 10px;
+}
+
+.vehicle-accordion.compact .top-icon {
+  width: 30px;
+  height: 30px;
+  font-size: 16px;
+}
+
+.vehicle-accordion.compact .feature-grid {
+  gap: 6px;
+}
+
+.vehicle-accordion.compact .feature-card {
+  height: 60px;
+  gap: 4px;
+}
+
+.vehicle-accordion.compact .feature-card svg {
+  font-size: 20px;
+}
+
+.vehicle-accordion.compact .feature-card span {
+  font-size: 8px;
+}
+
+/* Responsive */
+@media (max-width: 768px) {
+  .feature-row {
+    gap: 4px;
+  }
+  
+  .feature-card {
+    height: 70px;
+  }
+  
+  .feature-card svg {
+    font-size: 20px;
+  }
+  
+  .feature-card span {
+    font-size: 9px;
+  }
+}

@@ -23,20 +23,12 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         const token = localStorage.getItem('token');
         const phone = localStorage.getItem('phone');
         
-        console.log('Checking existing auth, token:', token ? 'exists' : 'none', 'phone:', phone ? 'exists' : 'none');
-        
         if (token && phone) {
-          // Try to get current user info
-          console.log('Token and phone found, calling getCurrentUser...');
           const response = await authService.getCurrentUser();
-          console.log('getCurrentUser response:', response);
           
           if (response.success && response.user) {
-            console.log('User data retrieved successfully:', response.user);
             setUser(response.user);
           } else {
-            console.log('getCurrentUser failed, clearing invalid credentials');
-            // Clear invalid credentials
             localStorage.removeItem('token');
             localStorage.removeItem('phone');
             setUser(null);

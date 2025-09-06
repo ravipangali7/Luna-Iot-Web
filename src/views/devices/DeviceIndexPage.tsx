@@ -48,7 +48,7 @@ const DeviceIndexPage: React.FC = () => {
         setError(result.error || 'Failed to load devices');
       }
     } catch (err) {
-      setError('An unexpected error occurred');
+      setError('An unexpected error occurred: '+err);
     } finally {
       setLoading(false);
     }
@@ -95,7 +95,7 @@ const DeviceIndexPage: React.FC = () => {
           setError(result.error || 'Failed to delete device');
         }
       } catch (err) {
-        setError('An unexpected error occurred');
+        setError('An unexpected error occurred: '+err);
       }
     }
   };
@@ -169,7 +169,6 @@ const DeviceIndexPage: React.FC = () => {
                   { value: '', label: 'All SIMs' },
                   { value: 'NTC', label: 'NTC' },
                   { value: 'Ncell', label: 'Ncell' },
-                  { value: 'SmartCell', label: 'SmartCell' }
                 ]}
               />
               <Select
@@ -178,8 +177,7 @@ const DeviceIndexPage: React.FC = () => {
                 options={[
                   { value: '', label: 'All Protocols' },
                   { value: 'GT06', label: 'GT06' },
-                  { value: 'GT06N', label: 'GT06N' },
-                  { value: 'GT06E', label: 'GT06E' }
+                  { value: 'FMB003', label: 'FMB003' },
                 ]}
               />
               <Select
@@ -188,8 +186,7 @@ const DeviceIndexPage: React.FC = () => {
                 options={[
                   { value: '', label: 'All Models' },
                   { value: 'EC08', label: 'EC08' },
-                  { value: 'TK103B', label: 'TK103B' },
-                  { value: 'TK103C', label: 'TK103C' }
+                  { value: ' VL149', label: ' VL149' },
                 ]}
               />
             </div>

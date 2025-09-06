@@ -192,12 +192,6 @@ const VehicleIndexPage: React.FC = () => {
 
         {/* Vehicles Table */}
         <Card>
-          <CardHeader>
-            <h3 className="text-lg font-semibold">
-              Vehicles ({filteredVehicles.length})
-            </h3>
-          </CardHeader>
-          <CardBody>
             {filteredVehicles.length === 0 ? (
               <div className="text-center py-8">
                 <p className="text-gray-500">No vehicles found</p>
@@ -270,7 +264,6 @@ const VehicleIndexPage: React.FC = () => {
                 </Table>
               </div>
             )}
-          </CardBody>
         </Card>
       </div>
     </Container>

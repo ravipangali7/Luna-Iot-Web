@@ -9,7 +9,6 @@ class AuthService {
         password,
       });
       
-      console.log('Login API response:', response.data);
       
       // Check the actual API response success field
       if (response.data.success === true) {
@@ -43,10 +42,7 @@ class AuthService {
 
   async getCurrentUser() {
     try {
-      console.log('Calling getCurrentUser API...');
-      
       const response = await apiClient.get('/api/auth/me');
-      console.log('getCurrentUser API response:', response.data);
       
       if (response.data.success === true) {
         const userData = response.data.message || response.data.user || response.data.data;

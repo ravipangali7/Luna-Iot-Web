@@ -1,0 +1,270 @@
+/* Vehicle Card Component Styles */
+
+.vehicle-card {
+  background: white;
+  border-radius: 8px;
+  margin-bottom: 8px;
+  box-shadow: 0 1px 4px rgba(0,0,0,0.1);
+  cursor: pointer;
+  transition: all 0.2s ease;
+  overflow: hidden;
+  font-size: 11px;
+}
+
+.vehicle-card:hover {
+  transform: translateY(-1px);
+  box-shadow: 0 2px 8px rgba(0,0,0,0.15);
+}
+
+.vehicle-card.compact {
+  margin-bottom: 6px;
+  font-size: 10px;
+}
+
+.vehicle-card.compact .vehicle-card-content {
+  padding: 8px;
+}
+
+.vehicle-card.compact .vehicle-image {
+  width: 40px;
+  height: 40px;
+}
+
+.vehicle-card.compact .stats-section {
+  min-width: 80px;
+}
+
+.vehicle-card.compact .stat-card {
+  padding: 4px;
+}
+
+.vehicle-card.compact .stat-icon {
+  font-size: 10px;
+}
+
+.vehicle-card.compact .stat-label {
+  font-size: 7px;
+}
+
+.vehicle-card.compact .stat-value {
+  font-size: 8px;
+}
+
+/* Header badges */
+.vehicle-card-header {
+  display: flex;
+  gap: 4px;
+  padding: 4px 8px;
+  background: #f8f9fa;
+}
+
+.vehicle-badge {
+  padding: 2px 6px;
+  border-radius: 3px;
+  font-size: 8px;
+  font-weight: 600;
+  color: white;
+}
+
+.ownership-badge {
+  background-color: #7B1FA2;
+}
+
+.power-badge.connected {
+  background-color: #388E3C;
+}
+
+.power-badge.disconnected {
+  background-color: #D32F2F;
+}
+
+/* Main content */
+.vehicle-card-content {
+  padding: 8px;
+}
+
+.vehicle-info {
+  display: flex;
+  gap: 8px;
+  margin-bottom: 6px;
+}
+
+.vehicle-image-section {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  min-width: 60px;
+}
+
+.vehicle-image {
+  width: 50px;
+  height: 50px;
+  object-fit: contain;
+  margin-bottom: 4px;
+}
+
+.vehicle-details {
+  text-align: center;
+}
+
+.vehicle-number {
+  font-size: 10px;
+  font-weight: 600;
+  color: #333;
+  margin-bottom: 1px;
+}
+
+.vehicle-name {
+  font-size: 8px;
+  color: #666;
+}
+
+.speed-section {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  flex: 1;
+}
+
+.speed-display {
+  padding: 6px;
+  border-radius: 4px;
+  color: white;
+  text-align: center;
+}
+
+.speed-info {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 2px;
+  margin-bottom: 2px;
+}
+
+.speed-icon {
+  font-size: 10px;
+}
+
+.speed-value {
+  font-size: 9px;
+  font-weight: 600;
+}
+
+.status-text {
+  font-size: 7px;
+  font-weight: 600;
+  text-transform: uppercase;
+}
+
+.status-icons {
+  display: flex;
+  gap: 4px;
+  justify-content: center;
+}
+
+.status-icon {
+  font-size: 10px;
+}
+
+.stats-section {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  min-width: 80px;
+}
+
+.stats-row {
+  display: flex;
+  gap: 4px;
+}
+
+.stat-card {
+  flex: 1;
+  padding: 4px;
+  background: #f8f9fa;
+  border-radius: 3px;
+  text-align: center;
+}
+
+.stat-icon {
+  font-size: 8px;
+  margin-bottom: 2px;
+}
+
+.stat-label {
+  font-size: 6px;
+  color: #666;
+  margin-bottom: 1px;
+}
+
+.stat-value {
+  font-size: 7px;
+  font-weight: 600;
+  color: #333;
+}
+
+.last-update {
+  display: flex;
+  align-items: center;
+  gap: 3px;
+  margin-bottom: 4px;
+  font-size: 8px;
+  color: #666;
+}
+
+.update-icon {
+  font-size: 8px;
+}
+
+.location-info {
+  display: flex;
+  align-items: flex-start;
+  gap: 3px;
+  font-size: 8px;
+  color: #666;
+  margin-bottom: 6px;
+}
+
+.location-icon {
+  font-size: 8px;
+  margin-top: 1px;
+  flex-shrink: 0;
+}
+
+.location-text {
+  line-height: 1.2;
+  word-break: break-word;
+}
+
+
+/* Responsive */
+@media (max-width: 768px) {
+  .vehicle-info {
+    flex-direction: column;
+    gap: 12px;
+  }
+  
+  .vehicle-image-section {
+    flex-direction: row;
+    justify-content: center;
+    gap: 12px;
+  }
+  
+  .vehicle-image {
+    width: 60px;
+    height: 60px;
+  }
+  
+  .stats-section {
+    min-width: auto;
+  }
+  
+  .stats-row {
+    justify-content: space-between;
+  }
+  
+  .stat-card {
+    flex: 1;
+    margin: 0 4px;
+  }
+}

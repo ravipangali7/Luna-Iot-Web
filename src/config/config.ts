@@ -1,22 +1,7 @@
 // API Configuration
 export const API_CONFIG = {
-    BASE_URL: 'http://5.189.159.178:7070', // Change this to your actual API URL
-    // BASE_URL: 'https://system.mylunago.com', // Change this to your actual API URL
-    TIMEOUT: 40000,
-    ENDPOINTS: {
-      AUTH: {
-        LOGIN: '/api/auth/login/',
-        REGISTER_SEND_OTP: '/api/auth/register/send-otp',
-        REGISTER_VERIFY_OTP: '/api/auth/register/verify-otp',
-        REGISTER_RESEND_OTP: '/api/auth/register/resend-otp',
-        LOGOUT: '/api/auth/logout',
-        GET_CURRENT_USER: '/api/auth/me',
-        FORGOT_PASSWORD_SEND_OTP: '/api/auth/forgot-password/send-otp',
-        FORGOT_PASSWORD_VERIFY_OTP: '/api/auth/forgot-password/verify-otp',
-        FORGOT_PASSWORD_RESET: '/api/auth/forgot-password/reset-password',
-      },
-      FCM_TOKEN: '/api/fcm-token',
-    },
+    BASE_URL: 'http://38.54.71.218:7070',
+    // BASE_URL: 'https://system.mylunago.com', 
   } as const;
   
   // App Configuration

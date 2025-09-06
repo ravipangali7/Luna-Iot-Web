@@ -90,11 +90,6 @@ export interface VehicleFormData {
   minimumFuel: number;
 }
 
-export interface VehicleFilters {
-  search?: string;
-  vehicleType?: string;
-  status?: string;
-}
 
 export interface VehicleTableColumn {
   key: keyof Vehicle;
@@ -103,14 +98,29 @@ export interface VehicleTableColumn {
 }
 
 export const VEHICLE_TYPES = [
-  'Car',
-  'Motorcycle',
-  'Truck',
-  'Bus',
-  'Van',
+  'Ambulance',
   'Bike',
-  'Auto Rickshaw',
-  'Tempo'
+  'Boat',
+  'Bulldozer',
+  'Bus',
+  'Car',
+  'Crane',
+  'Cycle',
+  'Dumper',
+  'Garbage',
+  'Jcb',
+  'Jeep',
+  'Mixer',
+  'Mpv',
+  'Pickup',
+  'SchoolBus',
+  'Suv',
+  'Tanker',
+  'Tempo',
+  'Tractor',
+  'Train',
+  'Truck',
+  'Van'
 ] as const;
 
 export type VehicleType = typeof VEHICLE_TYPES[number];

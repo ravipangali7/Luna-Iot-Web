@@ -1,0 +1,246 @@
+/* Live Tracking Index Page Styles */
+
+.live-tracking-container {
+  display: flex;
+  flex-direction: column;
+  height: 100vh;
+  background-color: #f5f5f5;
+}
+
+/* Header */
+.live-tracking-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 8px 12px;
+  background: white;
+  box-shadow: 0 1px 2px rgba(0,0,0,0.1);
+  z-index: 1000;
+}
+
+.header-title {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.header-title h1 {
+  margin: 0;
+  color: #333;
+  font-size: 16px;
+  font-weight: 600;
+}
+
+.title-icon {
+  font-size: 14px;
+}
+
+.connection-status {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  padding: 2px 6px;
+  border-radius: 8px;
+  font-size: 9px;
+  font-weight: 500;
+}
+
+.connection-status.connected {
+  background-color: #E8F5E8;
+  color: #2E7D32;
+}
+
+.connection-status.disconnected {
+  background-color: #FFEBEE;
+  color: #C62828;
+}
+
+.status-dot {
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  background-color: currentColor;
+  animation: pulse 2s infinite;
+}
+
+@keyframes pulse {
+  0% { opacity: 1; }
+  50% { opacity: 0.5; }
+  100% { opacity: 1; }
+}
+
+/* Status Filters */
+.status-filters {
+  display: flex;
+  gap: 6px;
+  flex-wrap: wrap;
+}
+
+.filter-button {
+  padding: 4px 8px;
+  border: none;
+  border-radius: 4px;
+  font-weight: 600;
+  font-size: 9px;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  color: white;
+}
+
+.filter-button.active {
+  transform: scale(1.05);
+  box-shadow: 0 1px 4px rgba(0,0,0,0.2);
+}
+
+.filter-button {
+  background-color: #7902c9;
+}
+
+.filter-button.stopped {
+  background-color: #D32F2F !important;
+}
+
+.filter-button.running {
+  background-color: #388E3C;
+}
+
+.filter-button.overspeed {
+  background-color: #F57C00;
+}
+
+.filter-button.idle {
+  background-color: #f5d000;
+}
+
+.filter-button.inactive {
+  background-color: #1976D2;
+}
+
+.filter-button.no_data {
+  background-color: #9E9E9E;
+}
+
+/* Main Content */
+.live-tracking-content {
+  display: flex;
+  flex: 1;
+  overflow: hidden;
+}
+
+/* Vehicle List */
+.vehicle-list {
+  width: 350px;
+  background: white;
+  overflow-y: auto;
+  padding: 8px;
+  border-right: 1px solid #e0e0e0;
+}
+
+/* Map Marker */
+.map-marker {
+  transition: all 0.2s ease;
+}
+
+.map-marker:hover {
+  transform: scale(1.2);
+  z-index: 1000;
+}
+
+/* Map Container */
+.map-container {
+  flex: 1;
+  position: relative;
+}
+
+.map {
+  width: 100%;
+  height: 100%;
+}
+
+.map-loading {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  height: 100%;
+  background-color: #f5f5f5;
+  color: #666;
+  font-size: 16px;
+}
+
+.map-error {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  height: 100%;
+  background-color: #ffebee;
+  color: #d32f2f;
+  font-size: 16px;
+}
+
+/* Loading */
+.loading-container {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  height: 100vh;
+  gap: 8px;
+}
+
+.loading-spinner {
+  width: 24px;
+  height: 24px;
+  border: 3px solid #f3f3f3;
+  border-top: 3px solid #1976D2;
+  border-radius: 50%;
+  animation: spin 1s linear infinite;
+}
+
+@keyframes spin {
+  0% { transform: rotate(0deg); }
+  100% { transform: rotate(360deg); }
+}
+
+.loading-text {
+  font-size: 12px;
+  color: #666;
+}
+
+/* Responsive */
+@media (max-width: 768px) {
+  .live-tracking-content {
+    flex-direction: column;
+  }
+  
+  .vehicle-list {
+    width: 100%;
+    height: 250px;
+  }
+  
+  .map-container {
+    height: 300px;
+  }
+  
+  .status-filters {
+    flex-wrap: wrap;
+    gap: 4px;
+  }
+  
+  .filter-button {
+    padding: 3px 6px;
+    font-size: 8px;
+  }
+  
+  .header-title h1 {
+    font-size: 14px;
+  }
+  
+  .title-icon {
+    font-size: 12px;
+  }
+  
+  .connection-status {
+    font-size: 8px;
+    padding: 2px 4px;
+  }
+}

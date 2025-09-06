@@ -11,6 +11,7 @@ import { PlaybackIndexPage, PlaybackShowPage } from './views/playback';
 
 import './styles/variables.css';
 import './styles/components.css';
+import LiveTrackingIndexPage from './views/live_tracking/LiveTrackingIndexPage';
 
 // Protected Route Component
 const ProtectedRoute: React.FC<{ children: React.ReactNode }> = ({ children }) => {
@@ -72,6 +73,10 @@ const AppRoutes: React.FC = () => {
         <Route path="vehicles" element={<VehicleIndexPage />} />
         <Route path="vehicles/create" element={<VehicleCreatePage />} />
         <Route path="vehicles/edit/:imei" element={<VehicleEditPage />} />
+
+        {/* Report Routes */}
+        <Route path="live-tracking" element={<LiveTrackingIndexPage />} />
+        <Route path="live-tracking/:imei" element={<ReportShowPage />} />
 
         {/* Report Routes */}
         <Route path="reports" element={<ReportIndexPage />} />
