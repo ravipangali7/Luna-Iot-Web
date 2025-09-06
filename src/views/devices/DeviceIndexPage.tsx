@@ -18,6 +18,8 @@ import TableCell from '../../components/ui/tables/TableCell';
 import Badge from '../../components/ui/common/Badge';
 import Spinner from '../../components/ui/common/Spinner';
 import Alert from '../../components/ui/common/Alert';
+import RoleBasedWidget from '../../components/role-based/RoleBasedWidget';
+import { ROLES } from '../../utils/roleUtils';
 
 const DeviceIndexPage: React.FC = () => {
   const navigate = useNavigate();
@@ -138,9 +140,11 @@ const DeviceIndexPage: React.FC = () => {
             <h1 className="text-2xl font-bold text-gray-900">Devices</h1>
             <p className="text-gray-600">Manage your IoT devices</p>
           </div>
-          <Button onClick={() => navigate('/devices/create')}>
-            Add Device
-          </Button>
+          <RoleBasedWidget allowedRoles={[ROLES.SUPER_ADMIN]}>
+            <Button onClick={() => navigate('/devices/create')}>
+              Add Device
+            </Button>
+          </RoleBasedWidget>
         </div>
 
         {/* Error Alert */}
@@ -234,20 +238,24 @@ const DeviceIndexPage: React.FC = () => {
                         </TableCell>
                         <TableCell>
                           <div className="flex space-x-2">
-                            <Button
-                              variant="outline"
-                              size="sm"
-                              onClick={() => handleEditDevice(device)}
-                            >
-                              Edit
-                            </Button>
-                            <Button
-                              variant="danger"
-                              size="sm"
-                              onClick={() => handleDeleteDevice(device)}
-                            >
-                              Delete
-                            </Button>
+                            <RoleBasedWidget allowedRoles={[ROLES.SUPER_ADMIN]}>
+                              <Button
+                                variant="outline"
+                                size="sm"
+                                onClick={() => handleEditDevice(device)}
+                              >
+                                Edit
+                              </Button>
+                            </RoleBasedWidget>
+                            <RoleBasedWidget allowedRoles={[ROLES.SUPER_ADMIN]}>
+                              <Button
+                                variant="danger"
+                                size="sm"
+                                onClick={() => handleDeleteDevice(device)}
+                              >
+                                Delete
+                              </Button>
+                            </RoleBasedWidget>
                           </div>
                         </TableCell>
                       </TableRow>

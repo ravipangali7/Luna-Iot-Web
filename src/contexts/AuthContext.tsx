@@ -2,12 +2,23 @@ import { createContext, useState, useEffect } from 'react';
 import type { ReactNode } from 'react';
 import { authService } from '../api/services/authService';
 import type { User } from '../types/auth';
+import { 
+  hasRole, 
+  isSuperAdmin, 
+  isDealer, 
+  isCustomer
+} from '../utils/roleUtils';
 
 interface AuthContextType {
   user: User | null;
   isLoading: boolean;
   login: (phone: string, password: string) => Promise<boolean>;
   logout: () => void;
+  // Role-based helper methods
+  hasRole: (allowedRoles: string[]) => boolean;
+  isSuperAdmin: () => boolean;
+  isDealer: () => boolean;
+  isCustomer: () => boolean;
 }
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
@@ -85,6 +96,11 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     isLoading,
     login,
     logout,
+    // Role-based helper methods
+    hasRole: (allowedRoles: string[]) => user ? hasRole(user, allowedRoles) : false,
+    isSuperAdmin: () => user ? isSuperAdmin(user) : false,
+    isDealer: () => user ? isDealer(user) : false,
+    isCustomer: () => user ? isCustomer(user) : false,
   };
 
   return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;

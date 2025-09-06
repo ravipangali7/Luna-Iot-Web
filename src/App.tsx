@@ -8,6 +8,8 @@ import { DeviceIndexPage, DeviceCreatePage, DeviceEditPage } from './views/devic
 import { VehicleIndexPage, VehicleCreatePage, VehicleEditPage } from './views/vehicles';
 import { ReportIndexPage, ReportShowPage } from './views/reports';
 import { PlaybackIndexPage, PlaybackShowPage } from './views/playback';
+import RoleBasedRoute from './components/role-based/RoleBasedRoute';
+import { ROLES } from './utils/roleUtils';
 
 import './styles/variables.css';
 import './styles/components.css';
@@ -64,27 +66,75 @@ const AppRoutes: React.FC = () => {
         <Route index element={<Navigate to="/dashboard" replace />} />
         <Route path="dashboard" element={<DashboardPage />} />
 
-        {/* Device Routes */}
-        <Route path="devices" element={<DeviceIndexPage />} />
-        <Route path="devices/create" element={<DeviceCreatePage />} />
-        <Route path="devices/edit/:imei" element={<DeviceEditPage />} />
+        {/* Device Routes - Super Admin and Dealer only */}
+        <Route path="devices" element={
+          <RoleBasedRoute allowedRoles={[ROLES.SUPER_ADMIN, ROLES.DEALER]}>
+            <DeviceIndexPage />
+          </RoleBasedRoute>
+        } />
+        <Route path="devices/create" element={
+          <RoleBasedRoute allowedRoles={[ROLES.SUPER_ADMIN]}>
+            <DeviceCreatePage />
+          </RoleBasedRoute>
+        } />
+        <Route path="devices/edit/:imei" element={
+          <RoleBasedRoute allowedRoles={[ROLES.SUPER_ADMIN]}>
+            <DeviceEditPage />
+          </RoleBasedRoute>
+        } />
 
-        {/* Vehicle Routes */}
-        <Route path="vehicles" element={<VehicleIndexPage />} />
-        <Route path="vehicles/create" element={<VehicleCreatePage />} />
-        <Route path="vehicles/edit/:imei" element={<VehicleEditPage />} />
+        {/* Vehicle Routes - All roles can access */}
+        <Route path="vehicles" element={
+          <RoleBasedRoute allowedRoles={[ROLES.SUPER_ADMIN, ROLES.DEALER, ROLES.CUSTOMER]}>
+            <VehicleIndexPage />
+          </RoleBasedRoute>
+        } />
+        <Route path="vehicles/create" element={
+          <RoleBasedRoute allowedRoles={[ROLES.SUPER_ADMIN, ROLES.DEALER, ROLES.CUSTOMER]}>
+            <VehicleCreatePage />
+          </RoleBasedRoute>
+        } />
+        <Route path="vehicles/edit/:imei" element={
+          <RoleBasedRoute allowedRoles={[ROLES.SUPER_ADMIN, ROLES.DEALER, ROLES.CUSTOMER]}>
+            <VehicleEditPage />
+          </RoleBasedRoute>
+        } />
 
-        {/* Report Routes */}
-        <Route path="live-tracking" element={<LiveTrackingIndexPage />} />
-        <Route path="live-tracking/:imei" element={<ReportShowPage />} />
+        {/* Live Tracking Routes - All roles can access */}
+        <Route path="live-tracking" element={
+          <RoleBasedRoute allowedRoles={[ROLES.SUPER_ADMIN, ROLES.DEALER, ROLES.CUSTOMER]}>
+            <LiveTrackingIndexPage />
+          </RoleBasedRoute>
+        } />
+        <Route path="live-tracking/:imei" element={
+          <RoleBasedRoute allowedRoles={[ROLES.SUPER_ADMIN, ROLES.DEALER, ROLES.CUSTOMER]}>
+            <ReportShowPage />
+          </RoleBasedRoute>
+        } />
 
-        {/* Report Routes */}
-        <Route path="reports" element={<ReportIndexPage />} />
-        <Route path="reports/:imei" element={<ReportShowPage />} />
+        {/* Report Routes - All roles can access */}
+        <Route path="reports" element={
+          <RoleBasedRoute allowedRoles={[ROLES.SUPER_ADMIN, ROLES.DEALER, ROLES.CUSTOMER]}>
+            <ReportIndexPage />
+          </RoleBasedRoute>
+        } />
+        <Route path="reports/:imei" element={
+          <RoleBasedRoute allowedRoles={[ROLES.SUPER_ADMIN, ROLES.DEALER, ROLES.CUSTOMER]}>
+            <ReportShowPage />
+          </RoleBasedRoute>
+        } />
 
-        {/* Playback Routes */}
-        <Route path="playback" element={<PlaybackIndexPage />} />
-        <Route path="playback/:imei" element={<PlaybackShowPage />} />
+        {/* Playback Routes - All roles can access */}
+        <Route path="playback" element={
+          <RoleBasedRoute allowedRoles={[ROLES.SUPER_ADMIN, ROLES.DEALER, ROLES.CUSTOMER]}>
+            <PlaybackIndexPage />
+          </RoleBasedRoute>
+        } />
+        <Route path="playback/:imei" element={
+          <RoleBasedRoute allowedRoles={[ROLES.SUPER_ADMIN, ROLES.DEALER, ROLES.CUSTOMER]}>
+            <PlaybackShowPage />
+          </RoleBasedRoute>
+        } />
       </Route>
     </Routes>
   );

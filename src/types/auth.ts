@@ -2,7 +2,7 @@ export interface Role {
     id: number;
     name: string;
     description: string;
-    permissions: Permission[];
+    permissions?: Permission[];
   }
   
   export interface Permission {
@@ -16,7 +16,7 @@ export interface Role {
     name: string;
     phone: string;
     status: string;
-    role: Role;
+    role: Role | string;
     token?: string;
     createdAt: string;
     updatedAt: string;
