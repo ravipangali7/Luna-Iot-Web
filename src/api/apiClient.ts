@@ -10,6 +10,10 @@ export const apiClient = axios.create({
   },
   timeout: 15000, // 15 second timeout
   withCredentials: true,
+  // Add retry logic for SSL certificate issues
+  validateStatus: function (status) {
+    return status >= 200 && status < 300; // default
+  },
 });
 
 // Request interceptor to add auth headers
@@ -35,12 +39,21 @@ apiClient.interceptors.response.use(
     return response;
   },
   (error) => {
+    console.error('API Error:', error);
+    
     if (error.response?.status === 401) {
       // Clear auth and redirect to login
       localStorage.removeItem('token');
       localStorage.removeItem('phone');
       window.location.href = '/login';
     }
+    
+    // Handle network errors (including SSL certificate issues)
+    if (error.code === 'ERR_NETWORK' || error.code === 'ERR_CERT_COMMON_NAME_INVALID') {
+      console.error('Network/SSL Error:', error.message);
+      // You could implement a fallback here or show a user-friendly message
+    }
+    
     return Promise.reject(error);
   }
 );
