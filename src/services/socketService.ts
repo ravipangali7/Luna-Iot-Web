@@ -18,7 +18,14 @@ class SocketService {
       this.socket = io(API_CONFIG.SOCKET_URL, {
         transports: ['websocket', 'polling'],
         timeout: 20000,
-        forceNew: true
+        forceNew: true,
+        autoConnect: true,
+        reconnection: true,
+        reconnectionAttempts: this.maxReconnectAttempts,
+        reconnectionDelay: this.reconnectDelay,
+        reconnectionDelayMax: 5000,
+        upgrade: true,
+        rememberUpgrade: true
       });
 
       this.socket.on('connect', () => {
@@ -30,7 +37,7 @@ class SocketService {
       this.socket.on('disconnect', (reason: string) => {
         console.log('Socket disconnected:', reason);
         this.isConnected = false;
-        
+
         if (reason === 'io server disconnect') {
           // Server disconnected, try to reconnect
           this.handleReconnect();
@@ -67,9 +74,9 @@ class SocketService {
     if (this.reconnectAttempts < this.maxReconnectAttempts) {
       this.reconnectAttempts++;
       const delay = this.reconnectDelay * Math.pow(2, this.reconnectAttempts - 1);
-      
+
       console.log(`Attempting to reconnect in ${delay}ms (attempt ${this.reconnectAttempts}/${this.maxReconnectAttempts})`);
-      
+
       setTimeout(() => {
         if (this.socket) {
           this.socket.connect();
