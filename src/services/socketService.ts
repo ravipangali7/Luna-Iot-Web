@@ -15,7 +15,7 @@ class SocketService {
   private connect(): void {
     try {
       // Connect to the socket server
-      this.socket = io(API_CONFIG.BASE_URL, {
+      this.socket = io(API_CONFIG.SOCKET_URL, {
         transports: ['websocket', 'polling'],
         timeout: 20000,
         forceNew: true
