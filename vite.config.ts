@@ -8,9 +8,9 @@ export default defineConfig({
     allowedHosts: ['app.mylunago.com', 'system.mylunago.com'],
     proxy: {
       '/api': {
-        target: 'http://system.mylunago.com:7070',
+        target: 'https://system.mylunago.com',
         changeOrigin: true,
-        secure: false
+        secure: true
       },
       '/socket.io': {
         target: 'http://38.54.71.218:7070',
