@@ -2,7 +2,9 @@
 export const API_CONFIG = {
     // BASE_URL: 'http://38.54.71.218:7070',
     SOCKET_URL: 'http://38.54.71.218:7070',
-    BASE_URL: 'https://system.mylunago.com', 
+    // Temporarily use HTTP to avoid SSL certificate issues
+    // TODO: Fix SSL certificate on server and switch back to HTTPS
+    BASE_URL: 'http://system.mylunago.com:7070', 
   } as const;
   
   // App Configuration
