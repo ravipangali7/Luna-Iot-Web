@@ -5,11 +5,10 @@ import Battery3BarIcon from '@mui/icons-material/Battery3Bar';
 import Battery4BarIcon from '@mui/icons-material/Battery4Bar';
 import Battery5BarIcon from '@mui/icons-material/Battery5Bar';
 import BatteryFullIcon from '@mui/icons-material/BatteryFull';
-import SignalCellularNoDataIcon from '@mui/icons-material/SignalCellularNoData';
-import SignalCellular1BarIcon from '@mui/icons-material/SignalCellular1Bar';
-import SignalCellular2BarIcon from '@mui/icons-material/SignalCellular2Bar';
-import SignalCellular3BarIcon from '@mui/icons-material/SignalCellular3Bar';
-import SignalCellular4BarIcon from '@mui/icons-material/SignalCellular4Bar';
+import SignalCellularNoDataSharpIcon from '@mui/icons-material/SignalCellularNoDataSharp';
+import SignalCellularAlt1BarIcon from '@mui/icons-material/SignalCellularAlt1Bar';
+import SignalCellularAlt2BarIcon from '@mui/icons-material/SignalCellularAlt2Bar';
+import SignalCellularAltIcon from '@mui/icons-material/SignalCellularAlt';
 import SignalCellularOffIcon from '@mui/icons-material/SignalCellularOff';
 import GpsFixedIcon from '@mui/icons-material/GpsFixed';
 import GpsOffIcon from '@mui/icons-material/GpsOff';
@@ -222,15 +221,15 @@ export const getBattery = (value: number, size = 16) => {
 export const getSignal = (value: number, size = 16) => {
   switch (value) {
     case 0:
-      return <SignalCellularNoDataIcon style={{ fontSize: size, color: "red" }} />;
+      return <SignalCellularNoDataSharpIcon style={{ fontSize: size, color: "red" }} />;
     case 1:
-      return <SignalCellular1BarIcon style={{ fontSize: size, color: "red" }} />;
+      return <SignalCellularAlt1BarIcon style={{ fontSize: size, color: "red" }} />;
     case 2:
-      return <SignalCellular2BarIcon style={{ fontSize: size, color: "yellow" }} />;
+      return <SignalCellularAlt2BarIcon style={{ fontSize: size, color: "yellow" }} />;
     case 3:
-      return <SignalCellular3BarIcon style={{ fontSize: size, color: "green" }} />;
+      return <SignalCellularAlt2BarIcon style={{ fontSize: size, color: "green" }} />;
     case 4:
-      return <SignalCellular4BarIcon style={{ fontSize: size, color: "green" }} />;
+      return <SignalCellularAltIcon style={{ fontSize: size, color: "green" }} />;
     default:
       return <SignalCellularOffIcon style={{ fontSize: size, color: "grey" }} />;
   }
