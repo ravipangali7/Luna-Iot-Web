@@ -5,7 +5,7 @@ import Battery3BarIcon from '@mui/icons-material/Battery3Bar';
 import Battery4BarIcon from '@mui/icons-material/Battery4Bar';
 import Battery5BarIcon from '@mui/icons-material/Battery5Bar';
 import BatteryFullIcon from '@mui/icons-material/BatteryFull';
-import SignalCellularNoDataSharpIcon from '@mui/icons-material/SignalCellularNoDataSharp';
+import SignalCellularNoDataIcon from '@mui/icons-material/SignalCellularNoData';
 import SignalCellularAlt1BarIcon from '@mui/icons-material/SignalCellularAlt1Bar';
 import SignalCellularAlt2BarIcon from '@mui/icons-material/SignalCellularAlt2Bar';
 import SignalCellularAltIcon from '@mui/icons-material/SignalCellularAlt';
@@ -221,7 +221,7 @@ export const getBattery = (value: number, size = 16) => {
 export const getSignal = (value: number, size = 16) => {
   switch (value) {
     case 0:
-      return <SignalCellularNoDataSharpIcon style={{ fontSize: size, color: "red" }} />;
+      return <SignalCellularNoDataIcon style={{ fontSize: size, color: "red" }} />;
     case 1:
       return <SignalCellularAlt1BarIcon style={{ fontSize: size, color: "red" }} />;
     case 2:
