@@ -1,6 +1,5 @@
 import React from 'react';
 import { useAuth } from '../../hooks/useAuth';
-import Badge from '../ui/common/Badge';
 
 interface HeaderProps {
   onMenuClick: () => void;
@@ -10,7 +9,7 @@ const Header: React.FC<HeaderProps> = ({ onMenuClick }) => {
   const { user } = useAuth();
 
   return (
-    <header className="bg-white shadow-sm border-b border-gray-200 px-6 py-4">
+    <header className="bg-white shadow-sm border-b border-gray-200 px-6 py-1">
       <div className="flex items-center justify-between">
         {/* Left side - Menu button and breadcrumb */}
         <div className="flex items-center space-x-4">
@@ -48,33 +47,20 @@ const Header: React.FC<HeaderProps> = ({ onMenuClick }) => {
 
         {/* Right side - Notifications and user info */}
         <div className="flex items-center space-x-4">
-          {/* Notifications */}
-          <button className="relative p-2 rounded-lg hover:bg-gray-100">
-            <svg className="w-5 h-5 text-gray-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 17h5l-5 5v-5z" />
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 7h6m0 10v-3m-3 3h.01M9 17h.01M9 14h.01M12 14h.01M15 11h.01M12 11h.01M9 11h.01M7 21h10a2 2 0 002-2V5a2 2 0 00-2-2H7a2 2 0 00-2 2v14a2 2 0 002 2z" />
-            </svg>
-            <Badge 
-              variant="danger" 
-              size="sm" 
-              className="absolute -top-1 -right-1"
-            >
-              3
-            </Badge>
-          </button>
+          
 
           {/* User info */}
           <div className="flex items-center space-x-3">
             <div className="text-right hidden sm:block">
               <p className="text-sm font-medium text-gray-900">{user?.name}</p>
-              <p className="text-xs text-gray-500">{user?.role?.name}</p>
+              <p className="text-xs text-gray-500">{typeof user?.role === 'object' ? user.role.name : user?.role}</p>
             </div>
             <div 
-              className="h-8 w-8 rounded-full flex items-center justify-center"
+              className="h-5 w-5 rounded-full flex items-center justify-center"
               style={{ backgroundColor: 'rgba(12, 160, 31, 0.15)' }}
             >
               <span 
-                className="text-sm font-semibold"
+                className="text-xs font-semibold"
                 style={{ color: 'var(--color-primary)' }}
               >
                 {user?.name?.charAt(0)}

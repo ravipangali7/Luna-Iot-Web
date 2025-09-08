@@ -39,6 +39,8 @@ export interface InputProps extends BaseProps {
   onChange?: (value: string) => void;
   onBlur?: () => void;
   onFocus?: () => void;
+  min?: string;
+  max?: string;
 }
 
 export interface TableProps extends BaseProps {

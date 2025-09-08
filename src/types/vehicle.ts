@@ -90,6 +90,11 @@ export interface VehicleFormData {
   minimumFuel: number;
 }
 
+export interface VehicleFilters {
+  vehicleType?: string;
+  status?: string;
+}
+
 
 export interface VehicleTableColumn {
   key: keyof Vehicle;

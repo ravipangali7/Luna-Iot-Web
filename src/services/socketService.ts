@@ -29,13 +29,13 @@ class SocketService {
       });
 
       this.socket.on('connect', () => {
-        console.log('Socket connected:', this.socket?.id);
+        console.log('✅ Socket connected:', this.socket?.id);
         this.isConnected = true;
         this.reconnectAttempts = 0;
       });
 
       this.socket.on('disconnect', (reason: string) => {
-        console.log('Socket disconnected:', reason);
+        console.log('❌ Socket disconnected:', reason);
         this.isConnected = false;
 
         if (reason === 'io server disconnect') {
@@ -45,13 +45,13 @@ class SocketService {
       });
 
       this.socket.on('connect_error', (error: any) => {
-        console.error('Socket connection error:', error);
+        console.error('❌ Socket connection error:', error);
         this.isConnected = false;
         this.handleReconnect();
       });
 
       this.socket.on('reconnect', (attemptNumber: number) => {
-        console.log('Socket reconnected after', attemptNumber, 'attempts');
+        console.log('🔄 Socket reconnected after', attemptNumber, 'attempts');
         this.isConnected = true;
         this.reconnectAttempts = 0;
       });
@@ -92,42 +92,45 @@ class SocketService {
   // Subscribe to vehicle status updates
   subscribeToVehicleStatus(callback: (data: any) => void): void {
     if (this.socket) {
-      this.socket.on('vehicle_status_update', callback);
+      this.socket.on('status_update', callback);
     }
   }
 
   // Subscribe to vehicle location updates
   subscribeToVehicleLocation(callback: (data: any) => void): void {
     if (this.socket) {
-      this.socket.on('vehicle_location_update', callback);
+      this.socket.on('location_update', callback);
     }
   }
 
-  // Subscribe to all vehicle updates
+  // Subscribe to all vehicle updates (combines status and location)
   subscribeToVehicleUpdates(callback: (data: any) => void): void {
     if (this.socket) {
-      this.socket.on('vehicle_update', callback);
+      // Listen to both status and location updates
+      this.socket.on('status_update', callback);
+      this.socket.on('location_update', callback);
     }
   }
 
   // Unsubscribe from vehicle status updates
   unsubscribeFromVehicleStatus(callback: (data: any) => void): void {
     if (this.socket) {
-      this.socket.off('vehicle_status_update', callback);
+      this.socket.off('status_update', callback);
     }
   }
 
   // Unsubscribe from vehicle location updates
   unsubscribeFromVehicleLocation(callback: (data: any) => void): void {
     if (this.socket) {
-      this.socket.off('vehicle_location_update', callback);
+      this.socket.off('location_update', callback);
     }
   }
 
   // Unsubscribe from all vehicle updates
   unsubscribeFromVehicleUpdates(callback: (data: any) => void): void {
     if (this.socket) {
-      this.socket.off('vehicle_update', callback);
+      this.socket.off('status_update', callback);
+      this.socket.off('location_update', callback);
     }
   }
 
@@ -143,7 +146,7 @@ class SocketService {
 
   // Get connection status
   getConnectionStatus(): boolean {
-    return this.isConnected;
+    return this.isConnected && this.socket?.connected === true;
   }
 
   // Get socket instance
@@ -165,6 +168,20 @@ class SocketService {
     this.disconnect();
     this.reconnectAttempts = 0;
     this.connect();
+  }
+
+  // Subscribe to device monitoring messages
+  subscribeToDeviceMonitoring(callback: (data: any) => void): void {
+    if (this.socket) {
+      this.socket.on('device_monitoring', callback);
+    }
+  }
+
+  // Unsubscribe from device monitoring messages
+  unsubscribeFromDeviceMonitoring(callback: (data: any) => void): void {
+    if (this.socket) {
+      this.socket.off('device_monitoring', callback);
+    }
   }
 }
 

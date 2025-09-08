@@ -26,27 +26,53 @@
 }
 
 .vehicle-card.compact .vehicle-image {
-  width: 40px;
-  height: 40px;
+  width: 50px;
+  height: 50px;
 }
 
-.vehicle-card.compact .stats-section {
-  min-width: 80px;
+.vehicle-card.compact .status-row {
+  min-width: 40px;
+  padding: 6px;
 }
 
-.vehicle-card.compact .stat-card {
-  padding: 4px;
+.vehicle-card.compact .status-icon {
+  font-size: 14px;
+  width: 20px;
+  height: 20px;
 }
 
-.vehicle-card.compact .stat-icon {
+.vehicle-card.compact .action-button {
+  width: 35px;
+  height: 35px;
+  padding: 6px;
+}
+
+.vehicle-card.compact .action-button .fa-icon {
+  font-size: 12px;
+}
+
+.vehicle-card.compact .vehicle-image {
+  width: 50px;
+  height: 50px;
+}
+
+.vehicle-card.compact .vehicle-number {
   font-size: 10px;
 }
 
-.vehicle-card.compact .stat-label {
-  font-size: 7px;
+.vehicle-card.compact .vehicle-name {
+  font-size: 8px;
 }
 
-.vehicle-card.compact .stat-value {
+.vehicle-card.compact .data-text {
+  font-size: 8px;
+}
+
+.vehicle-card.compact .vehicle-number {
+  font-size: 10px;
+}
+
+.vehicle-card.compact .vehicle-name {
   font-size: 8px;
 }
 
@@ -80,27 +106,67 @@
 
 /* Main content */
 .vehicle-card-content {
-  padding: 8px;
-}
-
-.vehicle-info {
   display: flex;
-  gap: 8px;
-  margin-bottom: 6px;
+  flex-direction: row;
 }
 
-.vehicle-image-section {
+/* Status Row - First Item */
+.status-row {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  padding: 8px;
+  background: #f8f9fa;
+  border-radius: 8px 0 0 8px;
+  min-width: 50px;
+  align-items: center;
+  justify-content: space-around;
+}
+
+.status-icon {
+  font-size: 16px;
+  width: 24px;
+  height: 24px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+/* Vehicle Details Column - Second Item */
+.vehicle-details-column {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  flex: 1;
+}
+
+/* Vehicle Info Row - First Row in Column */
+.vehicle-info-row {
+  display: flex;
+  gap: 16px;
+  align-items: flex-start;
+}
+
+/* Vehicle Info Section */
+.vehicle-info-section {
   display: flex;
   flex-direction: column;
   align-items: center;
-  min-width: 60px;
+  min-width: 100px;
+}
+
+.vehicle-image-container {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 60px;
+  min-width: 80px;  
 }
 
 .vehicle-image {
-  width: 50px;
-  height: 50px;
+  width: 60px;
+  height: 60px;
   object-fit: contain;
-  margin-bottom: 4px;
 }
 
 .vehicle-details {
@@ -108,99 +174,185 @@
 }
 
 .vehicle-number {
-  font-size: 10px;
-  font-weight: 600;
+  font-size: 12px;
+  font-weight: 700;
   color: #333;
-  margin-bottom: 1px;
+  margin-bottom: 2px;
 }
 
 .vehicle-name {
-  font-size: 8px;
+  font-size: 10px;
   color: #666;
+  font-weight: 400;
 }
 
-.speed-section {
+/* Buttons and Data Section */
+.buttons-data-section {
   display: flex;
   flex-direction: column;
-  gap: 4px;
+  gap: 8px;
   flex: 1;
 }
 
-.speed-display {
-  padding: 6px;
-  border-radius: 4px;
-  color: white;
-  text-align: center;
+.action-buttons {
+  display: flex;
+  gap: 8px;
+  justify-content: flex-start;
 }
 
-.speed-info {
+.data-items {
+  display: flex;
+  flex-direction: row;
+  gap: 4px;
+  justify-content: space-around;
+}
+
+/* Middle Section - Interactive Buttons and Data */
+.middle-section {
+  display: flex;
+  gap: 16px;
+  flex: 1;
+}
+
+.middle-left,
+.middle-right {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  flex: 1;
+}
+
+.action-button {
   display: flex;
   align-items: center;
   justify-content: center;
-  gap: 2px;
-  margin-bottom: 2px;
+  padding: 8px;
+  border: 1px solid #ddd;
+  border-radius: 6px;
+  background: white;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  font-size: 12px;
+  color: #333;
+  width: 40px;
+  height: 40px;
 }
 
-.speed-icon {
+.action-button:hover {
+  background: #f8f9fa;
+  border-color: #007bff;
+}
+
+.action-button .fa-icon {
+  font-size: 14px;
+}
+
+/* Geo Data Row - Second Row in Column */
+.geo-data-row {
+  display: flex;
+  gap: 16px;
+  align-items: center;
+  padding: 8px 0;
+  border-top: 1px solid #eee;
+}
+
+.geo-code {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  flex: 1;
+}
+
+.geo-icon {
   font-size: 10px;
+  color: #666;
+  min-width: 12px;
 }
 
-.speed-value {
+.geo-text {
   font-size: 9px;
-  font-weight: 600;
+  color: #333;
+  font-weight: 500;
+  line-height: 1.2;
+  word-break: break-word;
 }
 
-.status-text {
-  font-size: 7px;
-  font-weight: 600;
-  text-transform: uppercase;
-}
-
-.status-icons {
+.last-data {
   display: flex;
-  gap: 4px;
-  justify-content: center;
-}
-
-.status-icon {
-  font-size: 10px;
-}
-
-.stats-section {
-  display: flex;
-  flex-direction: column;
-  gap: 4px;
+  align-items: center;
+  gap: 6px;
   min-width: 80px;
 }
 
-.stats-row {
+.last-data-icon {
+  font-size: 10px;
+  color: #666;
+  min-width: 12px;
+}
+
+.last-data-text {
+  font-size: 9px;
+  color: #333;
+  font-weight: 500;
+}
+
+.data-item {
   display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 6px;
+  padding: 4px 0;
+}
+
+.data-icon {
+  font-size: 10px;
+  color: #666;
+  min-width: 12px;
+}
+
+.data-text {
+  font-size: 9px;
+  color: #333;
+  font-weight: 500;
+}
+
+/* Right Section - Report Button and Altitude */
+.right-section {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  min-width: 80px;
+  align-items: center;
+}
+
+.report-section {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
   gap: 4px;
 }
 
-.stat-card {
-  flex: 1;
-  padding: 4px;
-  background: #f8f9fa;
-  border-radius: 3px;
-  text-align: center;
+.status-dot {
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  background: #28a745;
+  margin-bottom: 4px;
 }
 
-.stat-icon {
-  font-size: 8px;
-  margin-bottom: 2px;
+.report-btn {
+  background: #dc3545;
+  color: white;
+  border-color: #dc3545;
 }
 
-.stat-label {
-  font-size: 6px;
-  color: #666;
-  margin-bottom: 1px;
+.report-btn:hover {
+  background: #c82333;
+  border-color: #bd2130;
 }
 
-.stat-value {
-  font-size: 7px;
-  font-weight: 600;
-  color: #333;
+.report-btn .fa-icon {
+  color: white;
 }
 
 .last-update {
@@ -239,32 +391,35 @@
 
 /* Responsive */
 @media (max-width: 768px) {
-  .vehicle-info {
+  .vehicle-card-content {
     flex-direction: column;
     gap: 12px;
   }
   
-  .vehicle-image-section {
+  .status-row {
     flex-direction: row;
     justify-content: center;
+    border-radius: 8px 8px 0 0;
+    min-width: auto;
+    padding: 8px;
+  }
+  
+  .vehicle-details-column {
+    padding: 8px;
+  }
+  
+  .vehicle-info-row {
+    flex-direction: column;
     gap: 12px;
   }
   
-  .vehicle-image {
-    width: 60px;
-    height: 60px;
+  .action-buttons {
+    justify-content: center;
   }
   
-  .stats-section {
-    min-width: auto;
-  }
-  
-  .stats-row {
-    justify-content: space-between;
-  }
-  
-  .stat-card {
-    flex: 1;
-    margin: 0 4px;
+  .geo-data-row {
+    flex-direction: column;
+    gap: 8px;
+    align-items: flex-start;
   }
 }

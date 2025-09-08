@@ -33,7 +33,7 @@ const Sidebar: React.FC<SidebarProps> = ({ isOpen, onToggle }) => {
       id: 'dashboard',
       label: 'Dashboard',
       path: '/dashboard',
-      allowedRoles: [ROLES.SUPER_ADMIN, ROLES.DEALER, ROLES.CUSTOMER],
+      allowedRoles: [ROLES.SUPER_ADMIN],
       icon: (
         <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
           <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 7v10a2 2 0 002 2h14a2 2 0 002-2V9a2 2 0 00-2-2H5a2 2 0 00-2-2z" />
@@ -161,7 +161,7 @@ const Sidebar: React.FC<SidebarProps> = ({ isOpen, onToggle }) => {
       id: 'settings',
       label: 'Settings',
       path: '/settings',
-      allowedRoles: [ROLES.SUPER_ADMIN, ROLES.DEALER, ROLES.CUSTOMER],
+      allowedRoles: [ROLES.SUPER_ADMIN],
       icon: (
         <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
           <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z" />
@@ -253,7 +253,7 @@ const Sidebar: React.FC<SidebarProps> = ({ isOpen, onToggle }) => {
           }}
           className={`
             w-full flex items-center justify-between px-4 py-3 text-sm font-medium rounded-lg transition-colors duration-200
-            ${level === 0 ? 'mx-2 mb-1' : 'ml-6 mr-2 mb-1'}
+            
             ${isItemActive 
               ? 'text-green-700 border' 
               : 'text-gray-700 hover:bg-gray-100 hover:text-gray-900'
@@ -294,7 +294,7 @@ const Sidebar: React.FC<SidebarProps> = ({ isOpen, onToggle }) => {
         </button>
 
         {hasChildren && isExpanded && (
-          <div className="mt-1">
+          <div className="mt-1 bg-gray-100 p-2 rounded-lg">
             {item.children!.map(child => renderNavItem(child, level + 1))}
           </div>
         )}
@@ -314,7 +314,7 @@ const Sidebar: React.FC<SidebarProps> = ({ isOpen, onToggle }) => {
 
       {/* Sidebar */}
       <div className={`
-        fixed inset-y-0 left-0 z-50 w-64 bg-white shadow-lg transform transition-transform duration-300 ease-in-out
+        fixed inset-y-0 left-0 z-50 w-[14rem] bg-white shadow-lg transform transition-transform duration-300 ease-in-out
         ${isOpen ? 'translate-x-0' : '-translate-x-full'}
         lg:translate-x-0 lg:static lg:inset-0
       `}>

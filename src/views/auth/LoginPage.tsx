@@ -10,6 +10,7 @@ import Button from '../../components/ui/buttons/Button';
 import Alert from '../../components/ui/common/Alert';
 import logo from '../../assets/logo.png';
 import Swal from 'sweetalert2';
+import { ROLES } from '../../utils/roleUtils';
 
 export default function LoginPage() {
   const [phone, setPhone] = useState('');
@@ -18,10 +19,23 @@ export default function LoginPage() {
   const { login, isLoading, user } = useAuth(); // Get user from auth context
   const navigate = useNavigate();
 
-  // Fixed useEffect - only run once on mount and when user changes
+  // Role-based redirect after login
   useEffect(() => {
     if (user) {
-      navigate('/dashboard', { replace: true });
+      // Determine redirect path based on user role
+      let redirectPath = '/dashboard'; // Default for Super Admin
+      
+      if (user.role) {
+        const userRole = typeof user.role === 'string' ? user.role : user.role.name;
+        
+        if (userRole === ROLES.SUPER_ADMIN) {
+          redirectPath = '/dashboard';
+        } else if (userRole === ROLES.DEALER || userRole === ROLES.CUSTOMER) {
+          redirectPath = '/live-tracking';
+        }
+      }
+      
+      navigate(redirectPath, { replace: true });
     }
   }, [user, navigate]);
 
@@ -39,7 +53,7 @@ export default function LoginPage() {
         Swal.fire({
           icon: 'success',
           title: 'Login Successful!',
-          text: 'Redirecting to dashboard...',
+          text: 'Redirecting...',
           timer: 2000,
           showConfirmButton: false,
           toast: true,

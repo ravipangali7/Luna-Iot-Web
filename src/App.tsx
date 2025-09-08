@@ -6,14 +6,15 @@ import DashboardPage from './views/DashboardPage';
 import Layout from './components/layout/Layout';
 import { DeviceIndexPage, DeviceCreatePage, DeviceEditPage } from './views/devices';
 import { VehicleIndexPage, VehicleCreatePage, VehicleEditPage } from './views/vehicles';
-import { ReportIndexPage, ReportShowPage } from './views/reports';
-import { PlaybackIndexPage, PlaybackShowPage } from './views/playback';
+import { ReportIndexPage } from './views/reports';
+import { PlaybackIndexPage } from './views/playback';
 import RoleBasedRoute from './components/role-based/RoleBasedRoute';
 import { ROLES } from './utils/roleUtils';
 
 import './styles/variables.css';
 import './styles/components.css';
 import LiveTrackingIndexPage from './views/live_tracking/LiveTrackingIndexPage';
+import LiveTrackingShowPage from './views/live_tracking/LiveTrackingShowPage';
 
 // Protected Route Component
 const ProtectedRoute: React.FC<{ children: React.ReactNode }> = ({ children }) => {
@@ -42,8 +43,24 @@ const PublicRoute: React.FC<{ children: React.ReactNode }> = ({ children }) => {
     );
   }
 
-  // Fix: Redirect to dashboard if user is already logged in
-  return !user ? <>{children}</> : <Navigate to="/dashboard" replace />;
+  // Role-based redirect if user is already logged in
+  if (user) {
+    let redirectPath = '/dashboard'; // Default for Super Admin
+    
+    if (user.role) {
+      const userRole = typeof user.role === 'string' ? user.role : user.role.name;
+      
+      if (userRole === ROLES.SUPER_ADMIN) {
+        redirectPath = '/dashboard';
+      } else if (userRole === ROLES.DEALER || userRole === ROLES.CUSTOMER) {
+        redirectPath = '/live-tracking';
+      }
+    }
+    
+    return <Navigate to={redirectPath} replace />;
+  }
+
+  return <>{children}</>;
 };
 
 
@@ -63,8 +80,12 @@ const AppRoutes: React.FC = () => {
           <Layout />
         </ProtectedRoute>
       }>
-        <Route index element={<Navigate to="/dashboard" replace />} />
-        <Route path="dashboard" element={<DashboardPage />} />
+        <Route index element={<Navigate to="/live-tracking" replace />} />
+        <Route path="dashboard" element={
+          <RoleBasedRoute allowedRoles={[ROLES.SUPER_ADMIN]}>
+            <DashboardPage />
+          </RoleBasedRoute>
+        } />
 
         {/* Device Routes - Super Admin and Dealer only */}
         <Route path="devices" element={
@@ -108,7 +129,7 @@ const AppRoutes: React.FC = () => {
         } />
         <Route path="live-tracking/:imei" element={
           <RoleBasedRoute allowedRoles={[ROLES.SUPER_ADMIN, ROLES.DEALER, ROLES.CUSTOMER]}>
-            <ReportShowPage />
+            <LiveTrackingShowPage />
           </RoleBasedRoute>
         } />
 
@@ -118,21 +139,11 @@ const AppRoutes: React.FC = () => {
             <ReportIndexPage />
           </RoleBasedRoute>
         } />
-        <Route path="reports/:imei" element={
-          <RoleBasedRoute allowedRoles={[ROLES.SUPER_ADMIN, ROLES.DEALER, ROLES.CUSTOMER]}>
-            <ReportShowPage />
-          </RoleBasedRoute>
-        } />
 
         {/* Playback Routes - All roles can access */}
         <Route path="playback" element={
           <RoleBasedRoute allowedRoles={[ROLES.SUPER_ADMIN, ROLES.DEALER, ROLES.CUSTOMER]}>
             <PlaybackIndexPage />
-          </RoleBasedRoute>
-        } />
-        <Route path="playback/:imei" element={
-          <RoleBasedRoute allowedRoles={[ROLES.SUPER_ADMIN, ROLES.DEALER, ROLES.CUSTOMER]}>
-            <PlaybackShowPage />
           </RoleBasedRoute>
         } />
       </Route>

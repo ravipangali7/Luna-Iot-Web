@@ -31,6 +31,8 @@ export interface Trip {
   endLongitude: number;
   distance: number;
   duration: number; // in minutes
+  avgSpeed?: number;
+  maxSpeed?: number;
   tripPoints: History[];
 }
 

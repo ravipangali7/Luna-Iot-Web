@@ -13,7 +13,7 @@ interface RoleBasedRouteProps {
 const RoleBasedRoute: React.FC<RoleBasedRouteProps> = ({
   children,
   allowedRoles,
-  fallbackPath = '/dashboard',
+  fallbackPath = '/live-tracking',
   fallbackComponent
 }) => {
   const { user, isLoading } = useAuth();

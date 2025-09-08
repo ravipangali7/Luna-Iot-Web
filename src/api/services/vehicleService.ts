@@ -1,15 +1,11 @@
 import { apiClient } from '../apiClient';
-import type { Vehicle, VehicleFormData, VehicleFilters } from '../../types/vehicle';
+import type { Vehicle, VehicleFormData,  } from '../../types/vehicle';
 
 class VehicleService {
-  async getAllVehicles(filters?: VehicleFilters): Promise<{ success: boolean; data?: Vehicle[]; error?: string }> {
+  async getAllVehicles(): Promise<{ success: boolean; data?: Vehicle[]; error?: string }> {
     try {
-      const params = new URLSearchParams();
-      if (filters?.search) params.append('search', filters.search);
-      if (filters?.vehicleType) params.append('vehicleType', filters.vehicleType);
-      if (filters?.status) params.append('status', filters.status);
 
-      const response = await apiClient.get(`/api/vehicle?${params.toString()}`, {
+      const response = await apiClient.get(`/api/vehicle`, {
         timeout: 120000 // 2 minutes for large responses
       });
       

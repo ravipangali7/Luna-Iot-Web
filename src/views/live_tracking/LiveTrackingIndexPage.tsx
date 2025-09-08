@@ -1,8 +1,9 @@
 import React, { useState, useEffect, useRef, useCallback } from 'react';
+import { useNavigate } from 'react-router-dom';
 import GoogleMapReact from 'google-map-react';
 import { vehicleService } from '../../api/services/vehicleService';
 import type { Vehicle } from '../../types/vehicle';
-import VehicleUtils, { VehicleState } from '../../utils/vehicleUtils';
+import VehicleUtils, { VehicleState, VehicleImageState } from '../../utils/vehicleUtils';
 import type { VehicleStateType } from '../../utils/vehicleUtils';
 import VehicleCard from '../../components/VehicleCard';
 import { useSocketUpdates } from '../../hooks/useSocketUpdates';
@@ -26,30 +27,53 @@ const MapMarker: React.FC<{
   onClick: (vehicle: Vehicle) => void;
 }> = ({ vehicle, onClick }) => {
   const vehicleState = VehicleUtils.getState(vehicle);
-  const stateColor = VehicleUtils.getStateColor(vehicleState);
+  const imagePath = VehicleUtils.getImagePath(
+    vehicle.vehicleType || 'car',
+    vehicleState,
+    VehicleImageState.LIVE
+  );
 
   return (
     <div
       className="map-marker"
       style={{
-        backgroundColor: stateColor,
-        width: '16px',
-        height: '16px',
-        borderRadius: '50%',
-        border: '2px solid white',
+        width: '32px',
+        height: '32px',
         cursor: 'pointer',
-        boxShadow: '0 2px 4px rgba(0,0,0,0.3)',
         display: 'flex',
         alignItems: 'center',
         justifyContent: 'center',
-        color: 'white',
-        fontSize: '10px',
-        fontWeight: 'bold'
+        filter: 'drop-shadow(0 2px 4px rgba(0,0,0,0.3))'
       }}
       onClick={() => onClick(vehicle)}
-      title={`${vehicle.vehicleNo} - ${vehicle.name} (${vehicleState.toUpperCase()})`}
+      title={`${vehicle.name} - ${vehicle.vehicleNo}`}
     >
-      {vehicle.vehicleNo.charAt(0)}
+      <img
+        src={imagePath}
+        alt={`${vehicle.vehicleType} - ${vehicleState}`}
+        style={{
+          width: '100%',
+          height: '100%',
+          objectFit: 'contain'
+        }}
+        onError={(e) => {
+          const target = e.target as HTMLImageElement;
+          // Fallback to a simple colored circle if image fails to load
+          target.style.display = 'none';
+          const parent = target.parentElement;
+          if (parent) {
+            parent.style.backgroundColor = VehicleUtils.getStateColor(vehicleState);
+            parent.style.borderRadius = '50%';
+            parent.style.border = '2px solid white';
+            parent.style.width = '16px';
+            parent.style.height = '16px';
+            parent.style.fontSize = '10px';
+            parent.style.fontWeight = 'bold';
+            parent.style.color = 'white';
+            parent.textContent = vehicle.vehicleNo.charAt(0);
+          }
+        }}
+      />
     </div>
   );
 };
@@ -68,18 +92,27 @@ const MapComponent: React.FC<{
 
   const defaultProps = {
     center: {
-      lat: 27.7172,
-      lng: 85.3240
+      lat: 28.3949,
+      lng: 84.1240
     },
-    zoom: 12
+    zoom: 7
   };
+
+  // Ensure center is always valid
+  const validCenter = center && 
+    typeof center.lat === 'number' && 
+    typeof center.lng === 'number' && 
+    !isNaN(center.lat) && 
+    !isNaN(center.lng) 
+    ? center 
+    : defaultProps.center;
 
   return (
     <div className="map">
       <GoogleMapReact
         bootstrapURLKeys={{ key: import.meta.env.VITE_GOOGLE_MAPS_API_KEY || '' }}
         defaultCenter={defaultProps.center}
-        center={center}
+        center={validCenter}
         defaultZoom={defaultProps.zoom}
         onChange={handleMapChange}
         options={{
@@ -122,7 +155,8 @@ const LiveTrackingIndexPage: React.FC = () => {
     inactive: 0,
     nodata: 0
   });
-  const [mapCenter, setMapCenter] = useState({ lat: 27.7172, lng: 85.3240 }); // Kathmandu coordinates
+  const [mapCenter, setMapCenter] = useState<{ lat: number; lng: number }>({ lat: 28.3949, lng: 84.1240 }); // Nepal country center
+  const navigate = useNavigate();
 
   // Use socket updates hook
   const { isConnected } = useSocketUpdates({ setVehicles });
@@ -170,8 +204,15 @@ const LiveTrackingIndexPage: React.FC = () => {
       setLoading(true);
       const response = await vehicleService.getAllVehicles();
       if (response.success && response.data) {
-        setVehicles(response.data);
-        calculateStatusCounts(response.data);
+        // Add fallback for missing status/location data
+        const vehiclesWithFallbacks = response.data.map(vehicle => ({
+          ...vehicle,
+          latestStatus: vehicle.latestStatus || null,
+          latestLocation: vehicle.latestLocation || null
+        }));
+        
+        setVehicles(vehiclesWithFallbacks);
+        calculateStatusCounts(vehiclesWithFallbacks);
       } else {
         console.error('Failed to load vehicles:', response.error);
       }
@@ -199,6 +240,11 @@ const LiveTrackingIndexPage: React.FC = () => {
     filterVehicles();
   }, [filterVehicles]);
 
+  // Update status counts when vehicles change (including socket updates)
+  useEffect(() => {
+    calculateStatusCounts(vehicles);
+  }, [vehicles, calculateStatusCounts]);
+
   const handleFilterClick = (filter: VehicleStateType | 'all') => {
     setSelectedFilter(filter);
   };
@@ -210,11 +256,14 @@ const LiveTrackingIndexPage: React.FC = () => {
         lng: vehicle.latestLocation.longitude
       });
     }
+    // Navigate to vehicle detail page
+    navigate(`/live-tracking/${vehicle.imei}`);
   };
 
   const handleNavigate = (route: string, vehicle?: Vehicle) => {
-    console.log('Navigate to:', route, vehicle);
-    // Add navigation logic here
+    if (route === 'live-tracking' && vehicle) {
+      navigate(`/live-tracking/${vehicle.imei}`);
+    }
   };
 
   const handleFindVehicle = (vehicle: Vehicle) => {
@@ -267,7 +316,7 @@ const LiveTrackingIndexPage: React.FC = () => {
       <div className="live-tracking-header">
         <div className="header-title">
           <span className="title-icon">🟢</span>
-          <h1>Live Tracking</h1>
+          <h3>Live Tracking</h3>
           <div className={`connection-status ${isConnected ? 'connected' : 'disconnected'}`}>
             <span className="status-dot"></span>
             <span className="status-text">
@@ -334,7 +383,6 @@ const LiveTrackingIndexPage: React.FC = () => {
               onVehicleClick={handleVehicleClick}
               showLocation={true}
               showAltitude={true}
-              showStats={true}
               compact={true}
               onNavigate={handleNavigate}
               onFindVehicle={handleFindVehicle}
