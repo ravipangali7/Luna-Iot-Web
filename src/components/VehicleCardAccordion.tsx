@@ -104,11 +104,11 @@ const VehicleCardAccordion: React.FC<VehicleCardAccordionProps> = ({
           <div className="vehicle-details-section">
             <div className="vehicle-info">
               <img
-                src={`/src/assets/icon/status/${vehicle.vehicleType?.toLowerCase()}_${vehicle.latestStatus?.ignition ? 'running' : 'stop'}.png`}
+                src={`/assets/icon/status/${vehicle.vehicleType?.toLowerCase()}_${vehicle.latestStatus?.ignition ? 'running' : 'stop'}.png`}
                 alt="Vehicle"
                 className="vehicle-image"
                 onError={(e) => {
-                  (e.target as HTMLImageElement).src = '/src/assets/icon/status/car_stop.png';
+                  (e.target as HTMLImageElement).src = '/assets/icon/status/car_stop.png';
                 }}
               />
               <div className="vehicle-text">

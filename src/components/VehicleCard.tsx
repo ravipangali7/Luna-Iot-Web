@@ -149,7 +149,7 @@ const VehicleCard: React.FC<VehicleCardProps> = ({
                   className="vehicle-image"
                   onError={(e) => {
                     const target = e.target as HTMLImageElement;
-                    target.src = '/src/assets/icon/status/car_stop.png';
+                    target.src = '/assets/icon/status/car_stop.png';
                     target.onerror = null; // Prevent infinite loop
                   }}
                 />

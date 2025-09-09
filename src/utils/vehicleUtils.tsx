@@ -147,9 +147,9 @@ export const getImagePath = (
   const mappedState = stateMap[state] || state;
 
   if (imageState === VehicleImageState.STATUS) {
-    return `/src/assets/icon/${imgState}/${type}_${mappedState}.png`;
+    return `/assets/icon/${imgState}/${type}_${mappedState}.png`;
   } else {
-    return `/src/assets/icon/${imgState}/live_${type}_${mappedState}.png`;
+    return `/assets/icon/${imgState}/live_${type}_${mappedState}.png`;
   }
 };
 
