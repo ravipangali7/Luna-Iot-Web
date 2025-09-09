@@ -13,5 +13,13 @@ export default defineConfig({
         changeOrigin: true
       }
     }
-  }
+  },
+  build: {
+    rollupOptions: {
+      output: {
+        assetFileNames: 'assets/[name].[hash][extname]'
+      }
+    }
+  },
+  publicDir: 'public'
 })
