@@ -250,19 +250,25 @@ const LiveTrackingIndexPage: React.FC = () => {
   };
 
   const handleVehicleClick = (vehicle: Vehicle) => {
-    if (vehicle.latestLocation?.latitude && vehicle.latestLocation?.longitude) {
-      setMapCenter({
-        lat: vehicle.latestLocation.latitude,
-        lng: vehicle.latestLocation.longitude
-      });
-    }
-    // Navigate to vehicle detail page
-    navigate(`/live-tracking/${vehicle.imei}`);
+    // if (vehicle.latestLocation?.latitude && vehicle.latestLocation?.longitude) {
+    //   setMapCenter({
+    //     lat: vehicle.latestLocation.latitude,
+    //     lng: vehicle.latestLocation.longitude
+    //   });
+    // }
+    // // Navigate to vehicle detail page
+    // navigate(`/live-tracking/${vehicle.imei}`);
   };
 
   const handleNavigate = (route: string, vehicle?: Vehicle) => {
     if (route === 'live-tracking' && vehicle) {
       navigate(`/live-tracking/${vehicle.imei}`);
+    } else if (route === 'playback' && vehicle) {
+      // Navigate to playback page with vehicle IMEI as query parameter
+      navigate(`/playback?vehicle=${vehicle.imei}`);
+    } else if (route === 'report' && vehicle) {
+      // Navigate to reports page with vehicle IMEI as query parameter
+      navigate(`/reports?vehicle=${vehicle.imei}`);
     }
   };
 

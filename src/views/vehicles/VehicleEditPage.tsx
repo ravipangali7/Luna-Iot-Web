@@ -71,12 +71,7 @@ const VehicleEditPage: React.FC = () => {
   const validateForm = (): boolean => {
     const newErrors: Record<string, string> = {};
 
-    // IMEI validation (15 digits)
-    if (!formData.imei) {
-      newErrors.imei = 'IMEI is required';
-    } else if (!/^\d{15}$/.test(formData.imei)) {
-      newErrors.imei = 'IMEI must be exactly 15 digits';
-    }
+    // Note: IMEI validation removed since it's read-only in edit mode
 
     // Vehicle name validation
     if (!formData.name) {
@@ -120,6 +115,7 @@ const VehicleEditPage: React.FC = () => {
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
+    formData.imei = imei ?? '';
     
     if (!imei || !validateForm()) {
       return;
@@ -199,9 +195,10 @@ const VehicleEditPage: React.FC = () => {
                     onChange={(value) => handleInputChange('imei', value)}
                     error={errors.imei}
                     required
+                    disabled={true}
                   />
                   <p className="text-xs text-gray-500 mt-1">
-                    IMEI must be exactly 15 digits and correspond to an existing device.
+                    IMEI cannot be changed after vehicle creation. This field is read-only.
                   </p>
                 </div>
 

@@ -21,6 +21,8 @@ declare namespace google {
       getMapTypeId(): MapTypeId;
       setMapTypeId(mapTypeId: MapTypeId): void;
       getVisibleRegion(): Promise<LatLngBounds>;
+      getZoom(): number;
+      setZoom(zoom: number): void;
     }
 
     class LatLng {
@@ -153,11 +155,11 @@ interface GoogleMapContainerProps {
   className?: string;
 }
 
-const GoogleMapContainer: React.FC<GoogleMapContainerProps> = ({ 
-  historyData, 
+const GoogleMapContainer: React.FC<GoogleMapContainerProps> = ({
+  historyData,
   vehicle,
   playbackState,
-  className = '' 
+  className = ''
 }) => {
   const mapRef = useRef<HTMLDivElement>(null);
   const mapInstanceRef = useRef<google.maps.Map | null>(null);
@@ -165,6 +167,8 @@ const GoogleMapContainer: React.FC<GoogleMapContainerProps> = ({
   const polylinesRef = useRef<google.maps.Polyline[]>([]);
   const vehicleMarkerRef = useRef<google.maps.Marker | null>(null);
   const [mapLoaded, setMapLoaded] = useState(false);
+  const [isPlaybackMode, setIsPlaybackMode] = useState(false);
+  const [originalZoom, setOriginalZoom] = useState<number>(GOOGLE_MAPS_CONFIG.defaultZoom);
 
   useEffect(() => {
     // Check if Google Maps is loaded
@@ -191,19 +195,26 @@ const GoogleMapContainer: React.FC<GoogleMapContainerProps> = ({
 
   useEffect(() => {
     if (mapLoaded && playbackState?.isPlaying) {
+      // Enter playback mode - zoom in and follow marker
+      if (!isPlaybackMode) {
+        enterPlaybackMode();
+      }
       updatePlaybackPosition();
     } else if (mapLoaded && !playbackState?.isPlaying && historyData.length > 0) {
-      // Restore full route when playback stops
+      // Exit playback mode - restore full route and original zoom
+      if (isPlaybackMode) {
+        exitPlaybackMode();
+      }
       updateMapWithHistory();
     }
-  }, [playbackState, mapLoaded, historyData]);
+  }, [playbackState, mapLoaded, historyData, isPlaybackMode]);
 
   const initializeMap = () => {
     if (!mapRef.current) return;
 
     // Get location data for initial center
     const locationData = historyData.filter(h => h.type === 'location' && h.latitude && h.longitude);
-    
+
     let center: google.maps.LatLng;
     if (locationData.length > 0) {
       center = new google.maps.LatLng(locationData[0].latitude!, locationData[0].longitude!);
@@ -233,11 +244,11 @@ const GoogleMapContainer: React.FC<GoogleMapContainerProps> = ({
     clearMap();
 
     const locationData = historyData.filter(h => h.type === 'location' && h.latitude && h.longitude);
-    
+
     if (locationData.length === 0) return;
 
     // Create route path
-    const routePath = locationData.map(point => 
+    const routePath = locationData.map(point =>
       new google.maps.LatLng(point.latitude!, point.longitude!)
     );
 
@@ -284,7 +295,7 @@ const GoogleMapContainer: React.FC<GoogleMapContainerProps> = ({
     if (locationData.length > 1) {
       const endMarker = new google.maps.Marker({
         position: new google.maps.LatLng(
-          locationData[locationData.length - 1].latitude!, 
+          locationData[locationData.length - 1].latitude!,
           locationData[locationData.length - 1].longitude!
         ),
         map: mapInstanceRef.current,
@@ -331,7 +342,7 @@ const GoogleMapContainer: React.FC<GoogleMapContainerProps> = ({
 
     // Determine vehicle state based on speed and ignition
     // const vehicleState = isMoving ? VehicleState.RUNNING : VehicleState.STOPPED;
-    
+
     // Create vehicle marker with rotatable arrow icon
     const vehicleMarker = new google.maps.Marker({
       position: new google.maps.LatLng(point.latitude!, point.longitude!),
@@ -352,20 +363,47 @@ const GoogleMapContainer: React.FC<GoogleMapContainerProps> = ({
     vehicleMarkerRef.current = vehicleMarker;
   };
 
+  const enterPlaybackMode = () => {
+    if (!mapInstanceRef.current) return;
+
+    // Store current zoom level
+    setOriginalZoom(mapInstanceRef.current.getZoom() || GOOGLE_MAPS_CONFIG.defaultZoom);
+
+    // Set playback mode
+    setIsPlaybackMode(true);
+
+    // Zoom in for better marker visibility during playback
+    mapInstanceRef.current.setZoom(15);
+
+    console.log('Entered playback mode - zoomed in to level 18');
+  };
+
+  const exitPlaybackMode = () => {
+    if (!mapInstanceRef.current) return;
+
+    // Restore original zoom level
+    mapInstanceRef.current.setZoom(originalZoom);
+
+    // Exit playback mode
+    setIsPlaybackMode(false);
+
+    console.log('Exited playback mode - restored zoom to level', originalZoom);
+  };
+
   const updatePlaybackPosition = () => {
     if (!mapInstanceRef.current || !playbackState?.isPlaying) return;
 
     const locationData = historyData.filter(h => h.type === 'location' && h.latitude && h.longitude);
-    
+
     if (playbackState.currentIndex >= locationData.length) return;
 
     const currentPoint = locationData[playbackState.currentIndex];
     const nextPoint = locationData[playbackState.currentIndex + 1];
     const prevPoint = locationData[playbackState.currentIndex - 1];
-    
+
     // Calculate smooth rotation based on movement direction
     let rotation = 0;
-    
+
     // Priority 1: Use course from GPS data if available and valid
     if (currentPoint.course !== undefined && currentPoint.course !== null && currentPoint.course >= 0 && currentPoint.course <= 360) {
       rotation = currentPoint.course;
@@ -387,7 +425,7 @@ const GoogleMapContainer: React.FC<GoogleMapContainerProps> = ({
       );
       console.log('Calculated bearing from previous point:', rotation);
     }
-    
+
     // Add slight variation based on speed for more realistic movement
     const speed = currentPoint.speed || 0;
     if (speed > 0) {
@@ -395,7 +433,7 @@ const GoogleMapContainer: React.FC<GoogleMapContainerProps> = ({
       const variation = (Math.random() - 0.5) * 2; // ±1 degree variation
       rotation = (rotation + variation + 360) % 360;
     }
-    
+
     console.log('Final rotation:', rotation, 'Speed:', speed);
 
     // Update polyline to show only remaining route (trail effect)
@@ -406,7 +444,7 @@ const GoogleMapContainer: React.FC<GoogleMapContainerProps> = ({
       // Smooth position update
       const newPosition = new google.maps.LatLng(currentPoint.latitude!, currentPoint.longitude!);
       vehicleMarkerRef.current.setPosition(newPosition);
-      
+
       // Update rotation smoothly with proper icon handling
       updateVehicleMarkerRotation(rotation);
     } else {
@@ -414,9 +452,21 @@ const GoogleMapContainer: React.FC<GoogleMapContainerProps> = ({
       addVehicleMarker(currentPoint, true);
     }
 
-    // Smooth camera movement to follow vehicle
+    // Enhanced camera movement - smooth pan with zoom following
     if (mapInstanceRef.current) {
-      mapInstanceRef.current.panTo(new google.maps.LatLng(currentPoint.latitude!, currentPoint.longitude!));
+      const newCenter = new google.maps.LatLng(currentPoint.latitude!, currentPoint.longitude!);
+
+      // Use smooth panTo for better user experience
+      mapInstanceRef.current.panTo(newCenter);
+
+      // Optional: Add slight zoom adjustment based on speed for dynamic effect
+      const speedBasedZoom = 15;
+      const currentZoom = mapInstanceRef.current.getZoom() || 18;
+
+      // Only adjust zoom if there's a significant difference to avoid jittery behavior
+      if (Math.abs(currentZoom - speedBasedZoom) > 0.5) {
+        mapInstanceRef.current.setZoom(speedBasedZoom);
+      }
     }
   };
 
@@ -428,10 +478,10 @@ const GoogleMapContainer: React.FC<GoogleMapContainerProps> = ({
     // Get current icon properties
     const currentIcon = vehicleMarkerRef.current.getIcon() as google.maps.Icon;
     const currentRotation = (currentIcon && typeof currentIcon === 'object' && currentIcon.rotation) ? currentIcon.rotation : 0;
-    
+
     // Apply smooth rotation to avoid jarring 360-degree jumps
     const smoothTargetRotation = smoothRotation(currentRotation, targetRotation);
-    
+
     console.log('Current rotation:', currentRotation, 'Smooth target:', smoothTargetRotation);
 
     // Create a rotated icon using SymbolPath
@@ -458,7 +508,7 @@ const GoogleMapContainer: React.FC<GoogleMapContainerProps> = ({
     polylinesRef.current = [];
 
     // Create new polyline with only remaining points (from current position to end)
-    const remainingPoints = locationData.slice(currentIndex).map(point => 
+    const remainingPoints = locationData.slice(currentIndex).map(point =>
       new google.maps.LatLng(point.latitude!, point.longitude!)
     );
 
@@ -480,20 +530,20 @@ const GoogleMapContainer: React.FC<GoogleMapContainerProps> = ({
     const dLon = (lon2 - lon1) * Math.PI / 180;
     const lat1Rad = lat1 * Math.PI / 180;
     const lat2Rad = lat2 * Math.PI / 180;
-    
+
     const y = Math.sin(dLon) * Math.cos(lat2Rad);
     const x = Math.cos(lat1Rad) * Math.sin(lat2Rad) - Math.sin(lat1Rad) * Math.cos(lat2Rad) * Math.cos(dLon);
-    
+
     let bearing = Math.atan2(y, x) * 180 / Math.PI;
     bearing = (bearing + 360) % 360;
-    
+
     return bearing;
   };
 
   const smoothRotation = (currentRotation: number, targetRotation: number): number => {
     // Handle the 360-degree wrap-around for smooth rotation
     const diff = targetRotation - currentRotation;
-    
+
     if (Math.abs(diff) > 180) {
       if (diff > 0) {
         return currentRotation + (diff - 360);
@@ -501,7 +551,7 @@ const GoogleMapContainer: React.FC<GoogleMapContainerProps> = ({
         return currentRotation + (diff + 360);
       }
     }
-    
+
     return targetRotation;
   };
 
@@ -523,22 +573,72 @@ const GoogleMapContainer: React.FC<GoogleMapContainerProps> = ({
 
   return (
     <div className={`relative ${className}`}>
-      <div 
+      <div
         ref={mapRef}
         className="w-full h-full border border-gray-300 rounded-lg"
         style={{ minHeight: '400px' }}
       />
-      
-      {/* Stats Overlay */}
-      <div className="absolute bottom-4 right-4 bg-white bg-opacity-90 p-3 rounded-lg shadow-sm z-10">
-        <div className="text-sm space-y-1">
-          <div>Total Points: {historyData.filter(h => h.type === 'location').length}</div>
-          <div>Date Range: {historyData.length > 0 ? new Date(historyData[0].createdAt || '').toLocaleDateString() : 'N/A'}</div>
-          {playbackState?.isPlaying && (
-            <div>Current: {playbackState.currentIndex + 1}</div>
-          )}
-        </div>
-      </div>
+
+        {/* Playback Info Overlay - Bottom Right */}
+        {playbackState?.isPlaying && (
+          <div className="absolute bottom-2 left-2 z-20 w-80 max-w-sm animate-in slide-in-from-bottom-4 duration-500">
+            <div className="bg-gradient-to-r from-green-600 via-green-700 to-emerald-700 text-white rounded-xl shadow-xl border border-green-500/30 backdrop-blur-sm hover:shadow-green-500/25 transition-all duration-300">
+              {/* Top accent line */}
+              <div className="h-0.5 bg-gradient-to-r from-green-400 via-emerald-400 to-green-500 rounded-t-xl"></div>
+              
+              <div className="px-4 py-3">
+                <div className="flex items-center justify-between">
+                  {/* Left Side - Date & Time */}
+                  <div className="flex items-center space-x-3">
+                    <div className="flex items-center space-x-2">
+                      <div className="relative">
+                        <div className="w-2 h-2 bg-white rounded-full animate-pulse"></div>
+                        <div className="absolute inset-0 w-2 h-2 bg-white rounded-full animate-ping opacity-30"></div>
+                      </div>
+                      <span className="text-xs font-bold text-green-100 tracking-wide">LIVE</span>
+                    </div>
+                    <div className="h-4 w-px bg-gradient-to-b from-transparent via-green-400/60 to-transparent"></div>
+                    <div className="text-left">
+                      <div className="text-xs text-green-200 font-medium uppercase tracking-wide mb-0.5">Time</div>
+                      <div className="text-sm font-bold text-white font-mono">
+                        {playbackState.currentDateTime ?
+                          new Date(playbackState.currentDateTime).toLocaleString('en-US', {
+                            hour: '2-digit',
+                            minute: '2-digit',
+                            second: '2-digit',
+                            hour12: true
+                          }) : 'N/A'}
+                      </div>
+                    </div>
+                  </div>
+
+                  {/* Center Divider */}
+                  <div className="h-8 w-px bg-gradient-to-b from-transparent via-green-400/60 to-transparent"></div>
+
+                  {/* Right Side - Speed */}
+                  <div className="text-center">
+                    <div className="text-xs text-green-200 font-medium uppercase tracking-wide mb-1">Speed</div>
+                    <div className="flex items-baseline justify-center space-x-1">
+                      <div className="text-2xl font-black text-white font-mono">
+                        {(playbackState?.currentSpeed || 0).toFixed(1)}
+                      </div>
+                      <div className="text-sm text-green-200 font-bold">km/h</div>
+                    </div>
+                    {/* Compact speed indicator bar */}
+                    <div className="mt-1 w-20 h-1 bg-green-400/20 rounded-full overflow-hidden">
+                      <div 
+                        className="h-full bg-gradient-to-r from-green-400 via-yellow-400 to-red-400 rounded-full transition-all duration-500 ease-out"
+                        style={{ 
+                          width: `${Math.min(100, ((playbackState?.currentSpeed || 0) / 120) * 100)}%` 
+                        }}
+                      ></div>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+        )}
 
       {/* Map Type Toggle */}
       <div className="absolute top-16 right-4 z-10">
@@ -546,8 +646,8 @@ const GoogleMapContainer: React.FC<GoogleMapContainerProps> = ({
           onClick={() => {
             if (mapInstanceRef.current) {
               const currentMapType = mapInstanceRef.current.getMapTypeId();
-              const newMapType = currentMapType === google.maps.MapTypeId.ROADMAP 
-                ? google.maps.MapTypeId.HYBRID 
+              const newMapType = currentMapType === google.maps.MapTypeId.ROADMAP
+                ? google.maps.MapTypeId.HYBRID
                 : google.maps.MapTypeId.ROADMAP;
               mapInstanceRef.current.setMapTypeId(newMapType);
             }

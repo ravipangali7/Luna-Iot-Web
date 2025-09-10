@@ -6,6 +6,7 @@ import DashboardPage from './views/DashboardPage';
 import Layout from './components/layout/Layout';
 import { DeviceIndexPage, DeviceCreatePage, DeviceEditPage } from './views/devices';
 import { VehicleIndexPage, VehicleCreatePage, VehicleEditPage } from './views/vehicles';
+import { RechargeIndexPage, RechargeCreatePage } from './views/recharges';
 import { ReportIndexPage } from './views/reports';
 import { PlaybackIndexPage } from './views/playback';
 import RoleBasedRoute from './components/role-based/RoleBasedRoute';
@@ -118,6 +119,18 @@ const AppRoutes: React.FC = () => {
         <Route path="vehicles/edit/:imei" element={
           <RoleBasedRoute allowedRoles={[ROLES.SUPER_ADMIN, ROLES.DEALER, ROLES.CUSTOMER]}>
             <VehicleEditPage />
+          </RoleBasedRoute>
+        } />
+
+        {/* Recharge Routes - Super Admin and Dealer only */}
+        <Route path="recharges" element={
+          <RoleBasedRoute allowedRoles={[ROLES.SUPER_ADMIN, ROLES.DEALER]}>
+            <RechargeIndexPage />
+          </RoleBasedRoute>
+        } />
+        <Route path="recharges/create" element={
+          <RoleBasedRoute allowedRoles={[ROLES.SUPER_ADMIN, ROLES.DEALER]}>
+            <RechargeCreatePage />
           </RoleBasedRoute>
         } />
 

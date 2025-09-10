@@ -1,4 +1,5 @@
 import React, { useState, useEffect, useRef } from 'react';
+import { useSearchParams } from 'react-router-dom';
 import { vehicleService } from '../../api/services/vehicleService';
 import { historyService } from '../../api/services/historyService';
 import GeoUtils from '../../utils/geoUtils';
@@ -13,6 +14,7 @@ import type { Vehicle } from '../../types/vehicle';
 import type { History, Trip, PlaybackState } from '../../types/history';
 
 const PlaybackIndexPage: React.FC = () => {
+  const [searchParams] = useSearchParams();
   const [vehicles, setVehicles] = useState<Vehicle[]>([]);
   const [loading, setLoading] = useState(true);
 
@@ -56,6 +58,9 @@ const PlaybackIndexPage: React.FC = () => {
   useEffect(() => {
     loadVehicles();
     initializeDates();
+    
+    // Note: We don't pre-select vehicle from URL parameter
+    // User needs to manually select from dropdown
   }, []);
 
   useEffect(() => {
@@ -308,12 +313,23 @@ const PlaybackIndexPage: React.FC = () => {
 
         animationRef.current = requestAnimationFrame(animate);
 
+        let currentDateTime = '';
+        const createdAt = historyData[nextIndex]?.createdAt;
+        if (createdAt) {
+          const dateObj = new Date(createdAt);
+          if (!isNaN(dateObj.getTime())) {
+            const [date, timeWithMs] = dateObj.toISOString().split('T');
+            const time = timeWithMs?.split('.')[0] || '';
+            currentDateTime = `${date} ${time}`;
+          }
+        }
+
         return {
           ...prev,
           currentIndex: nextIndex,
           progress,
           currentSpeed: historyData[nextIndex]?.speed || 0,
-          currentDateTime: historyData[nextIndex]?.createdAt
+          currentDateTime: currentDateTime,
         };
       });
     };
@@ -328,10 +344,13 @@ const PlaybackIndexPage: React.FC = () => {
     setPlaybackState(prev => ({ ...prev, isPlaying: false }));
   };
 
-  const vehicleOptions = vehicles.map(vehicle => ({
-    value: vehicle.imei,
-    label: `${vehicle.vehicleNo} - ${vehicle.name}`
-  }));
+  const vehicleOptions = [
+    { value: '', label: '-- SELECT VEHICLE --' },
+    ...vehicles.map(vehicle => ({
+      value: vehicle.imei,
+      label: `${vehicle.vehicleNo} - ${vehicle.name}`
+    }))
+  ];
 
   if (loading) {
     return (
@@ -455,15 +474,8 @@ const PlaybackIndexPage: React.FC = () => {
                         {/* Start time and location */}
                         <div className="mb-3">
                           <div className="text-sm font-bold text-gray-800">
-                            {new Date(segment.startTime).toLocaleDateString('en-US', {
-                              year: 'numeric',
-                              month: 'short',
-                              day: '2-digit',
-                              hour: '2-digit',
-                              minute: '2-digit',
-                              second: '2-digit',
-                              hour12: true
-                            })}
+                            {new Date(segment.startTime).toISOString().split('T')[0]},
+                            {new Date(segment.startTime).toISOString().split('T')[1].split('.')[0]}
               </div>
                           <div className="text-sm text-gray-600 mt-1">
                             {segment.startLocation}
@@ -473,15 +485,8 @@ const PlaybackIndexPage: React.FC = () => {
                         {/* End time and location */}
                         <div className="mb-3">
                           <div className="text-sm font-bold text-gray-800">
-                            {new Date(segment.endTime).toLocaleDateString('en-US', {
-                              year: 'numeric',
-                              month: 'short',
-                              day: '2-digit',
-                              hour: '2-digit',
-                              minute: '2-digit',
-                              second: '2-digit',
-                              hour12: true
-                            })}
+                            {new Date(segment.endTime).toISOString().split('T')[0]},
+                            {new Date(segment.endTime).toISOString().split('T')[1].split('.')[0]}
                   </div>
                           <div className="text-sm text-gray-600 mt-1">
                             {segment.endLocation}
@@ -570,7 +575,7 @@ const PlaybackIndexPage: React.FC = () => {
                       <span className="text-gray-600">Current Time:</span>
                       <p className="font-medium">
                         {playbackState.currentDateTime ?
-                          new Date(playbackState.currentDateTime).toLocaleString() : 'N/A'}
+                          new Date(playbackState.currentDateTime).toISOString().split('T')[0] + ' ' + new Date(playbackState.currentDateTime).toISOString().split('T')[1].split('.')[0] : 'N/A'}
                       </p>
                     </div>
                     <div>

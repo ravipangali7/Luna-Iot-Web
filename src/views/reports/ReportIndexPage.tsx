@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from 'react';
+import { useSearchParams } from 'react-router-dom';
 import { vehicleService } from '../../api/services/vehicleService';
 import { reportService } from '../../api/services/reportService';
 import Card from '../../components/ui/cards/Card';
@@ -13,6 +14,7 @@ import type { Vehicle } from '../../types/vehicle';
 import type { ReportData } from '../../types/report';
 
 const ReportIndexPage: React.FC = () => {
+  const [searchParams] = useSearchParams();
   const [vehicles, setVehicles] = useState<Vehicle[]>([]);
   const [loading, setLoading] = useState(true);
 
@@ -28,6 +30,9 @@ const ReportIndexPage: React.FC = () => {
   useEffect(() => {
     loadVehicles();
     initializeDates();
+    
+    // Note: We don't pre-select vehicle from URL parameter
+    // User needs to manually select from dropdown
   }, []);
 
   const loadVehicles = async () => {
@@ -137,10 +142,13 @@ const ReportIndexPage: React.FC = () => {
     }));
   };
 
-  const vehicleOptions = vehicles.map(vehicle => ({
-    value: vehicle.imei,
-    label: `${vehicle.vehicleNo} - ${vehicle.name}`
-  }));
+  const vehicleOptions = [
+    { value: '', label: '-- SELECT VEHICLE --' },
+    ...vehicles.map(vehicle => ({
+      value: vehicle.imei,
+      label: `${vehicle.vehicleNo} - ${vehicle.name}`
+    }))
+  ];
 
   if (loading) {
     return (

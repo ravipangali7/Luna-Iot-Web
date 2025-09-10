@@ -19,6 +19,8 @@ import TableCell from '../../components/ui/tables/TableCell';
 import Badge from '../../components/ui/common/Badge';
 import Spinner from '../../components/ui/common/Spinner';
 import Alert from '../../components/ui/common/Alert';
+import RoleBasedWidget from '../../components/role-based/RoleBasedWidget';
+import { ROLES } from '../../utils/roleUtils';
 
 const VehicleIndexPage: React.FC = () => {
   const navigate = useNavigate();
@@ -249,6 +251,7 @@ const VehicleIndexPage: React.FC = () => {
                             >
                               Edit
                             </Button>
+                            <RoleBasedWidget allowedRoles={[ROLES.SUPER_ADMIN]}>
                             <Button
                               variant="danger"
                               size="sm"
@@ -256,6 +259,7 @@ const VehicleIndexPage: React.FC = () => {
                             >
                               Delete
                             </Button>
+                            </RoleBasedWidget>
                           </div>
                         </TableCell>
                       </TableRow>
