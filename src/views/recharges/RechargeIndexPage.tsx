@@ -15,7 +15,6 @@ import TableHeader from '../../components/ui/tables/TableHeader';
 import TableBody from '../../components/ui/tables/TableBody';
 import TableRow from '../../components/ui/tables/TableRow';
 import TableCell from '../../components/ui/tables/TableCell';
-import Badge from '../../components/ui/common/Badge';
 import Spinner from '../../components/ui/common/Spinner';
 import Alert from '../../components/ui/common/Alert';
 import RoleBasedWidget from '../../components/role-based/RoleBasedWidget';

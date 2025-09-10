@@ -189,7 +189,7 @@ const RechargeCreatePage: React.FC = () => {
                     min="0.01"
                     max="10000"
                     placeholder="0.00"
-                    value={formData.amount || ''}
+                    value={formData.amount ? formData.amount.toString() : ''}
                     onChange={(value) => handleInputChange('amount', value ? parseFloat(value) : 0)}
                     className="pl-7"
                   />

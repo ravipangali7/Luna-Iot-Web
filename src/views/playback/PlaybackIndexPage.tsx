@@ -14,7 +14,7 @@ import type { Vehicle } from '../../types/vehicle';
 import type { History, Trip, PlaybackState } from '../../types/history';
 
 const PlaybackIndexPage: React.FC = () => {
-  const [searchParams] = useSearchParams();
+  const [_searchParams] = useSearchParams();
   const [vehicles, setVehicles] = useState<Vehicle[]>([]);
   const [loading, setLoading] = useState(true);
 

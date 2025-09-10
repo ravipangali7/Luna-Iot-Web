@@ -14,7 +14,7 @@ import type { Vehicle } from '../../types/vehicle';
 import type { ReportData } from '../../types/report';
 
 const ReportIndexPage: React.FC = () => {
-  const [searchParams] = useSearchParams();
+  const [_searchParams] = useSearchParams();
   const [vehicles, setVehicles] = useState<Vehicle[]>([]);
   const [loading, setLoading] = useState(true);
 

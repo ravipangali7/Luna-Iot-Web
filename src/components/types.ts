@@ -2,7 +2,7 @@ export type ButtonVariant = 'primary' | 'secondary' | 'success' | 'warning' | 'd
 export type ButtonSize = 'sm' | 'md' | 'lg';
 export type ButtonType = 'button' | 'submit' | 'reset';
 
-export type InputType = 'text' | 'email' | 'password' | 'number' | 'tel' | 'url' | 'search' | 'file';
+export type InputType = 'text' | 'email' | 'password' | 'number' | 'tel' | 'url' | 'search' | 'file' | 'date';
 export type InputSize = 'sm' | 'md' | 'lg';
 
 export type TableVariant = 'striped' | 'bordered' | 'hover';
@@ -41,6 +41,7 @@ export interface InputProps extends BaseProps {
   onFocus?: () => void;
   min?: string;
   max?: string;
+  step?: string;
 }
 
 export interface TableProps extends BaseProps {
