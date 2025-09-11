@@ -1,72 +1,119 @@
 import React from 'react';
 import { useAuth } from '../../hooks/useAuth';
+import { useRefresh } from '../../contexts/RefreshContext';
+import Button from '../ui/buttons/Button';
+import IconButton from '../ui/buttons/IconButton';
 
 interface HeaderProps {
   onMenuClick: () => void;
+  onBack?: () => void;
+  onRefresh?: () => void;
+  onLiveTracking?: () => void;
+  onAllVehicles?: () => void;
+  onFullscreen?: () => void;
 }
 
-const Header: React.FC<HeaderProps> = ({ onMenuClick }) => {
+const Header: React.FC<HeaderProps> = ({ 
+  onMenuClick: _onMenuClick, 
+  onBack, 
+  onRefresh, 
+  onLiveTracking, 
+  onAllVehicles, 
+  onFullscreen, 
+}) => {
   const { user } = useAuth();
+  const { isRefreshing } = useRefresh();
 
   return (
-    <header className="bg-white shadow-sm border-b border-gray-200 px-6 py-1">
+    <header className="bg-white shadow-sm border-b border-gray-200 px-6 py-3">
       <div className="flex items-center justify-between">
-        {/* Left side - Menu button and breadcrumb */}
-        <div className="flex items-center space-x-4">
-          <button
-            onClick={onMenuClick}
-            className="lg:hidden p-2 rounded-lg hover:bg-gray-100"
+        {/* Left side - Navigation buttons */}
+        <div className="flex items-center space-x-3">
+          {/* Back Button */}
+          {onBack && (
+            <IconButton
+              variant="outline"
+              size="sm"
+              onClick={onBack}
+              className="border-red-500 text-red-500 hover:bg-red-50"
+            >
+              <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" />
+              </svg>
+            </IconButton>
+          )}
+
+          {/* Refresh Button */}
+          <IconButton
+            variant="outline"
+            size="sm"
+            onClick={onRefresh}
+            loading={isRefreshing}
+            className="border-blue-500 text-blue-500 hover:bg-blue-50"
           >
-            <svg className="w-5 h-5 text-gray-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 6h16M4 12h16M4 18h16" />
+            <svg className={`w-4 h-4 ${isRefreshing ? 'animate-spin' : ''}`} fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" />
             </svg>
-          </button>
-          
-          <div className="hidden sm:block">
-            <nav className="flex" aria-label="Breadcrumb">
-              <ol className="flex items-center space-x-2">
-                <li>
-                  <div className="text-gray-500 hover:text-gray-700">
-                    <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 7v10a2 2 0 002 2h14a2 2 0 002-2V9a2 2 0 00-2-2H5a2 2 0 00-2-2z" />
-                    </svg>
-                  </div>
-                </li>
-                <li>
-                  <div className="flex items-center">
-                    <svg className="w-4 h-4 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
-                    </svg>
-                    <span className="ml-2 text-sm font-medium text-gray-900">Dashboard</span>
-                  </div>
-                </li>
-              </ol>
-            </nav>
-          </div>
+          </IconButton>
+
+          {/* Live Tracking Button */}
+          <Button
+            variant="outline"
+            size="sm"
+            onClick={onLiveTracking}
+            className="border-red-500 text-red-500 hover:bg-red-50 flex items-center space-x-2"
+            icon={
+              <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z" />
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 11a3 3 0 11-6 0 3 3 0 016 0z" />
+              </svg>
+            }
+          >
+            Live Tracking
+          </Button>
+
+          {/* All Vehicles Button */}
+          <Button
+            variant="outline"
+            size="sm"
+            onClick={onAllVehicles}
+            className="border-red-500 text-red-500 hover:bg-red-50 flex items-center space-x-2"
+            icon={
+              <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 7h12m0 0l-4-4m4 4l-4 4m0 6H4m0 0l4 4m-4-4l4-4" />
+              </svg>
+            }
+          >
+            All Vehicles
+          </Button>
         </div>
 
-        {/* Right side - Notifications and user info */}
+        {/* Right side - User controls */}
         <div className="flex items-center space-x-4">
-          
+          {/* Fullscreen Button */}
+          <IconButton
+            variant="outline"
+            size="sm"
+            onClick={onFullscreen}
+            className="border-gray-400 text-gray-400 hover:bg-gray-50"
+          >
+            <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 8V4m0 0h4M4 4l5 5m11-1V4m0 0h-4m4 0l-5 5M4 16v4m0 0h4m-4 0l5-5m11 5l-5-5m5 5v-4m0 4h-4" />
+            </svg>
+          </IconButton>
 
-          {/* User info */}
+          {/* User Info */}
           <div className="flex items-center space-x-3">
-            <div className="text-right hidden sm:block">
-              <p className="text-sm font-medium text-gray-900">{user?.name}</p>
-              <p className="text-xs text-gray-500">{typeof user?.role === 'object' ? user.role.name : user?.role}</p>
+            <div className="text-right">
+              <p className="text-sm font-medium text-gray-600">{user?.name}</p>
             </div>
-            <div 
-              className="h-5 w-5 rounded-full flex items-center justify-center"
-              style={{ backgroundColor: 'rgba(12, 160, 31, 0.15)' }}
-            >
-              <span 
-                className="text-xs font-semibold"
-                style={{ color: 'var(--color-primary)' }}
-              >
-                {user?.name?.charAt(0)}
-              </span>
+            <div className="h-8 w-8 rounded-full bg-gray-100 flex items-center justify-center">
+              <svg className="w-4 h-4 text-gray-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" />
+              </svg>
             </div>
           </div>
+
         </div>
       </div>
     </header>

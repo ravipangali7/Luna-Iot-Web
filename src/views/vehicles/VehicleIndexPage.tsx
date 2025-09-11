@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { vehicleService } from '../../api/services/vehicleService';
+import { useRefresh } from '../../contexts/RefreshContext';
 import type { Vehicle, VehicleFilters } from '../../types/vehicle';
 import { VEHICLE_TYPES } from '../../types/vehicle';
 import Container from '../../components/ui/layout/Container';
@@ -24,6 +25,7 @@ import { ROLES } from '../../utils/roleUtils';
 
 const VehicleIndexPage: React.FC = () => {
   const navigate = useNavigate();
+  const { refreshKey } = useRefresh();
   const [vehicles, setVehicles] = useState<Vehicle[]>([]);
   const [filteredVehicles, setFilteredVehicles] = useState<Vehicle[]>([]);
   const [loading, setLoading] = useState(true);
@@ -33,7 +35,7 @@ const VehicleIndexPage: React.FC = () => {
 
   useEffect(() => {
     loadVehicles();
-  }, []);
+  }, [refreshKey]); // Reload when refresh is triggered
 
   useEffect(() => {
     applyFilters();

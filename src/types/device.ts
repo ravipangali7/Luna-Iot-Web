@@ -21,6 +21,25 @@ export interface UserDevice {
   updatedAt: string;
 }
 
+export interface Vehicle {
+  id: number;
+  imei: string;
+  name: string;
+  vehicleNo: string;
+  vehicleType: string;
+  userVehicles?: UserVehicle[];
+}
+
+export interface UserVehicle {
+  id: number;
+  userId: number;
+  vehicleId: number;
+  isMain: boolean;
+  user?: User;
+  createdAt: string;
+  updatedAt: string;
+}
+
 export interface Device {
   id: number;
   imei: string;
@@ -31,6 +50,7 @@ export interface Device {
   model: string;
   status: string;
   userDevices: UserDevice[];
+  vehicles?: Vehicle[];
   createdAt: string;
   updatedAt: string;
 }

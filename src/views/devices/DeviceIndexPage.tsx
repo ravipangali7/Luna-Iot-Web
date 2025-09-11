@@ -43,14 +43,14 @@ const DeviceIndexPage: React.FC = () => {
       setLoading(true);
       setError(null);
       const result = await deviceService.getAllDevices();
-      
+
       if (result.success && result.data) {
         setDevices(result.data);
       } else {
         setError(result.error || 'Failed to load devices');
       }
     } catch (err) {
-      setError('An unexpected error occurred: '+err);
+      setError('An unexpected error occurred: ' + err);
     } finally {
       setLoading(false);
     }
@@ -65,7 +65,15 @@ const DeviceIndexPage: React.FC = () => {
         device.imei.toLowerCase().includes(searchQuery.toLowerCase()) ||
         device.phone.toLowerCase().includes(searchQuery.toLowerCase()) ||
         device.model.toLowerCase().includes(searchQuery.toLowerCase()) ||
-        device.sim.toLowerCase().includes(searchQuery.toLowerCase())
+        device.sim.toLowerCase().includes(searchQuery.toLowerCase()) ||
+        (device.iccid || '').toLowerCase().includes(searchQuery.toLowerCase()) ||
+        device.protocol.toLowerCase().includes(searchQuery.toLowerCase()) ||
+        getDealerInfo(device).toLowerCase().includes(searchQuery.toLowerCase()) ||
+        getDealerPhone(device).toLowerCase().includes(searchQuery.toLowerCase()) ||
+        getVehicleInfo(device).toLowerCase().includes(searchQuery.toLowerCase()) ||
+        getVehicleNo(device).toLowerCase().includes(searchQuery.toLowerCase()) ||
+        getCustomerInfo(device).toLowerCase().includes(searchQuery.toLowerCase()) ||
+        getCustomerPhone(device).toLowerCase().includes(searchQuery.toLowerCase())
       );
     }
 
@@ -97,28 +105,120 @@ const DeviceIndexPage: React.FC = () => {
           setError(result.error || 'Failed to delete device');
         }
       } catch (err) {
-        setError('An unexpected error occurred: '+err);
+        setError('An unexpected error occurred: ' + err);
       }
     }
   };
 
-  const getStatusBadge = (status: string) => {
-    const statusConfig = {
-      'active': { variant: 'success' as const, label: 'Active' },
-      'inactive': { variant: 'secondary' as const, label: 'Inactive' },
-      'maintenance': { variant: 'warning' as const, label: 'Maintenance' },
-      'error': { variant: 'danger' as const, label: 'Error' }
-    };
-    
-    const config = statusConfig[status as keyof typeof statusConfig] || { variant: 'secondary' as const, label: status };
-    return <Badge variant={config.variant} size="sm">{config.label}</Badge>;
+  const handleRechargeDevice = (device: Device) => {
+    navigate(`/recharges/create?deviceId=${device.id}&imei=${device.imei}`);
   };
 
-  const getAssignedUsers = (device: Device) => {
+
+  const getDealerInfo = (device: Device) => {
     if (device.userDevices && device.userDevices.length > 0) {
-      return device.userDevices.map(ud => ud.user.name).join(', ');
+      // Sort to show dealer first, then other users
+      const sortedUsers = device.userDevices.sort((a, b) => {
+        const aIsDealer = a.user && a.user.role && a.user.role.name === 'Dealer';
+        const bIsDealer = b.user && b.user.role && b.user.role.name === 'Dealer';
+        if (aIsDealer && !bIsDealer) return -1;
+        if (!aIsDealer && bIsDealer) return 1;
+        return 0;
+      });
+
+      const dealer = sortedUsers.find(ud =>
+        ud.user && ud.user.role && ud.user.role.name === 'Dealer'
+      );
+      if (dealer && dealer.user) {
+        return dealer.user.name;
+      }
     }
-    return 'Unassigned';
+    return 'No dealer';
+  };
+
+  const getDealerPhone = (device: Device) => {
+    if (device.userDevices && device.userDevices.length > 0) {
+      // Sort to show dealer first, then other users
+      const sortedUsers = device.userDevices.sort((a, b) => {
+        const aIsDealer = a.user && a.user.role && a.user.role.name === 'Dealer';
+        const bIsDealer = b.user && b.user.role && b.user.role.name === 'Dealer';
+        if (aIsDealer && !bIsDealer) return -1;
+        if (!aIsDealer && bIsDealer) return 1;
+        return 0;
+      });
+
+      const dealer = sortedUsers.find(ud =>
+        ud.user && ud.user.role && ud.user.role.name === 'Dealer'
+      );
+      if (dealer && dealer.user) {
+        return dealer.user.phone;
+      }
+    }
+    return '';
+  };
+
+  const getVehicleInfo = (device: Device) => {
+    if (device.vehicles && device.vehicles.length > 0) {
+      const vehicle = device.vehicles[0]; // Get first vehicle
+      return vehicle.name || 'Unknown Vehicle';
+    }
+    return 'Not Assign';
+  };
+
+  const getVehicleNo = (device: Device) => {
+    if (device.vehicles && device.vehicles.length > 0) {
+      const vehicle = device.vehicles[0]; // Get first vehicle
+      return vehicle.vehicleNo || '';
+    }
+    return '';
+  };
+
+  const getCustomerInfo = (device: Device) => {
+    if (device.vehicles && device.vehicles.length > 0) {
+      const vehicle = device.vehicles[0];
+      if (vehicle.userVehicles && vehicle.userVehicles.length > 0) {
+        // Sort to show main customers first, then other customers
+        const sortedCustomers = vehicle.userVehicles.sort((a, b) => {
+          const aIsMain = a.isMain && a.user && a.user.role && a.user.role.name === 'Customer';
+          const bIsMain = b.isMain && b.user && b.user.role && b.user.role.name === 'Customer';
+          if (aIsMain && !bIsMain) return -1;
+          if (!aIsMain && bIsMain) return 1;
+          return 0;
+        });
+
+        const mainCustomer = sortedCustomers.find(uv =>
+          uv.user && uv.user.role && uv.user.role.name === 'Customer' && uv.isMain
+        );
+        if (mainCustomer && mainCustomer.user) {
+          return mainCustomer.user.name;
+        }
+      }
+    }
+    return 'No customer';
+  };
+
+  const getCustomerPhone = (device: Device) => {
+    if (device.vehicles && device.vehicles.length > 0) {
+      const vehicle = device.vehicles[0];
+      if (vehicle.userVehicles && vehicle.userVehicles.length > 0) {
+        // Sort to show main customers first, then other customers
+        const sortedCustomers = vehicle.userVehicles.sort((a, b) => {
+          const aIsMain = a.isMain && a.user && a.user.role && a.user.role.name === 'Customer';
+          const bIsMain = b.isMain && b.user && b.user.role && b.user.role.name === 'Customer';
+          if (aIsMain && !bIsMain) return -1;
+          if (!aIsMain && bIsMain) return 1;
+          return 0;
+        });
+
+        const mainCustomer = sortedCustomers.find(uv =>
+          uv.user && uv.user.role && uv.user.role.name === 'Customer' && uv.isMain
+        );
+        if (mainCustomer && mainCustomer.user) {
+          return mainCustomer.user.phone;
+        }
+      }
+    }
+    return '';
   };
 
   if (loading) {
@@ -199,71 +299,111 @@ const DeviceIndexPage: React.FC = () => {
 
         {/* Devices Table */}
         <Card>
-            {filteredDevices.length === 0 ? (
-              <div className="text-center py-8">
-                <p className="text-gray-500">No devices found</p>
-              </div>
-            ) : (
-              <div className="overflow-x-auto">
-                <Table striped hover>
-                  <TableHead>
-                    <TableRow>
-                      <TableHeader>S.N.</TableHeader>
-                      <TableHeader>IMEI</TableHeader>
-                      <TableHeader>Phone</TableHeader>
-                      <TableHeader>SIM</TableHeader>
-                      <TableHeader>Protocol</TableHeader>
-                      <TableHeader>Model</TableHeader>
-                      <TableHeader>ICCID</TableHeader>
-                      <TableHeader>Status</TableHeader>
-                      <TableHeader>Assigned To</TableHeader>
-                      <TableHeader>Actions</TableHeader>
+          {filteredDevices.length === 0 ? (
+            <div className="text-center py-8">
+              <p className="text-gray-500">No devices found</p>
+            </div>
+          ) : (
+            <div className="overflow-x-auto">
+              <Table striped hover>
+                <TableHead>
+                  <TableRow>
+                    <TableHeader>S.N.</TableHeader>
+                    <TableHeader>General Info</TableHeader>
+                    <TableHeader>SIM Info</TableHeader>
+                    <TableHeader>Device Info</TableHeader>
+                    <TableHeader>Dealer Info</TableHeader>
+                    <TableHeader>Vehicle Info</TableHeader>
+                    <TableHeader>Customer Info</TableHeader>
+                    <RoleBasedWidget allowedRoles={[ROLES.SUPER_ADMIN]}><TableHeader>Actions</TableHeader></RoleBasedWidget>
+                  </TableRow>
+                </TableHead>
+                <TableBody>
+                  {filteredDevices.map((device, index) => (
+                    <TableRow key={device.id}>
+                      <TableCell>{index + 1}</TableCell>
+                      <TableCell>
+                        <div className="space-y-1">
+                          <div className="font-mono text-sm">{device.imei}</div>
+                          <Badge variant="secondary" size="sm">{device.phone}</Badge>
+                        </div>
+                      </TableCell>
+                      <TableCell>
+                        <div className="space-y-1">
+                          <div className="text-sm">{device.sim}</div>
+                          <Badge variant="secondary" size="sm">{device.iccid || 'N/A'}</Badge>
+                        </div>
+                      </TableCell>
+                      <TableCell>
+                        <div className="space-y-1">
+                          <div className="text-sm">{device.protocol}</div>
+                          <Badge variant="info" size="sm">{device.model}</Badge>
+                        </div>
+                      </TableCell>
+                      <TableCell>
+                        <div className="space-y-1">
+                          <div className="text-sm">{getDealerInfo(device)}</div>
+                          {getDealerPhone(device) && (
+                            <Badge variant="secondary" size="sm">{getDealerPhone(device)}</Badge>
+                          )}
+                        </div>
+                      </TableCell>
+                      <TableCell>
+                        <div className="space-y-1">
+                          <div className="text-sm">{getVehicleInfo(device)}</div>
+                          {getVehicleNo(device) && (
+                            <Badge variant="secondary" size="sm">{getVehicleNo(device)}</Badge>
+                          )}
+                        </div>
+                      </TableCell>
+                      <TableCell>
+                        <div className="space-y-1">
+                          <div className="text-sm">{getCustomerInfo(device)}</div>
+                          {getCustomerPhone(device) && (
+                            <Badge variant="secondary" size="sm">{getCustomerPhone(device)}</Badge>
+                          )}
+                        </div>
+                      </TableCell>
+                      <RoleBasedWidget allowedRoles={[ROLES.SUPER_ADMIN]}>
+                      <TableCell>
+                        <div className="flex space-x-2">
+                          <RoleBasedWidget allowedRoles={[ROLES.SUPER_ADMIN]}>
+                            <Button
+                              variant="outline"
+                              size="sm"
+                              onClick={() => handleEditDevice(device)}
+                            >
+                              Edit
+                            </Button>
+                          </RoleBasedWidget>
+
+                          <RoleBasedWidget allowedRoles={[ROLES.SUPER_ADMIN]}>
+                            <Button
+                              variant="primary"
+                              size="sm"
+                              onClick={() => handleRechargeDevice(device)}
+                            >
+                              Recharge
+                            </Button>
+                          </RoleBasedWidget>
+                          <RoleBasedWidget allowedRoles={[ROLES.SUPER_ADMIN]}>
+                            <Button
+                              variant="danger"
+                              size="sm"
+                              onClick={() => handleDeleteDevice(device)}
+                            >
+                              Delete
+                            </Button>
+                          </RoleBasedWidget>
+                        </div>
+                      </TableCell>
+                      </RoleBasedWidget>
                     </TableRow>
-                  </TableHead>
-                  <TableBody>
-                    {filteredDevices.map((device, index) => (
-                      <TableRow key={device.id}>
-                        <TableCell>{index + 1}</TableCell>
-                        <TableCell className="font-mono text-sm">{device.imei}</TableCell>
-                        <TableCell>{device.phone}</TableCell>
-                        <TableCell>{device.sim}</TableCell>
-                        <TableCell>{device.protocol}</TableCell>
-                        <TableCell>{device.model}</TableCell>
-                        <TableCell className="font-mono text-sm">
-                          {device.iccid || '-'}
-                        </TableCell>
-                        <TableCell>{getStatusBadge(device.status)}</TableCell>
-                        <TableCell className="text-sm">
-                          {getAssignedUsers(device)}
-                        </TableCell>
-                        <TableCell>
-                          <div className="flex space-x-2">
-                            <RoleBasedWidget allowedRoles={[ROLES.SUPER_ADMIN]}>
-                              <Button
-                                variant="outline"
-                                size="sm"
-                                onClick={() => handleEditDevice(device)}
-                              >
-                                Edit
-                              </Button>
-                            </RoleBasedWidget>
-                            <RoleBasedWidget allowedRoles={[ROLES.SUPER_ADMIN]}>
-                              <Button
-                                variant="danger"
-                                size="sm"
-                                onClick={() => handleDeleteDevice(device)}
-                              >
-                                Delete
-                              </Button>
-                            </RoleBasedWidget>
-                          </div>
-                        </TableCell>
-                      </TableRow>
-                    ))}
-                  </TableBody>
-                </Table>
-              </div>
-            )}
+                  ))}
+                </TableBody>
+              </Table>
+            </div>
+          )}
         </Card>
       </div>
     </Container>

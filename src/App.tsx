@@ -1,5 +1,6 @@
 import { BrowserRouter as Router, Routes, Route, Navigate } from 'react-router-dom';
 import { AuthProvider } from './contexts/AuthContext';
+import { RefreshProvider } from './contexts/RefreshContext';
 import { useAuth } from './hooks/useAuth';
 import LoginPage from './views/auth/LoginPage';
 import DashboardPage from './views/DashboardPage';
@@ -168,7 +169,9 @@ const App: React.FC = () => {
   return (
     <Router>
       <AuthProvider>
-        <AppRoutes />
+        <RefreshProvider>
+          <AppRoutes />
+        </RefreshProvider>
       </AuthProvider>
     </Router>
   );
