@@ -12,10 +12,19 @@ export interface User {
   updatedAt: string;
 }
 
+export interface Recharge {
+  id: number;
+  deviceId: number;
+  amount: number;
+  createdAt: string;
+  device?: Device | null;
+}
+
 export interface UserVehicle {
   id: number;
   userId: number;
   vehicleId: number;
+  isMain: boolean;
   user?: User;
   createdAt: string;
   updatedAt: string;
@@ -74,9 +83,11 @@ export interface Vehicle {
   device?: Device | null;
   latestStatus?: Status | null;
   latestLocation?: Location | null;
+  latestRecharge?: Recharge | null;
   todayKm?: number;
   ownershipType?: string;
   userVehicle?: UserVehicle | null;
+  mainCustomer?: UserVehicle | null;
 }
 
 export interface VehicleFormData {

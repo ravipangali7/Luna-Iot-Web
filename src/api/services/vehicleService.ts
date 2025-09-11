@@ -20,6 +20,23 @@ class VehicleService {
     }
   }
 
+  async getAllVehiclesDetailed(): Promise<{ success: boolean; data?: Vehicle[]; error?: string }> {
+    try {
+      const response = await apiClient.get(`/api/vehicle/detailed`, {
+        timeout: 120000 // 2 minutes for large responses
+      });
+      
+      if (response.data.success) {
+        return { success: true, data: response.data.data };
+      } else {
+        return { success: false, error: response.data.message || 'Failed to fetch detailed vehicles' };
+      }
+    } catch (error) {
+      console.error('Get detailed vehicles error:', error);
+      return { success: false, error: 'Network error: ' + (error as Error).message };
+    }
+  }
+
   async getVehicleByImei(imei: string): Promise<{ success: boolean; data?: Vehicle; error?: string }> {
     try {
       const response = await apiClient.get(`/api/vehicle/${imei}`, {

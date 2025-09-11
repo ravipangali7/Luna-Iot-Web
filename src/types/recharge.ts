@@ -55,6 +55,17 @@ export interface Recharge {
   amount: number;
   createdAt: string;
   device: Device;
+  topupResult?: {
+    success: boolean;
+    message: string;
+    simType: string;
+    reference: string;
+    statusCode: number;
+    state: string;
+    creditsConsumed: number;
+    creditsAvailable: number;
+    transactionId: number | null;
+  };
 }
 
 export interface RechargeFormData {

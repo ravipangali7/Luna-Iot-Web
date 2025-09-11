@@ -129,9 +129,32 @@ class RechargeService {
       } else {
         return { success: false, error: response.data.message || 'Failed to create recharge' };
       }
-    } catch (error) {
+    } catch (error: any) {
       console.error('Create recharge error:', error);
-      return { success: false, error: 'Network error: ' + (error as Error).message };
+      
+      // Handle different types of errors
+      if (error.response) {
+        // Server responded with error status
+        const errorMessage = error.response.data?.message || error.response.data?.error || 'Server error';
+        const statusCode = error.response.status;
+        
+        return { 
+          success: false, 
+          error: `Error ${statusCode}: ${errorMessage}` 
+        };
+      } else if (error.request) {
+        // Network error - no response received
+        return { 
+          success: false, 
+          error: 'Network error: Unable to connect to server. Please check your internet connection.' 
+        };
+      } else {
+        // Other error
+        return { 
+          success: false, 
+          error: `Error: ${error.message}` 
+        };
+      }
     }
   }
 

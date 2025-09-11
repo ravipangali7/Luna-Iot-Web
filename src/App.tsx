@@ -124,12 +124,12 @@ const AppRoutes: React.FC = () => {
 
         {/* Recharge Routes - Super Admin and Dealer only */}
         <Route path="recharges" element={
-          <RoleBasedRoute allowedRoles={[ROLES.SUPER_ADMIN, ROLES.DEALER]}>
+          <RoleBasedRoute allowedRoles={[ROLES.SUPER_ADMIN]}>
             <RechargeIndexPage />
           </RoleBasedRoute>
         } />
         <Route path="recharges/create" element={
-          <RoleBasedRoute allowedRoles={[ROLES.SUPER_ADMIN, ROLES.DEALER]}>
+          <RoleBasedRoute allowedRoles={[ROLES.SUPER_ADMIN]}>
             <RechargeCreatePage />
           </RoleBasedRoute>
         } />

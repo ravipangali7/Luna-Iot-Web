@@ -43,7 +43,9 @@ const VehicleIndexPage: React.FC = () => {
     try {
       setLoading(true);
       setError(null);
-      const result = await vehicleService.getAllVehicles();
+      
+      // Load detailed vehicles data (includes device, user, recharge info)
+      const result = await vehicleService.getAllVehiclesDetailed();
       
       if (result.success && result.data) {
         setVehicles(result.data);
@@ -65,8 +67,11 @@ const VehicleIndexPage: React.FC = () => {
       filtered = filtered.filter(vehicle =>
         vehicle.imei.toLowerCase().includes(searchQuery.toLowerCase()) ||
         vehicle.vehicleNo.toLowerCase().includes(searchQuery.toLowerCase()) ||
+        vehicle.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
         vehicle.vehicleType.toLowerCase().includes(searchQuery.toLowerCase()) ||
-        (vehicle.device?.phone || '').toLowerCase().includes(searchQuery.toLowerCase())
+        (vehicle.device?.phone || '').toLowerCase().includes(searchQuery.toLowerCase()) ||
+        getCustomerInfo(vehicle).toLowerCase().includes(searchQuery.toLowerCase()) ||
+        getCustomerPhone(vehicle).toLowerCase().includes(searchQuery.toLowerCase())
       );
     }
 
@@ -98,26 +103,97 @@ const VehicleIndexPage: React.FC = () => {
     }
   };
 
+  const handleRechargeVehicle = (vehicle: Vehicle) => {
+    if (vehicle.device) {
+      navigate(`/recharges/create?deviceId=${vehicle.device.id}&imei=${vehicle.imei}`);
+    } else {
+      setError('Device information not available for this vehicle');
+    }
+  };
 
 
-  const getAssignedUsers = (vehicle: Vehicle) => {
-    if (vehicle.userVehicle && vehicle.userVehicle.user) {
-      return vehicle.userVehicle.user.name;
+
+  const getCustomerInfo = (vehicle: Vehicle) => {
+    if (vehicle.mainCustomer && vehicle.mainCustomer.user) {
+      return vehicle.mainCustomer.user.name;
     }
     return 'Unassigned';
   };
 
-  const formatLastRecharge = () => {
-    // This would typically come from the device data
-    return 'N/A';
+  const getCustomerPhone = (vehicle: Vehicle) => {
+    if (vehicle.mainCustomer && vehicle.mainCustomer.user) {
+      return vehicle.mainCustomer.user.phone;
+    }
+    return '';
   };
 
-  const formatLastData = (vehicle: Vehicle) => {
+  const getLastRecharge = (vehicle: Vehicle) => {
+    if (vehicle.latestRecharge) {
+      return formatTimeAgo(vehicle.latestRecharge.createdAt);
+    }
+    return 'No recharge';
+  };
+
+  const getLastData = (vehicle: Vehicle) => {
     if (vehicle.latestStatus) {
-      return new Date(vehicle.latestStatus.createdAt).toLocaleString();
+      return formatTimeAgo(vehicle.latestStatus.createdAt);
     }
     return 'No data';
   };
+
+  const formatTimeAgo = (dateString: string) => {
+    const now = new Date();
+    const date = new Date(dateString);
+    
+    // Check if date is valid
+    if (isNaN(date.getTime())) {
+      return 'Invalid date';
+    }
+    
+    const diffInSeconds = Math.floor((now.getTime() - date.getTime()) / 1000);
+    
+    // Handle negative values (future dates)
+    if (diffInSeconds < 0) {
+      return 'Just now';
+    }
+    
+    // Handle very small differences
+    if (diffInSeconds < 1) {
+      return 'Just now';
+    }
+    
+    if (diffInSeconds < 60) return `${diffInSeconds}s ago`;
+    
+    const minutes = Math.floor(diffInSeconds / 60);
+    const hours = Math.floor(diffInSeconds / 3600);
+    const days = Math.floor(diffInSeconds / 86400);
+    const months = Math.floor(diffInSeconds / 2592000);
+    const years = Math.floor(diffInSeconds / 31536000);
+    
+    if (diffInSeconds < 3600) {
+      const remainingSeconds = diffInSeconds % 60;
+      return remainingSeconds > 0 ? `${minutes}m, ${remainingSeconds}s ago` : `${minutes}m ago`;
+    }
+    
+    if (diffInSeconds < 86400) {
+      const remainingMinutes = minutes % 60;
+      return remainingMinutes > 0 ? `${hours}h, ${remainingMinutes}m ago` : `${hours}h ago`;
+    }
+    
+    if (diffInSeconds < 2592000) {
+      const remainingHours = hours % 24;
+      return remainingHours > 0 ? `${days}d, ${remainingHours}h ago` : `${days}d ago`;
+    }
+    
+    if (diffInSeconds < 31536000) {
+      const remainingDays = days % 30;
+      return remainingDays > 0 ? `${months}mo, ${remainingDays}d ago` : `${months}mo ago`;
+    }
+    
+    const remainingMonths = months % 12;
+    return remainingMonths > 0 ? `${years}y, ${remainingMonths}mo ago` : `${years}y ago`;
+  };
+
 
   const getRelayStatus = (vehicle: Vehicle) => {
     if (vehicle.latestStatus) {
@@ -204,13 +280,12 @@ const VehicleIndexPage: React.FC = () => {
                   <TableHead>
                     <TableRow>
                       <TableHeader>S.N.</TableHeader>
-                      <TableHeader>Reg. No.</TableHeader>
-                      <TableHeader>Customer</TableHeader>
-                      <TableHeader>IMEI</TableHeader>
-                      <TableHeader>Type</TableHeader>
-                      <TableHeader>Number</TableHeader>
-                      <TableHeader>Last Recharge</TableHeader>
-                      <TableHeader>Last Data</TableHeader>
+                      <TableHeader>Vehicle Info</TableHeader>
+                      <TableHeader>Device Info</TableHeader>
+                      <TableHeader>Vehicle Type</TableHeader>
+                      <TableHeader>Customer Info</TableHeader>
+                      <TableHeader>Last Recharge ago</TableHeader>
+                      <TableHeader>Last Data ago</TableHeader>
                       <TableHeader>Relay</TableHeader>
                       <TableHeader>Actions</TableHeader>
                     </TableRow>
@@ -219,20 +294,34 @@ const VehicleIndexPage: React.FC = () => {
                     {filteredVehicles.map((vehicle, index) => (
                       <TableRow key={vehicle.id}>
                         <TableCell>{index + 1}</TableCell>
-                        <TableCell className="font-semibold">{vehicle.vehicleNo}</TableCell>
-                        <TableCell className="text-sm">
-                          {getAssignedUsers(vehicle)}
+                        <TableCell>
+                          <div className="space-y-1">
+                            <div className="font-semibold">{vehicle.vehicleNo}</div>
+                            <Badge variant="secondary" size="sm">{vehicle.name}</Badge>
+                          </div>
                         </TableCell>
-                        <TableCell className="font-mono text-sm">{vehicle.imei}</TableCell>
+                        <TableCell>
+                          <div className="space-y-1">
+                            <div className="font-mono text-sm">{vehicle.imei}</div>
+                            <Badge variant="secondary" size="sm">{vehicle.device?.phone || 'N/A'}</Badge>
+                          </div>
+                        </TableCell>
                         <TableCell>
                           <Badge variant="info" size="sm">{vehicle.vehicleType}</Badge>
                         </TableCell>
-                        <TableCell>{vehicle.device?.phone || 'N/A'}</TableCell>
-                        <TableCell className="text-sm">
-                          {formatLastRecharge()}
+                        <TableCell>
+                          <div className="space-y-1">
+                            <div className="text-sm">{getCustomerInfo(vehicle)}</div>
+                            {getCustomerPhone(vehicle) && (
+                              <Badge variant="secondary" size="sm">{getCustomerPhone(vehicle)}</Badge>
+                            )}
+                          </div>
                         </TableCell>
                         <TableCell className="text-sm">
-                          {formatLastData(vehicle)}
+                          {getLastRecharge(vehicle)}
+                        </TableCell>
+                        <TableCell className="text-sm">
+                          {getLastData(vehicle)}
                         </TableCell>
                         <TableCell>
                           <Badge 
@@ -250,6 +339,13 @@ const VehicleIndexPage: React.FC = () => {
                               onClick={() => handleEditVehicle(vehicle)}
                             >
                               Edit
+                            </Button>
+                            <Button
+                              variant="primary"
+                              size="sm"
+                              onClick={() => handleRechargeVehicle(vehicle)}
+                            >
+                              Recharge
                             </Button>
                             <RoleBasedWidget allowedRoles={[ROLES.SUPER_ADMIN]}>
                             <Button

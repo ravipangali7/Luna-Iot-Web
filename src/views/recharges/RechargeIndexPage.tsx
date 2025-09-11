@@ -1,7 +1,9 @@
 import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { rechargeService } from '../../api/services/rechargeService';
+import { deviceService } from '../../api/services/deviceService';
 import type { Recharge, RechargeFilters } from '../../types/recharge';
+import type { Device } from '../../types/device';
 import Container from '../../components/ui/layout/Container';
 import Card from '../../components/ui/cards/Card';
 import CardHeader from '../../components/ui/cards/CardHeader';
@@ -31,7 +33,7 @@ const RechargeIndexPage: React.FC = () => {
   const [currentPage, setCurrentPage] = useState(1);
   const [totalPages, setTotalPages] = useState(1);
   const [totalCount, setTotalCount] = useState(0);
-  const [devices, setDevices] = useState<{ id: number; imei: string; phone: string }[]>([]);
+  const [devices, setDevices] = useState<Device[]>([]);
 
   useEffect(() => {
     loadRecharges();
@@ -64,20 +66,13 @@ const RechargeIndexPage: React.FC = () => {
 
   const loadDevices = async () => {
     try {
-      // This would typically come from a device service
-      // For now, we'll extract unique devices from recharges
-      const uniqueDevices = recharges.reduce((acc, recharge) => {
-        const device = recharge.device;
-        if (!acc.find(d => d.id === device.id)) {
-          acc.push({
-            id: device.id,
-            imei: device.imei,
-            phone: device.phone
-          });
-        }
-        return acc;
-      }, [] as { id: number; imei: string; phone: string }[]);
-      setDevices(uniqueDevices);
+      const result = await deviceService.getAllDevices();
+      
+      if (result.success && result.data) {
+        setDevices(result.data);
+      } else {
+        console.error('Failed to load devices:', result.error);
+      }
     } catch (err) {
       console.error('Error loading devices:', err);
     }
@@ -139,9 +134,9 @@ const RechargeIndexPage: React.FC = () => {
   };
 
   const formatAmount = (amount: number) => {
-    return new Intl.NumberFormat('en-US', {
+    return new Intl.NumberFormat('en-NP', {
       style: 'currency',
-      currency: 'USD'
+      currency: 'NPR'
     }).format(amount);
   };
 
@@ -240,7 +235,7 @@ const RechargeIndexPage: React.FC = () => {
                   { value: '', label: 'All Devices' },
                   ...devices.map(device => ({ 
                     value: device.id.toString(), 
-                    label: `${device.imei} (${device.phone})` 
+                    label: `${device.imei} - ${device.phone} (${device.model})` 
                   }))
                 ]}
               />
