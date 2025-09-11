@@ -8,7 +8,7 @@ const Layout: React.FC = () => {
   const [sidebarOpen, setSidebarOpen] = useState(false);
   const navigate = useNavigate();
   const location = useLocation();
-  const { triggerRefresh, isRefreshing } = useRefresh();
+  const { triggerRefresh } = useRefresh();
 
   const toggleSidebar = () => {
     setSidebarOpen(!sidebarOpen);
