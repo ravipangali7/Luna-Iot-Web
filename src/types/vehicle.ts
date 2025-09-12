@@ -28,6 +28,17 @@ export interface UserVehicle {
   user?: User;
   createdAt: string;
   updatedAt: string;
+  // Vehicle-specific permissions
+  allAccess: boolean;
+  liveTracking: boolean;
+  history: boolean;
+  report: boolean;
+  vehicleProfile: boolean;
+  events: boolean;
+  geofence: boolean;
+  edit: boolean;
+  shareTracking: boolean;
+  notification: boolean;
 }
 
 export interface Device {
@@ -78,6 +89,7 @@ export interface Vehicle {
   mileage: number;
   speedLimit: number;
   minimumFuel: number;
+  expireDate?: string | null;
   createdAt: string;
   updatedAt: string;
   device?: Device | null;
@@ -86,6 +98,7 @@ export interface Vehicle {
   latestRecharge?: Recharge | null;
   todayKm?: number;
   ownershipType?: string;
+  userVehicles?: UserVehicle[];
   userVehicle?: UserVehicle | null;
   mainCustomer?: UserVehicle | null;
 }
@@ -99,6 +112,7 @@ export interface VehicleFormData {
   mileage: number;
   speedLimit: number;
   minimumFuel: number;
+  expireDate?: string;
 }
 
 export interface VehicleFilters {

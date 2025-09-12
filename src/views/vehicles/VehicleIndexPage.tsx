@@ -45,10 +45,10 @@ const VehicleIndexPage: React.FC = () => {
     try {
       setLoading(true);
       setError(null);
-      
+
       // Load detailed vehicles data (includes device, user, recharge info)
       const result = await vehicleService.getAllVehiclesDetailed();
-      
+
       if (result.success && result.data) {
         setVehicles(result.data);
       } else {
@@ -136,6 +136,54 @@ const VehicleIndexPage: React.FC = () => {
     return 'No recharge';
   };
 
+  const getExpireDate = (vehicle: Vehicle) => {
+    if (!vehicle.expireDate) {
+      return 'Not set';
+    }
+
+    const now = new Date();
+    const expireDate = new Date(vehicle.expireDate);
+
+    // Check if date is valid
+    if (isNaN(expireDate.getTime())) {
+      return 'Invalid date';
+    }
+
+    const diffInSeconds = Math.floor((expireDate.getTime() - now.getTime()) / 1000);
+
+    // If already expired
+    if (diffInSeconds < 0) {
+      return 'Expired';
+    }
+
+    const minutes = Math.floor(diffInSeconds / 60);
+    const hours = Math.floor(diffInSeconds / 3600);
+    const days = Math.floor(diffInSeconds / 86400);
+    const months = Math.floor(diffInSeconds / 2592000);
+    const years = Math.floor(diffInSeconds / 31536000);
+
+    // Format based on time remaining
+    if (years > 0) {
+      // Show years and months
+      const remainingMonths = months % 12;
+      return remainingMonths > 0 ? `${years}y ${remainingMonths}mo` : `${years}y`;
+    } else if (months > 0) {
+      // Show months and days
+      const remainingDays = days % 30;
+      return remainingDays > 0 ? `${months}mo ${remainingDays}d` : `${months}mo`;
+    } else if (days > 0) {
+      // Show days and hours
+      const remainingHours = hours % 24;
+      return remainingHours > 0 ? `${days}d ${remainingHours}h` : `${days}d`;
+    } else if (hours > 0) {
+      // Show hours only
+      return `${hours}h`;
+    } else {
+      // Less than 1 hour - show minutes
+      return `${minutes}m`;
+    }
+  };
+
   const getLastData = (vehicle: Vehicle) => {
     if (vehicle.latestStatus) {
       return formatTimeAgo(vehicle.latestStatus.createdAt);
@@ -146,52 +194,52 @@ const VehicleIndexPage: React.FC = () => {
   const formatTimeAgo = (dateString: string) => {
     const now = new Date();
     const date = new Date(dateString);
-    
+
     // Check if date is valid
     if (isNaN(date.getTime())) {
       return 'Invalid date';
     }
-    
+
     const diffInSeconds = Math.floor((now.getTime() - date.getTime()) / 1000);
-    
+
     // Handle negative values (future dates)
     if (diffInSeconds < 0) {
       return 'Just now';
     }
-    
+
     // Handle very small differences
     if (diffInSeconds < 1) {
       return 'Just now';
     }
-    
+
     if (diffInSeconds < 60) return `${diffInSeconds}s ago`;
-    
+
     const minutes = Math.floor(diffInSeconds / 60);
     const hours = Math.floor(diffInSeconds / 3600);
     const days = Math.floor(diffInSeconds / 86400);
     const months = Math.floor(diffInSeconds / 2592000);
     const years = Math.floor(diffInSeconds / 31536000);
-    
+
     if (diffInSeconds < 3600) {
       const remainingSeconds = diffInSeconds % 60;
       return remainingSeconds > 0 ? `${minutes}m, ${remainingSeconds}s ago` : `${minutes}m ago`;
     }
-    
+
     if (diffInSeconds < 86400) {
       const remainingMinutes = minutes % 60;
       return remainingMinutes > 0 ? `${hours}h, ${remainingMinutes}m ago` : `${hours}h ago`;
     }
-    
+
     if (diffInSeconds < 2592000) {
       const remainingHours = hours % 24;
       return remainingHours > 0 ? `${days}d, ${remainingHours}h ago` : `${days}d ago`;
     }
-    
+
     if (diffInSeconds < 31536000) {
       const remainingDays = days % 30;
       return remainingDays > 0 ? `${months}mo, ${remainingDays}d ago` : `${months}mo ago`;
     }
-    
+
     const remainingMonths = months % 12;
     return remainingMonths > 0 ? `${years}y, ${remainingMonths}mo ago` : `${years}y ago`;
   };
@@ -272,76 +320,101 @@ const VehicleIndexPage: React.FC = () => {
 
         {/* Vehicles Table */}
         <Card>
-            {filteredVehicles.length === 0 ? (
-              <div className="text-center py-8">
-                <p className="text-gray-500">No vehicles found</p>
-              </div>
-            ) : (
-              <div className="overflow-x-auto">
-                <Table striped hover>
-                  <TableHead>
-                    <TableRow>
-                      <TableHeader>S.N.</TableHeader>
-                      <TableHeader>Vehicle Info</TableHeader>
-                      <TableHeader>Device Info</TableHeader>
-                      <TableHeader>Vehicle Type</TableHeader>
-                      <TableHeader>Customer Info</TableHeader>
-                      <TableHeader>Last Recharge ago</TableHeader>
-                      <TableHeader>Last Data ago</TableHeader>
-                      <TableHeader>Relay</TableHeader>
-                      <TableHeader>Actions</TableHeader>
-                    </TableRow>
-                  </TableHead>
-                  <TableBody>
-                    {filteredVehicles.map((vehicle, index) => (
-                      <TableRow key={vehicle.id}>
-                        <TableCell>{index + 1}</TableCell>
-                        <TableCell>
-                          <div className="space-y-1">
-                            <div className="font-semibold">{vehicle.vehicleNo}</div>
-                            <Badge variant="secondary" size="sm">{vehicle.name}</Badge>
-                          </div>
-                        </TableCell>
-                        <TableCell>
-                          <div className="space-y-1">
-                            <div className="font-mono text-sm">{vehicle.imei}</div>
-                            <Badge variant="secondary" size="sm">{vehicle.device?.phone || 'N/A'}</Badge>
-                          </div>
-                        </TableCell>
-                        <TableCell>
-                          <Badge variant="info" size="sm">{vehicle.vehicleType}</Badge>
-                        </TableCell>
-                        <TableCell>
-                          <div className="space-y-1">
-                            <div className="text-sm">{getCustomerInfo(vehicle)}</div>
-                            {getCustomerPhone(vehicle) && (
-                              <Badge variant="secondary" size="sm">{getCustomerPhone(vehicle)}</Badge>
-                            )}
-                          </div>
-                        </TableCell>
-                        <TableCell className="text-sm">
-                          {getLastRecharge(vehicle)}
-                        </TableCell>
-                        <TableCell className="text-sm">
-                          {getLastData(vehicle)}
-                        </TableCell>
-                        <TableCell>
-                          <Badge 
-                            variant={vehicle.latestStatus?.relay ? 'success' : 'secondary'} 
+          {filteredVehicles.length === 0 ? (
+            <div className="text-center py-8">
+              <p className="text-gray-500">No vehicles found</p>
+            </div>
+          ) : (
+            <div className="overflow-x-auto">
+              <Table striped hover>
+                <TableHead>
+                  <TableRow>
+                    <TableHeader>S.N.</TableHeader>
+                    <TableHeader>Vehicle Info</TableHeader>
+                    <TableHeader>Device Info</TableHeader>
+                    <TableHeader>Vehicle Type</TableHeader>
+                    <TableHeader>Expire Date</TableHeader>
+                    <TableHeader>Customer Info</TableHeader>
+                    <RoleBasedWidget allowedRoles={[ROLES.SUPER_ADMIN]}> <TableHeader>Last Recharge ago</TableHeader></RoleBasedWidget>
+                    <RoleBasedWidget allowedRoles={[ROLES.SUPER_ADMIN, ROLES.DEALER]}> <TableHeader>Expire Date</TableHeader></RoleBasedWidget>
+                    <TableHeader>Last Data ago</TableHeader>
+                    <RoleBasedWidget allowedRoles={[ROLES.SUPER_ADMIN]}><TableHeader>Relay</TableHeader></RoleBasedWidget>
+                    <TableHeader>Actions</TableHeader>
+                  </TableRow>
+                </TableHead>
+                <TableBody>
+                  {filteredVehicles.map((vehicle, index) => (
+                    <TableRow key={vehicle.id}>
+                      <TableCell>{index + 1}</TableCell>
+                      <TableCell>
+                        <div className="space-y-1">
+                          <div className="font-semibold">{vehicle.vehicleNo}</div>
+                          <Badge variant="secondary" size="sm">{vehicle.name}</Badge>
+                        </div>
+                      </TableCell>
+                      <TableCell>
+                        <div className="space-y-1">
+                          <div className="font-mono text-sm">{vehicle.imei}</div>
+                          <Badge variant="secondary" size="sm">{vehicle.device?.phone || 'N/A'}</Badge>
+                        </div>
+                      </TableCell>
+                      <TableCell>
+                        <Badge variant="info" size="sm">{vehicle.vehicleType}</Badge>
+                      </TableCell>
+                       <TableCell>
+                         <div className="text-sm">
+                           {vehicle.expireDate ? (
+                             <div className="space-y-1">
+                               <div>{getExpireDate(vehicle)}</div>
+                               <Badge 
+                                 variant={new Date(vehicle.expireDate) < new Date() ? 'danger' : 
+                                          new Date(vehicle.expireDate) < new Date(Date.now() + 30 * 24 * 60 * 60 * 1000) ? 'warning' : 'success'}
+                                 size="sm"
+                               >
+                                 {new Date(vehicle.expireDate) < new Date() ? 'Expired' : 
+                                  new Date(vehicle.expireDate) < new Date(Date.now() + 30 * 24 * 60 * 60 * 1000) ? 'Expires Soon' : 'Active'}
+                               </Badge>
+                             </div>
+                           ) : (
+                             <span className="text-gray-400">Not set</span>
+                           )}
+                         </div>
+                       </TableCell>
+                      <TableCell>
+                        <div className="space-y-1">
+                          <div className="text-sm">{getCustomerInfo(vehicle)}</div>
+                          {getCustomerPhone(vehicle) && (
+                            <Badge variant="secondary" size="sm">{getCustomerPhone(vehicle)}</Badge>
+                          )}
+                        </div>
+                      </TableCell>
+                      <RoleBasedWidget allowedRoles={[ROLES.SUPER_ADMIN]}> <TableCell className="text-sm">
+                        {getLastRecharge(vehicle)}
+                      </TableCell></RoleBasedWidget>
+                      <RoleBasedWidget allowedRoles={[ROLES.SUPER_ADMIN, ROLES.DEALER]}> <TableCell className="text-sm">
+                        {getExpireDate(vehicle)}
+                      </TableCell></RoleBasedWidget>
+                      <TableCell className="text-sm">
+                        {getLastData(vehicle)}
+                      </TableCell>
+                      <RoleBasedWidget allowedRoles={[ROLES.SUPER_ADMIN]}> <TableCell>
+                        <Badge
+                          variant={vehicle.latestStatus?.relay ? 'success' : 'secondary'}
+                          size="sm"
+                        >
+                          {getRelayStatus(vehicle)}
+                        </Badge>
+                      </TableCell></RoleBasedWidget>
+                      <TableCell>
+                        <div className="flex space-x-2">
+                          <Button
+                            variant="outline"
                             size="sm"
+                            onClick={() => handleEditVehicle(vehicle)}
                           >
-                            {getRelayStatus(vehicle)}
-                          </Badge>
-                        </TableCell>
-                        <TableCell>
-                          <div className="flex space-x-2">
-                            <Button
-                              variant="outline"
-                              size="sm"
-                              onClick={() => handleEditVehicle(vehicle)}
-                            >
-                              Edit
-                            </Button>
+                            Edit
+                          </Button>
+                          <RoleBasedWidget allowedRoles={[ROLES.SUPER_ADMIN]}>
                             <Button
                               variant="primary"
                               size="sm"
@@ -349,7 +422,8 @@ const VehicleIndexPage: React.FC = () => {
                             >
                               Recharge
                             </Button>
-                            <RoleBasedWidget allowedRoles={[ROLES.SUPER_ADMIN]}>
+                          </RoleBasedWidget>
+                          <RoleBasedWidget allowedRoles={[ROLES.SUPER_ADMIN]}>
                             <Button
                               variant="danger"
                               size="sm"
@@ -357,15 +431,15 @@ const VehicleIndexPage: React.FC = () => {
                             >
                               Delete
                             </Button>
-                            </RoleBasedWidget>
-                          </div>
-                        </TableCell>
-                      </TableRow>
-                    ))}
-                  </TableBody>
-                </Table>
-              </div>
-            )}
+                          </RoleBasedWidget>
+                        </div>
+                      </TableCell>
+                    </TableRow>
+                  ))}
+                </TableBody>
+              </Table>
+            </div>
+          )}
         </Card>
       </div>
     </Container>

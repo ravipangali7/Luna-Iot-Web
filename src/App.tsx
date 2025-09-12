@@ -7,6 +7,7 @@ import DashboardPage from './views/DashboardPage';
 import Layout from './components/layout/Layout';
 import { DeviceIndexPage, DeviceCreatePage, DeviceEditPage } from './views/devices';
 import { VehicleIndexPage, VehicleCreatePage, VehicleEditPage } from './views/vehicles';
+import { VehicleAccessIndexPage, VehicleAccessCreatePage, VehicleAccessEditPage } from './views/vehicleAccess';
 import { RechargeIndexPage, RechargeCreatePage } from './views/recharges';
 import { ReportIndexPage } from './views/reports';
 import { PlaybackIndexPage } from './views/playback';
@@ -108,7 +109,7 @@ const AppRoutes: React.FC = () => {
 
         {/* Vehicle Routes - All roles can access */}
         <Route path="vehicles" element={
-          <RoleBasedRoute allowedRoles={[ROLES.SUPER_ADMIN, ROLES.DEALER, ROLES.CUSTOMER]}>
+          <RoleBasedRoute allowedRoles={[ROLES.SUPER_ADMIN, ROLES.DEALER]}>
             <VehicleIndexPage />
           </RoleBasedRoute>
         } />
@@ -120,6 +121,23 @@ const AppRoutes: React.FC = () => {
         <Route path="vehicles/edit/:imei" element={
           <RoleBasedRoute allowedRoles={[ROLES.SUPER_ADMIN, ROLES.DEALER, ROLES.CUSTOMER]}>
             <VehicleEditPage />
+          </RoleBasedRoute>
+        } />
+
+        {/* Vehicle Access Routes - Super Admin and Dealer only */}
+        <Route path="vehicle-access" element={
+          <RoleBasedRoute allowedRoles={[ROLES.SUPER_ADMIN, ROLES.DEALER]}>
+            <VehicleAccessIndexPage />
+          </RoleBasedRoute>
+        } />
+        <Route path="vehicle-access/create" element={
+          <RoleBasedRoute allowedRoles={[ROLES.SUPER_ADMIN, ROLES.DEALER]}>
+            <VehicleAccessCreatePage />
+          </RoleBasedRoute>
+        } />
+        <Route path="vehicle-access/edit/:id" element={
+          <RoleBasedRoute allowedRoles={[ROLES.SUPER_ADMIN, ROLES.DEALER]}>
+            <VehicleAccessEditPage />
           </RoleBasedRoute>
         } />
 

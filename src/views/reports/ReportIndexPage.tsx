@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import { useSearchParams } from 'react-router-dom';
 import { vehicleService } from '../../api/services/vehicleService';
 import { reportService } from '../../api/services/reportService';
@@ -14,7 +14,7 @@ import type { Vehicle } from '../../types/vehicle';
 import type { ReportData } from '../../types/report';
 
 const ReportIndexPage: React.FC = () => {
-  const [_searchParams] = useSearchParams();
+  const [searchParams] = useSearchParams();
   const [vehicles, setVehicles] = useState<Vehicle[]>([]);
   const [loading, setLoading] = useState(true);
 
@@ -30,10 +30,8 @@ const ReportIndexPage: React.FC = () => {
   useEffect(() => {
     loadVehicles();
     initializeDates();
-    
-    // Note: We don't pre-select vehicle from URL parameter
-    // User needs to manually select from dropdown
   }, []);
+
 
   const loadVehicles = async () => {
     try {
@@ -55,7 +53,7 @@ const ReportIndexPage: React.FC = () => {
   const initializeDates = () => {
     const today = new Date();
     const yesterday = new Date(today);
-    yesterday.setDate(yesterday.getDate() - 1);
+    yesterday.setDate(yesterday.getDate() - 7);
 
     setStartDate(yesterday.toISOString().split('T')[0]);
     setEndDate(today.toISOString().split('T')[0]);
@@ -81,7 +79,7 @@ const ReportIndexPage: React.FC = () => {
     setEndDate(date);
   };
 
-  const generateReport = async () => {
+  const generateReport = useCallback(async () => {
     if (!selectedVehicle || !startDate || !endDate) {
       return;
     }
@@ -103,7 +101,26 @@ const ReportIndexPage: React.FC = () => {
     } finally {
       setLoadingReport(false);
     }
-  };
+  }, [selectedVehicle, startDate, endDate]);
+
+  // Handle URL parameters for pre-selecting vehicle
+  useEffect(() => {
+    const vehicleImei = searchParams.get('vehicle');
+    if (vehicleImei && vehicles.length > 0) {
+      const vehicle = vehicles.find(v => v.imei === vehicleImei);
+      if (vehicle) {
+        setSelectedVehicle(vehicleImei);
+        
+        // Auto-load data when vehicle is pre-selected
+        if (startDate && endDate) {
+          console.log('📊 Auto-loading report data for vehicle:', vehicleImei);
+          setTimeout(() => {
+            generateReport();
+          }, 100);
+        }
+      }
+    }
+  }, [searchParams, vehicles, startDate, endDate, generateReport]);
 
   const formatDuration = (minutes: number): string => {
     const hours = Math.floor(minutes / 60);

@@ -10,6 +10,9 @@ import GeoUtils from '../../utils/geoUtils';
 import SpeedIcon from '@mui/icons-material/Speed';
 import LocationOnIcon from '@mui/icons-material/LocationOn';
 import DirectionsCarIcon from '@mui/icons-material/DirectionsCar';
+import WbSunnyIcon from '@mui/icons-material/WbSunny';
+import LandscapeIcon from '@mui/icons-material/Landscape';
+import HistoryIcon from '@mui/icons-material/History';
 import './LiveTrackingShowPage.css';
 
 interface LiveTrackingShowPageProps {
@@ -128,6 +131,13 @@ const LiveTrackingShowPage: React.FC<LiveTrackingShowPageProps> = ({ imei: propI
   const [isTracking, setIsTracking] = useState(false);
   const [routePoints, setRoutePoints] = useState<Array<{ lat: number; lng: number }>>([]);
   const [currentAddress, setCurrentAddress] = useState<string>('Loading address...');
+  
+  // Floating buttons state
+  const [mapType, setMapType] = useState<'roadmap' | 'satellite' | 'hybrid' | 'terrain'>('roadmap');
+  const [showWeatherModal, setShowWeatherModal] = useState(false);
+  const [weatherData, setWeatherData] = useState<any>(null);
+  const [altitude, setAltitude] = useState<string>('...');
+  const [loadingAltitude, setLoadingAltitude] = useState(false);
 
   const mapControllerRef = useRef<any>(null);
   const mapRef = useRef<any>(null);
@@ -207,6 +217,50 @@ const LiveTrackingShowPage: React.FC<LiveTrackingShowPageProps> = ({ imei: propI
       setCurrentAddress('Address unavailable');
     }
   }, []);
+
+  // Toggle map type (satellite/roadmap)
+  const toggleMapType = useCallback(() => {
+    setMapType(prev => prev === 'roadmap' ? 'satellite' : 'roadmap');
+  }, []);
+
+  // Handle weather button click
+  const handleWeatherClick = useCallback(async () => {
+    if (!currentLocation) {
+      alert('No location data available for weather');
+      return;
+    }
+
+    try {
+      setShowWeatherModal(true);
+      const weather = await GeoUtils.getWeatherData(currentLocation.latitude, currentLocation.longitude);
+      setWeatherData(weather);
+    } catch (error) {
+      console.error('Error fetching weather:', error);
+      alert('Failed to load weather data');
+    }
+  }, [currentLocation]);
+
+  // Handle altitude button click
+  const handleAltitudeClick = useCallback(async () => {
+    if (!currentLocation || loadingAltitude) return;
+
+    try {
+      setLoadingAltitude(true);
+      const alt = await GeoUtils.getAltitude(currentLocation.latitude, currentLocation.longitude);
+      setAltitude(alt);
+    } catch (error) {
+      console.error('Error fetching altitude:', error);
+      setAltitude('N/A');
+    } finally {
+      setLoadingAltitude(false);
+    }
+  }, [currentLocation, loadingAltitude]);
+
+  // Handle playback button click
+  const handlePlaybackClick = useCallback(() => {
+    if (!vehicle) return;
+    navigate(`/playback?vehicle=${vehicle.imei}`);
+  }, [vehicle, navigate]);
 
   // Handle location updates from socket
   const handleLocationUpdate = useCallback((data: any) => {
@@ -466,6 +520,13 @@ const LiveTrackingShowPage: React.FC<LiveTrackingShowPageProps> = ({ imei: propI
     }
   }, [vehicle, isTracking, startRealTimeTracking]);
 
+  // Load altitude when location changes
+  useEffect(() => {
+    if (currentLocation && !loadingAltitude) {
+      handleAltitudeClick();
+    }
+  }, [currentLocation, handleAltitudeClick, loadingAltitude]);
+
   // Cleanup on unmount
   useEffect(() => {
     return () => {
@@ -537,6 +598,7 @@ const LiveTrackingShowPage: React.FC<LiveTrackingShowPageProps> = ({ imei: propI
             scaleControl: true,
             gestureHandling: 'greedy',
             disableDefaultUI: false,
+            mapTypeId: mapType,
           }}
         >
         </GoogleMapReact>
@@ -548,6 +610,98 @@ const LiveTrackingShowPage: React.FC<LiveTrackingShowPageProps> = ({ imei: propI
             vehicleState={vehicleState}
             rotation={mapRotation}
           />
+        )}
+
+        {/* Floating Buttons */}
+        <div className="floating-buttons">
+          {/* Satellite Button */}
+          <button
+            className="floating-button satellite-button"
+            onClick={toggleMapType}
+            title={mapType === 'roadmap' ? 'Switch to Satellite' : 'Switch to Roadmap'}
+          >
+            <img 
+              src="/assets/satellite_view_icon.png" 
+              alt="Satellite View"
+              className="satellite-icon"
+            />
+          </button>
+
+          {/* Playback Button */}
+          <button
+            className="floating-button playback-button"
+            onClick={handlePlaybackClick}
+            title="View Playback History"
+          >
+            <HistoryIcon />
+          </button>
+
+          {/* Weather Button */}
+          <button
+            className="floating-button weather-button"
+            onClick={handleWeatherClick}
+            title="Show Weather"
+          >
+            <WbSunnyIcon />
+          </button>
+
+          {/* Altitude Button */}
+          <button
+            className="floating-button altitude-button"
+            onClick={handleAltitudeClick}
+            title="Show Altitude"
+            disabled={loadingAltitude}
+          >
+            <LandscapeIcon />
+            <span className="altitude-text">
+              {loadingAltitude ? '...' : `${altitude}m`}
+            </span>
+          </button>
+        </div>
+
+        {/* Weather Modal */}
+        {showWeatherModal && (
+          <div className="weather-modal-overlay" onClick={() => setShowWeatherModal(false)}>
+            <div className="weather-modal" onClick={(e) => e.stopPropagation()}>
+              <div className="weather-modal-header">
+                <h3>Weather Information</h3>
+                <button 
+                  className="close-button"
+                  onClick={() => setShowWeatherModal(false)}
+                >
+                  ×
+                </button>
+              </div>
+              <div className="weather-modal-content">
+                {weatherData ? (
+                  <div className="weather-data">
+                    <div className="weather-item">
+                      <span className="weather-label">Temperature:</span>
+                      <span className="weather-value">{weatherData.temperature}</span>
+                    </div>
+                    <div className="weather-item">
+                      <span className="weather-label">Description:</span>
+                      <span className="weather-value">{weatherData.description}</span>
+                    </div>
+                    <div className="weather-item">
+                      <span className="weather-label">Humidity:</span>
+                      <span className="weather-value">{weatherData.humidity}</span>
+                    </div>
+                    <div className="weather-item">
+                      <span className="weather-label">Pressure:</span>
+                      <span className="weather-value">{weatherData.pressure}</span>
+                    </div>
+                    <div className="weather-item">
+                      <span className="weather-label">Wind Speed:</span>
+                      <span className="weather-value">{weatherData.wind_speed}</span>
+                    </div>
+                  </div>
+                ) : (
+                  <div className="weather-loading">Loading weather data...</div>
+                )}
+              </div>
+            </div>
+          </div>
         )}
       </div>
     </div>

@@ -28,7 +28,8 @@ const VehicleEditPage: React.FC = () => {
     odometer: 0,
     mileage: 0,
     speedLimit: 60,
-    minimumFuel: 0
+    minimumFuel: 0,
+    expireDate: ''
   });
   const [errors, setErrors] = useState<Record<string, string>>({});
 
@@ -56,7 +57,8 @@ const VehicleEditPage: React.FC = () => {
           odometer: result.data.odometer,
           mileage: result.data.mileage,
           speedLimit: result.data.speedLimit,
-          minimumFuel: result.data.minimumFuel
+          minimumFuel: result.data.minimumFuel,
+          expireDate: result.data.expireDate ? new Date(result.data.expireDate).toISOString().split('T')[0] : ''
         });
       } else {
         setError(result.error || 'Failed to load vehicle');
@@ -314,6 +316,22 @@ const VehicleEditPage: React.FC = () => {
                   />
                   <p className="text-xs text-gray-500 mt-1">
                     Set the maximum speed limit for this vehicle (1-200 km/h).
+                  </p>
+                </div>
+
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">
+                    Expire Date
+                  </label>
+                  <Input
+                    type="date"
+                    placeholder="Select expire date"
+                    value={formData.expireDate || ''}
+                    onChange={(value) => handleInputChange('expireDate', value)}
+                    error={errors.expireDate}
+                  />
+                  <p className="text-xs text-gray-500 mt-1">
+                    Vehicle expiration date. If not set, defaults to one year from creation date.
                   </p>
                 </div>
               </div>

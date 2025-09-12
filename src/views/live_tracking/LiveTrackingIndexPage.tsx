@@ -155,7 +155,7 @@ const LiveTrackingIndexPage: React.FC = () => {
     inactive: 0,
     nodata: 0
   });
-  const [mapCenter] = useState<{ lat: number; lng: number }>({ lat: 28.3949, lng: 84.1240 }); // Nepal country center
+  const [mapCenter, setMapCenter] = useState<{ lat: number; lng: number }>({ lat: 28.3949, lng: 84.1240 }); // Nepal country center
   const navigate = useNavigate();
 
   // Use socket updates hook
@@ -249,14 +249,14 @@ const LiveTrackingIndexPage: React.FC = () => {
     setSelectedFilter(filter);
   };
 
-  const handleVehicleClick = (_vehicle: Vehicle) => {
+  const handleVehicleClick = (vehicle: Vehicle) => {
     // if (vehicle.latestLocation?.latitude && vehicle.latestLocation?.longitude) {
     //   setMapCenter({
     //     lat: vehicle.latestLocation.latitude,
     //     lng: vehicle.latestLocation.longitude
     //   });
     // }
-    // // Navigate to vehicle detail page
+    // Navigate to vehicle detail page
     // navigate(`/live-tracking/${vehicle.imei}`);
   };
 

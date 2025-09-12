@@ -3,6 +3,8 @@ import { useAuth } from '../../hooks/useAuth';
 import { useRefresh } from '../../contexts/RefreshContext';
 import Button from '../ui/buttons/Button';
 import IconButton from '../ui/buttons/IconButton';
+import RoleBasedWidget from '../role-based/RoleBasedWidget';
+import { ROLES } from '../../utils/roleUtils';
 
 interface HeaderProps {
   onMenuClick: () => void;
@@ -73,6 +75,7 @@ const Header: React.FC<HeaderProps> = ({
           </Button>
 
           {/* All Vehicles Button */}
+          <RoleBasedWidget allowedRoles={[ROLES.SUPER_ADMIN, ROLES.DEALER]}>
           <Button
             variant="outline"
             size="sm"
@@ -86,6 +89,7 @@ const Header: React.FC<HeaderProps> = ({
           >
             All Vehicles
           </Button>
+          </RoleBasedWidget>
         </div>
 
         {/* Right side - User controls */}

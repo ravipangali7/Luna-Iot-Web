@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useRef } from 'react';
+import React, { useState, useEffect, useRef, useCallback } from 'react';
 import { useSearchParams } from 'react-router-dom';
 import { vehicleService } from '../../api/services/vehicleService';
 import { historyService } from '../../api/services/historyService';
@@ -14,7 +14,7 @@ import type { Vehicle } from '../../types/vehicle';
 import type { History, Trip, PlaybackState } from '../../types/history';
 
 const PlaybackIndexPage: React.FC = () => {
-  const [_searchParams] = useSearchParams();
+  const [searchParams] = useSearchParams();
   const [vehicles, setVehicles] = useState<Vehicle[]>([]);
   const [loading, setLoading] = useState(true);
 
@@ -58,10 +58,8 @@ const PlaybackIndexPage: React.FC = () => {
   useEffect(() => {
     loadVehicles();
     initializeDates();
-    
-    // Note: We don't pre-select vehicle from URL parameter
-    // User needs to manually select from dropdown
   }, []);
+
 
   useEffect(() => {
     return () => {
@@ -117,7 +115,7 @@ const PlaybackIndexPage: React.FC = () => {
     setEndDate(date);
   };
 
-  const fetchHistoryData = async () => {
+  const fetchHistoryData = useCallback(async () => {
     if (!selectedVehicle || !startDate || !endDate) {
       return;
     }
@@ -148,7 +146,27 @@ const PlaybackIndexPage: React.FC = () => {
     } finally {
       setLoadingHistory(false);
     }
-  };
+  }, [selectedVehicle, startDate, endDate, vehicles]);
+
+  // Handle URL parameters for pre-selecting vehicle
+  useEffect(() => {
+    const vehicleImei = searchParams.get('vehicle');
+    if (vehicleImei && vehicles.length > 0) {
+      const vehicle = vehicles.find(v => v.imei === vehicleImei);
+      if (vehicle) {
+        setSelectedVehicle(vehicleImei);
+        setSelectedVehicleData(vehicle);
+        
+        // Auto-load data when vehicle is pre-selected
+        if (startDate && endDate) {
+          console.log('🚀 Auto-loading playback data for vehicle:', vehicleImei);
+          setTimeout(() => {
+            fetchHistoryData();
+          }, 100);
+        }
+      }
+    }
+  }, [searchParams, vehicles, startDate, endDate, fetchHistoryData]);
 
   const calculateTrips = async (history: History[]) => {
     // Simple trip calculation based on ignition status
