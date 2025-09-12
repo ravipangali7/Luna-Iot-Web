@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { vehicleAccessService } from '../../api/services/vehicleAccessService';
+import { confirmDelete, showSuccess, showError } from '../../utils/sweetAlert';
 import { useRefresh } from '../../contexts/RefreshContext';
 import type { Vehicle } from '../../types/vehicle';
 import Container from '../../components/ui/layout/Container';
@@ -83,17 +84,36 @@ const VehicleAccessIndexPage: React.FC = () => {
     navigate(`/vehicle-access/manage/${imei}`);
   };
 
-  const handleDeleteAccess = async (imei: string, userId: number) => {
-    if (window.confirm('Are you sure you want to remove this user\'s access to this vehicle?')) {
+  const handleDeleteAccess = async (imei: string, userVehicle: any) => {
+    const confirmed = await confirmDelete(
+      'Remove Vehicle Access',
+      `Are you sure you want to remove ${userVehicle.user?.name || 'this user'}'s access to this vehicle?`
+    );
+    
+    if (confirmed) {
       try {
-        const result = await vehicleAccessService.deleteVehicleAccess(imei, userId);
+        // Try with userId first, fallback to userPhone if userId is not available
+        const userId = userVehicle.user?.id || userVehicle.userId;
+        const userPhone = userVehicle.user?.phone;
+        
+        if (!userId && !userPhone) {
+          showError('Error', 'User ID or phone number is required for deletion');
+          return;
+        }
+        
+        // Use userId if available, otherwise use userPhone
+        const result = userId 
+          ? await vehicleAccessService.deleteVehicleAccessById(imei, userId)
+          : await vehicleAccessService.deleteVehicleAccess(imei, userPhone);
+          
         if (result.success) {
+          showSuccess('Access Removed', 'User access has been successfully removed from the vehicle.');
           await loadVehiclesWithAccess(); // Reload the list
         } else {
-          setError(result.error || 'Failed to remove vehicle access');
+          showError('Failed to Remove Access', result.error || 'Failed to remove vehicle access');
         }
       } catch (err) {
-        setError('An unexpected error occurred while removing access');
+        showError('Error', 'An unexpected error occurred while removing access');
       }
     }
   };
@@ -254,7 +274,7 @@ const VehicleAccessIndexPage: React.FC = () => {
                                   <Button
                                     variant="danger"
                                     size="sm"
-                                    onClick={() => handleDeleteAccess(vehicle.imei, userVehicle.userId)}
+                                    onClick={() => handleDeleteAccess(vehicle.imei, userVehicle)}
                                     icon={
                                       <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                         <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />

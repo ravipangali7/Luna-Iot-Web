@@ -138,7 +138,14 @@ const VehicleAccessEditPage: React.FC = () => {
       setLoading(true);
       setError(null);
 
-      const result = await vehicleAccessService.updateVehicleAccess(formData.imei, formData.userId, formData.permissions as unknown as Record<string, boolean>);
+      // Get the selected user's phone number
+      const selectedUser = users.find(u => u.id === formData.userId);
+      if (!selectedUser) {
+        setError('Selected user not found');
+        return;
+      }
+
+      const result = await vehicleAccessService.updateVehicleAccess(formData.imei, selectedUser.phone, formData.permissions as unknown as Record<string, boolean>);
 
       if (result.success) {
         navigate('/vehicle-access');
@@ -233,7 +240,16 @@ const VehicleAccessEditPage: React.FC = () => {
                       }
                     }}
                     onFocus={() => setShowUserSuggestions(userSearchQuery.length > 0)}
-                    onBlur={() => setTimeout(() => setShowUserSuggestions(false), 200)}
+                    onBlur={() => {
+                      // Use a small delay to allow click events to register
+                      setTimeout(() => {
+                        // Check if the active element is within the suggestion dropdown
+                        const activeElement = document.activeElement;
+                        if (!activeElement || !activeElement.closest('[data-suggestion-dropdown]')) {
+                          setShowUserSuggestions(false);
+                        }
+                      }, 200);
+                    }}
                   />
                 </div>
                 
@@ -241,6 +257,7 @@ const VehicleAccessEditPage: React.FC = () => {
                 {showUserSuggestions && filteredUsers.length > 0 && userInputRef.current && (
                   <div 
                     className="fixed bg-white border border-gray-300 rounded-md shadow-xl max-h-60 overflow-auto z-[9999]"
+                    data-suggestion-dropdown
                     style={{
                       top: userInputRef.current.getBoundingClientRect().bottom + window.scrollY + 4,
                       left: userInputRef.current.getBoundingClientRect().left + window.scrollX,
@@ -251,7 +268,8 @@ const VehicleAccessEditPage: React.FC = () => {
                       <div
                         key={user.id}
                         className="px-4 py-2 hover:bg-gray-100 cursor-pointer border-b border-gray-100 last:border-b-0"
-                        onClick={() => {
+                        onMouseDown={(e) => {
+                          e.preventDefault(); // Prevent input blur
                           setUserSearchQuery(user.phone || user.name);
                           handleInputChange('userId', user.id);
                           setShowUserSuggestions(false);
@@ -332,7 +350,16 @@ const VehicleAccessEditPage: React.FC = () => {
                       }
                     }}
                     onFocus={() => setShowVehicleSuggestions(vehicleSearchQuery.length > 0)}
-                    onBlur={() => setTimeout(() => setShowVehicleSuggestions(false), 200)}
+                    onBlur={() => {
+                      // Use a small delay to allow click events to register
+                      setTimeout(() => {
+                        // Check if the active element is within the suggestion dropdown
+                        const activeElement = document.activeElement;
+                        if (!activeElement || !activeElement.closest('[data-vehicle-suggestion-dropdown]')) {
+                          setShowVehicleSuggestions(false);
+                        }
+                      }, 200);
+                    }}
                   />
                 </div>
                 
@@ -340,6 +367,7 @@ const VehicleAccessEditPage: React.FC = () => {
                 {showVehicleSuggestions && filteredVehicles.length > 0 && vehicleInputRef.current && (
                   <div 
                     className="fixed bg-white border border-gray-300 rounded-md shadow-xl max-h-60 overflow-auto z-[9999]"
+                    data-vehicle-suggestion-dropdown
                     style={{
                       top: vehicleInputRef.current.getBoundingClientRect().bottom + window.scrollY + 4,
                       left: vehicleInputRef.current.getBoundingClientRect().left + window.scrollX,
@@ -350,7 +378,8 @@ const VehicleAccessEditPage: React.FC = () => {
                       <div
                         key={vehicle.id}
                         className="px-4 py-2 hover:bg-gray-100 cursor-pointer border-b border-gray-100 last:border-b-0"
-                        onClick={() => {
+                        onMouseDown={(e) => {
+                          e.preventDefault(); // Prevent input blur
                           setVehicleSearchQuery(vehicle.vehicleNo || vehicle.name);
                           handleVehicleChange(vehicle.id.toString());
                           setShowVehicleSuggestions(false);

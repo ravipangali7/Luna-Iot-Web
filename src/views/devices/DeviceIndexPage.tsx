@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { deviceService } from '../../api/services/deviceService';
+import { confirmDelete, showSuccess, showError } from '../../utils/sweetAlert';
 import type { Device, DeviceFilters } from '../../types/device';
 import Container from '../../components/ui/layout/Container';
 import Card from '../../components/ui/cards/Card';
@@ -96,16 +97,22 @@ const DeviceIndexPage: React.FC = () => {
   };
 
   const handleDeleteDevice = async (device: Device) => {
-    if (window.confirm(`Are you sure you want to delete device ${device.imei}?`)) {
+    const confirmed = await confirmDelete(
+      'Delete Device',
+      `Are you sure you want to delete device ${device.imei}? This action cannot be undone.`
+    );
+    
+    if (confirmed) {
       try {
         const result = await deviceService.deleteDevice(device.imei);
         if (result.success) {
+          showSuccess('Device Deleted', `Device ${device.imei} has been successfully deleted.`);
           setDevices(devices.filter(d => d.imei !== device.imei));
         } else {
-          setError(result.error || 'Failed to delete device');
+          showError('Failed to Delete Device', result.error || 'Failed to delete device');
         }
       } catch (err) {
-        setError('An unexpected error occurred: ' + err);
+        showError('Error', 'An unexpected error occurred: ' + err);
       }
     }
   };

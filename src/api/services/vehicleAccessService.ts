@@ -40,11 +40,11 @@ class VehicleAccessService {
   }
 
   // Create vehicle access (assign user to vehicle) - like Flutter
-  async createVehicleAccess(data: VehicleAccessFormData): Promise<{ success: boolean; data?: VehicleAccess; error?: string }> {
+  async createVehicleAccess(data: VehicleAccessFormData, userPhone?: string): Promise<{ success: boolean; data?: VehicleAccess; error?: string }> {
     try {
       const response = await apiClient.post('/api/vehicle/access', {
         imei: data.imei,
-        userId: data.userId,
+        userPhone: userPhone, // Send phone instead of userId
         permissions: data.permissions
       }, {
         timeout: 30000
@@ -62,11 +62,11 @@ class VehicleAccessService {
   }
 
   // Update vehicle access permissions - like Flutter
-  async updateVehicleAccess(imei: string, userId: number, permissions: Record<string, boolean>): Promise<{ success: boolean; data?: VehicleAccess; error?: string }> {
+  async updateVehicleAccess(imei: string, userPhone: string, permissions: Record<string, boolean>): Promise<{ success: boolean; data?: VehicleAccess; error?: string }> {
     try {
       const response = await apiClient.put('/api/vehicle/access', {
         imei,
-        userId,
+        userPhone,
         permissions
       }, {
         timeout: 30000
@@ -84,7 +84,26 @@ class VehicleAccessService {
   }
 
   // Remove vehicle access (unassign user from vehicle) - like Flutter
-  async deleteVehicleAccess(imei: string, userId: number): Promise<{ success: boolean; error?: string }> {
+  async deleteVehicleAccess(imei: string, userPhone: string): Promise<{ success: boolean; error?: string }> {
+    try {
+      const response = await apiClient.delete('/api/vehicle/access', {
+        data: { imei, userPhone },
+        timeout: 30000
+      });
+      
+      if (response.data.success) {
+        return { success: true };
+      } else {
+        return { success: false, error: response.data.message || 'Failed to delete vehicle access' };
+      }
+    } catch (error) {
+      console.error('Delete vehicle access error:', error);
+      return { success: false, error: 'Network error: ' + (error as Error).message };
+    }
+  }
+
+  // Remove vehicle access by user ID - for backend compatibility
+  async deleteVehicleAccessById(imei: string, userId: number): Promise<{ success: boolean; error?: string }> {
     try {
       const response = await apiClient.delete('/api/vehicle/access', {
         data: { imei, userId },
@@ -97,7 +116,7 @@ class VehicleAccessService {
         return { success: false, error: response.data.message || 'Failed to delete vehicle access' };
       }
     } catch (error) {
-      console.error('Delete vehicle access error:', error);
+      console.error('Delete vehicle access by ID error:', error);
       return { success: false, error: 'Network error: ' + (error as Error).message };
     }
   }

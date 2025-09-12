@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { rechargeService } from '../../api/services/rechargeService';
 import { deviceService } from '../../api/services/deviceService';
+import { confirmDelete, showSuccess, showError } from '../../utils/sweetAlert';
 import type { Recharge, RechargeFilters } from '../../types/recharge';
 import type { Device } from '../../types/device';
 import Container from '../../components/ui/layout/Container';
@@ -119,16 +120,22 @@ const RechargeIndexPage: React.FC = () => {
   };
 
   const handleDeleteRecharge = async (recharge: Recharge) => {
-    if (window.confirm(`Are you sure you want to delete recharge #${recharge.id}?`)) {
+    const confirmed = await confirmDelete(
+      'Delete Recharge',
+      `Are you sure you want to delete recharge #${recharge.id}? This action cannot be undone.`
+    );
+    
+    if (confirmed) {
       try {
         const result = await rechargeService.deleteRecharge(recharge.id);
         if (result.success) {
+          showSuccess('Recharge Deleted', `Recharge #${recharge.id} has been successfully deleted.`);
           setRecharges(recharges.filter(r => r.id !== recharge.id));
         } else {
-          setError(result.error || 'Failed to delete recharge');
+          showError('Failed to Delete Recharge', result.error || 'Failed to delete recharge');
         }
       } catch (err) {
-        setError('An unexpected error occurred');
+        showError('Error', 'An unexpected error occurred');
       }
     }
   };

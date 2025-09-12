@@ -121,10 +121,19 @@ const RechargeCreatePage: React.FC = () => {
   };
 
   const handleInputChange = (field: keyof RechargeFormData, value: any) => {
-    setFormData(prev => ({
-      ...prev,
-      [field]: value
-    }));
+    setFormData(prev => {
+      const newFormData = {
+        ...prev,
+        [field]: value
+      };
+      
+      // Reset amount when device changes to ensure valid amount selection
+      if (field === 'deviceId') {
+        newFormData.amount = 0;
+      }
+      
+      return newFormData;
+    });
     
     // Clear validation error for this field
     if (validationErrors[field]) {
@@ -132,6 +141,48 @@ const RechargeCreatePage: React.FC = () => {
         ...prev,
         [field]: ''
       }));
+    }
+  };
+
+  // Get recharge amount options based on SIM type
+  const getRechargeAmountOptions = () => {
+    const selectedDevice = devices.find(d => d.id === formData.deviceId);
+    const isNTC = selectedDevice?.sim?.toLowerCase().includes('ntc');
+    
+    if (isNTC) {
+      return [
+        { value: '', label: 'Select amount...' },
+        { value: '20', label: 'Rs 20' },
+        { value: '30', label: 'Rs 30' },
+        { value: '40', label: 'Rs 40' },
+        { value: '50', label: 'Rs 50' },
+        { value: '80', label: 'Rs 80' },
+        { value: '100', label: 'Rs 100' },
+        { value: '150', label: 'Rs 150' },
+        { value: '200', label: 'Rs 200' },
+        { value: '250', label: 'Rs 250' },
+        { value: '300', label: 'Rs 300' },
+        { value: '400', label: 'Rs 400' },
+        { value: '500', label: 'Rs 500' },
+        { value: '800', label: 'Rs 800' },
+        { value: '1000', label: 'Rs 1,000' }
+      ];
+    } else {
+      // Default Ncell options
+      return [
+        { value: '', label: 'Select amount...' },
+        { value: '50', label: 'Rs 50' },
+        { value: '80', label: 'Rs 80' },
+        { value: '100', label: 'Rs 100' },
+        { value: '150', label: 'Rs 150' },
+        { value: '200', label: 'Rs 200' },
+        { value: '250', label: 'Rs 250' },
+        { value: '300', label: 'Rs 300' },
+        { value: '400', label: 'Rs 400' },
+        { value: '500', label: 'Rs 500' },
+        { value: '800', label: 'Rs 800' },
+        { value: '1000', label: 'Rs 1,000' }
+      ];
     }
   };
 
@@ -262,26 +313,19 @@ const RechargeCreatePage: React.FC = () => {
                 <Select
                   value={formData.amount ? formData.amount.toString() : ''}
                   onChange={(value) => handleInputChange('amount', value ? parseFloat(value) : 0)}
-                  options={[
-                    { value: '', label: 'Select amount...' },
-                    { value: '50', label: 'Rs 50' },
-                    { value: '80', label: 'Rs 80' },
-                    { value: '100', label: 'Rs 100' },
-                    { value: '150', label: 'Rs 150' },
-                    { value: '200', label: 'Rs 200' },
-                    { value: '250', label: 'Rs 250' },
-                    { value: '300', label: 'Rs 300' },
-                    { value: '400', label: 'Rs 400' },
-                    { value: '500', label: 'Rs 500' },
-                    { value: '800', label: 'Rs 800' },
-                    { value: '1000', label: 'Rs 1,000' }
-                  ]}
+                  options={getRechargeAmountOptions()}
                 />
                 {validationErrors.amount && (
                   <p className="mt-1 text-sm text-red-600">{validationErrors.amount}</p>
                 )}
                 <p className="mt-1 text-sm text-gray-500">
-                  Select from predefined recharge amounts
+                  {formData.deviceId > 0 ? (
+                    devices.find(d => d.id === formData.deviceId)?.sim?.toLowerCase().includes('ntc') 
+                      ? 'NTC SIM: Select from Rs 20, Rs 30, Rs 40, or higher amounts'
+                      : 'Ncell SIM: Select from Rs 50 or higher amounts'
+                  ) : (
+                    'Select from predefined recharge amounts based on SIM type'
+                  )}
                 </p>
               </div>
 

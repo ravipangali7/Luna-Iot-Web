@@ -7,7 +7,7 @@ import DashboardPage from './views/DashboardPage';
 import Layout from './components/layout/Layout';
 import { DeviceIndexPage, DeviceCreatePage, DeviceEditPage } from './views/devices';
 import { VehicleIndexPage, VehicleCreatePage, VehicleEditPage } from './views/vehicles';
-import { VehicleAccessIndexPage, VehicleAccessCreatePage, VehicleAccessEditPage } from './views/vehicleAccess';
+import { VehicleAccessIndexPage, VehicleAccessCreatePage, VehicleAccessEditPage, VehicleAccessManagePage } from './views/vehicleAccess';
 import { RechargeIndexPage, RechargeCreatePage } from './views/recharges';
 import { ReportIndexPage } from './views/reports';
 import { PlaybackIndexPage } from './views/playback';
@@ -138,6 +138,11 @@ const AppRoutes: React.FC = () => {
         <Route path="vehicle-access/edit/:id" element={
           <RoleBasedRoute allowedRoles={[ROLES.SUPER_ADMIN, ROLES.DEALER]}>
             <VehicleAccessEditPage />
+          </RoleBasedRoute>
+        } />
+        <Route path="vehicle-access/manage/:imei" element={
+          <RoleBasedRoute allowedRoles={[ROLES.SUPER_ADMIN, ROLES.DEALER]}>
+            <VehicleAccessManagePage />
           </RoleBasedRoute>
         } />
 

@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { vehicleService } from '../../api/services/vehicleService';
+import { confirmDelete, showSuccess, showError } from '../../utils/sweetAlert';
 import { useRefresh } from '../../contexts/RefreshContext';
 import type { Vehicle, VehicleFilters } from '../../types/vehicle';
 import { VEHICLE_TYPES } from '../../types/vehicle';
@@ -91,16 +92,22 @@ const VehicleIndexPage: React.FC = () => {
   };
 
   const handleDeleteVehicle = async (vehicle: Vehicle) => {
-    if (window.confirm(`Are you sure you want to delete vehicle ${vehicle.vehicleNo}?`)) {
+    const confirmed = await confirmDelete(
+      'Delete Vehicle',
+      `Are you sure you want to delete vehicle ${vehicle.vehicleNo}? This action cannot be undone.`
+    );
+    
+    if (confirmed) {
       try {
         const result = await vehicleService.deleteVehicle(vehicle.imei);
         if (result.success) {
+          showSuccess('Vehicle Deleted', `Vehicle ${vehicle.vehicleNo} has been successfully deleted.`);
           setVehicles(vehicles.filter(v => v.imei !== vehicle.imei));
         } else {
-          setError(result.error || 'Failed to delete vehicle');
+          showError('Failed to Delete Vehicle', result.error || 'Failed to delete vehicle');
         }
       } catch (err) {
-        setError('An unexpected error occurred');
+        showError('Error', 'An unexpected error occurred');
       }
     }
   };
@@ -333,7 +340,6 @@ const VehicleIndexPage: React.FC = () => {
                     <TableHeader>Vehicle Info</TableHeader>
                     <TableHeader>Device Info</TableHeader>
                     <TableHeader>Vehicle Type</TableHeader>
-                    <TableHeader>Expire Date</TableHeader>
                     <TableHeader>Customer Info</TableHeader>
                     <RoleBasedWidget allowedRoles={[ROLES.SUPER_ADMIN]}> <TableHeader>Last Recharge ago</TableHeader></RoleBasedWidget>
                     <RoleBasedWidget allowedRoles={[ROLES.SUPER_ADMIN, ROLES.DEALER]}> <TableHeader>Expire Date</TableHeader></RoleBasedWidget>
@@ -361,8 +367,19 @@ const VehicleIndexPage: React.FC = () => {
                       <TableCell>
                         <Badge variant="info" size="sm">{vehicle.vehicleType}</Badge>
                       </TableCell>
-                       <TableCell>
-                         <div className="text-sm">
+                      <TableCell>
+                        <div className="space-y-1">
+                          <div className="text-sm">{getCustomerInfo(vehicle)}</div>
+                          {getCustomerPhone(vehicle) && (
+                            <Badge variant="secondary" size="sm">{getCustomerPhone(vehicle)}</Badge>
+                          )}
+                        </div>
+                      </TableCell>
+                      <RoleBasedWidget allowedRoles={[ROLES.SUPER_ADMIN]}> <TableCell className="text-sm">
+                        {getLastRecharge(vehicle)}
+                      </TableCell></RoleBasedWidget>
+                      <RoleBasedWidget allowedRoles={[ROLES.SUPER_ADMIN, ROLES.DEALER]}> <TableCell className="text-sm">
+                      <div className="text-sm">
                            {vehicle.expireDate ? (
                              <div className="space-y-1">
                                <div>{getExpireDate(vehicle)}</div>
@@ -379,20 +396,6 @@ const VehicleIndexPage: React.FC = () => {
                              <span className="text-gray-400">Not set</span>
                            )}
                          </div>
-                       </TableCell>
-                      <TableCell>
-                        <div className="space-y-1">
-                          <div className="text-sm">{getCustomerInfo(vehicle)}</div>
-                          {getCustomerPhone(vehicle) && (
-                            <Badge variant="secondary" size="sm">{getCustomerPhone(vehicle)}</Badge>
-                          )}
-                        </div>
-                      </TableCell>
-                      <RoleBasedWidget allowedRoles={[ROLES.SUPER_ADMIN]}> <TableCell className="text-sm">
-                        {getLastRecharge(vehicle)}
-                      </TableCell></RoleBasedWidget>
-                      <RoleBasedWidget allowedRoles={[ROLES.SUPER_ADMIN, ROLES.DEALER]}> <TableCell className="text-sm">
-                        {getExpireDate(vehicle)}
                       </TableCell></RoleBasedWidget>
                       <TableCell className="text-sm">
                         {getLastData(vehicle)}

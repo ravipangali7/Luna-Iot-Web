@@ -3,6 +3,7 @@ import { useParams, useNavigate } from 'react-router-dom';
 import GoogleMapReact from 'google-map-react';
 import { vehicleService } from '../../api/services/vehicleService';
 import socketService from '../../services/socketService';
+import { showError, showInfo } from '../../utils/sweetAlert';
 import type { Vehicle } from '../../types/vehicle';
 import VehicleUtils, { VehicleImageState } from '../../utils/vehicleUtils';
 import type { VehicleStateType } from '../../utils/vehicleUtils';
@@ -226,7 +227,7 @@ const LiveTrackingShowPage: React.FC<LiveTrackingShowPageProps> = ({ imei: propI
   // Handle weather button click
   const handleWeatherClick = useCallback(async () => {
     if (!currentLocation) {
-      alert('No location data available for weather');
+      showInfo('No Location Data', 'No location data available for weather');
       return;
     }
 
@@ -236,7 +237,7 @@ const LiveTrackingShowPage: React.FC<LiveTrackingShowPageProps> = ({ imei: propI
       setWeatherData(weather);
     } catch (error) {
       console.error('Error fetching weather:', error);
-      alert('Failed to load weather data');
+      showError('Weather Error', 'Failed to load weather data');
     }
   }, [currentLocation]);
 
