@@ -1,5 +1,5 @@
 import { apiClient } from '../apiClient';
-import type { VehicleAccess, VehicleAccessFormData, VehicleAccessFilters } from '../../types/vehicleAccess';
+import type { VehicleAccess, VehicleAccessFormData } from '../../types/vehicleAccess';
 import type { Vehicle } from '../../types/vehicle';
 
 class VehicleAccessService {
