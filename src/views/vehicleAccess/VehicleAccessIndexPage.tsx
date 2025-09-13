@@ -272,13 +272,12 @@ const VehicleAccessIndexPage: React.FC = () => {
                             <div className="space-y-1">
                               {vehicle.userVehicles.map((userVehicle, userIndex) => (
                                 <RoleBasedWidget key={userIndex} allowedRoles={[ROLES.SUPER_ADMIN, ROLES.DEALER]}>
-                                  <Button
-                                    variant="danger"
-                                    size="sm"
-                                    onClick={() => handleDeleteAccess(vehicle.imei, userVehicle)}
-                                    icon={<PersonRemoveIcon className="w-4 h-4" />}
-                                    title={`Remove ${userVehicle.user?.name || 'User'}`}
-                                  />
+                            <Button
+                              variant="danger"
+                              size="sm"
+                              onClick={() => handleDeleteAccess(vehicle.imei, userVehicle)}
+                              icon={<PersonRemoveIcon className="w-4 h-4" />}
+                            />
                                 </RoleBasedWidget>
                               ))}
                             </div>
