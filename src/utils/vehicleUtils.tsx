@@ -124,6 +124,26 @@ export const getStateColor = (state: VehicleStateType): string => {
   }
 };
 
+// Get very light state color for background
+export const getStateBackgroundColor = (state: VehicleStateType): string => {
+  switch (state) {
+    case VehicleState.NO_DATA:
+      return '#F5F5F5'; // Very light grey
+    case VehicleState.INACTIVE:
+      return '#E3F2FD'; // Very light blue
+    case VehicleState.STOPPED:
+      return '#FFEBEE'; // Very light red
+    case VehicleState.IDLE:
+      return '#FFFDE7'; // Very light gold/yellow
+    case VehicleState.RUNNING:
+      return '#E8F5E8'; // Very light green
+    case VehicleState.OVERSPEED:
+      return '#FFF3E0'; // Very light orange
+    default:
+      return '#F5F5F5'; // Very light grey
+  }
+};
+
 // Get image path
 export const getImagePath = (
   vehicleType: string,

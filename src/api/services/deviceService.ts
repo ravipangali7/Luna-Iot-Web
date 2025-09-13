@@ -110,6 +110,40 @@ class DeviceService {
       return { success: false, error: 'Network error: ' + (error as Error).message };
     }
   }
+
+  async sendServerPoint(phone: string): Promise<{ success: boolean; data?: unknown; error?: string }> {
+    try {
+      const response = await apiClient.post('/api/device/server-point', {
+        phone
+      });
+      
+      if (response.data.success) {
+        return { success: true, data: response.data.data };
+      } else {
+        return { success: false, error: response.data.message || 'Failed to send server point command' };
+      }
+    } catch (error) {
+      console.error('Send server point error:', error);
+      return { success: false, error: 'Network error: ' + (error as Error).message };
+    }
+  }
+
+  async sendReset(phone: string): Promise<{ success: boolean; data?: unknown; error?: string }> {
+    try {
+      const response = await apiClient.post('/api/device/reset', {
+        phone
+      });
+      
+      if (response.data.success) {
+        return { success: true, data: response.data.data };
+      } else {
+        return { success: false, error: response.data.message || 'Failed to send reset command' };
+      }
+    } catch (error) {
+      console.error('Send reset error:', error);
+      return { success: false, error: 'Network error: ' + (error as Error).message };
+    }
+  }
 }
 
 export const deviceService = new DeviceService();

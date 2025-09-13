@@ -1,6 +1,6 @@
 // Google Maps Configuration
 export const GOOGLE_MAPS_CONFIG = {
-  apiKey: 'AIzaSyC4oO2oBMNzhEhLCmD2i9Ts9ljplYpsCVg',
+  apiKey: 'AIzaSyDakyL49GU8gPjnK0jihVQuRDxh6lTx-O8',
   libraries: ['geometry'] as const,
   defaultCenter: {
     lat: 27.7172, // Kathmandu, Nepal

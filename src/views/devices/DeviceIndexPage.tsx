@@ -21,6 +21,12 @@ import Spinner from '../../components/ui/common/Spinner';
 import Alert from '../../components/ui/common/Alert';
 import RoleBasedWidget from '../../components/role-based/RoleBasedWidget';
 import { ROLES } from '../../utils/roleUtils';
+import EditIcon from '@mui/icons-material/Edit';
+import DeleteIcon from '@mui/icons-material/Delete';
+import AccountBalanceWalletIcon from '@mui/icons-material/AccountBalanceWallet';
+import SendIcon from '@mui/icons-material/Send';
+import ArrowDropDownIcon from '@mui/icons-material/ArrowDropDown';
+import RefreshIcon from '@mui/icons-material/Refresh';
 
 const DeviceIndexPage: React.FC = () => {
   const navigate = useNavigate();
@@ -30,6 +36,7 @@ const DeviceIndexPage: React.FC = () => {
   const [error, setError] = useState<string | null>(null);
   const [filters, setFilters] = useState<DeviceFilters>({});
   const [searchQuery, setSearchQuery] = useState('');
+  const [dropdownOpen, setDropdownOpen] = useState<{ [key: string]: boolean }>({});
 
   useEffect(() => {
     loadDevices();
@@ -119,6 +126,53 @@ const DeviceIndexPage: React.FC = () => {
 
   const handleRechargeDevice = (device: Device) => {
     navigate(`/recharges/create?deviceId=${device.id}&imei=${device.imei}`);
+  };
+
+  const handleServerPoint = async (device: Device) => {
+    try {
+      if (!device.phone) {
+        showError('Device phone number not available');
+        return;
+      }
+
+      const result = await deviceService.sendServerPoint(device.phone);
+
+      if (result.success) {
+        showSuccess('Server point command sent successfully');
+      } else {
+        showError(result.error || 'Failed to send server point command');
+      }
+    } catch (error) {
+      console.error('Server point error:', error);
+      showError('Failed to send server point command');
+    }
+  };
+
+  const handleReset = async (device: Device) => {
+    try {
+      if (!device.phone) {
+        showError('Device phone number not available');
+        return;
+      }
+
+      const result = await deviceService.sendReset(device.phone);
+
+      if (result.success) {
+        showSuccess('Reset command sent successfully');
+      } else {
+        showError(result.error || 'Failed to send reset command');
+      }
+    } catch (error) {
+      console.error('Reset error:', error);
+      showError('Failed to send reset command');
+    }
+  };
+
+  const toggleDropdown = (deviceId: string) => {
+    setDropdownOpen(prev => ({
+      ...prev,
+      [deviceId]: !prev[deviceId]
+    }));
   };
 
 
@@ -379,9 +433,8 @@ const DeviceIndexPage: React.FC = () => {
                               variant="outline"
                               size="sm"
                               onClick={() => handleEditDevice(device)}
-                            >
-                              Edit
-                            </Button>
+                              icon={<EditIcon className="w-4 h-4" />}
+                            />
                           </RoleBasedWidget>
 
                           <RoleBasedWidget allowedRoles={[ROLES.SUPER_ADMIN]}>
@@ -389,18 +442,54 @@ const DeviceIndexPage: React.FC = () => {
                               variant="primary"
                               size="sm"
                               onClick={() => handleRechargeDevice(device)}
-                            >
-                              Recharge
-                            </Button>
+                              icon={<AccountBalanceWalletIcon className="w-4 h-4" />}
+                            />
+                          </RoleBasedWidget>
+                          <RoleBasedWidget allowedRoles={[ROLES.SUPER_ADMIN]}>
+                            <div className="relative">
+                              <Button
+                                variant="secondary"
+                                size="sm"
+                                onClick={() => toggleDropdown(device.id.toString())}
+                                icon={<SendIcon className="w-4 h-4" />}
+                              >
+                                <ArrowDropDownIcon className="w-4 h-4 ml-1" />
+                              </Button>
+                              {dropdownOpen[device.id.toString()] && (
+                                <div className="absolute right-0 mt-1 w-48 bg-white rounded-md shadow-lg z-10 border border-gray-200">
+                                  <div className="py-1">
+                                    <button
+                                      className="flex items-center w-full px-4 py-2 text-sm text-gray-700 hover:bg-gray-100"
+                                      onClick={() => {
+                                        handleServerPoint(device);
+                                        setDropdownOpen(prev => ({ ...prev, [device.id.toString()]: false }));
+                                      }}
+                                    >
+                                      <SendIcon className="w-4 h-4 mr-2" />
+                                      SERVER POINT
+                                    </button>
+                                    <button
+                                      className="flex items-center w-full px-4 py-2 text-sm text-gray-700 hover:bg-gray-100"
+                                      onClick={() => {
+                                        handleReset(device);
+                                        setDropdownOpen(prev => ({ ...prev, [device.id.toString()]: false }));
+                                      }}
+                                    >
+                                      <RefreshIcon className="w-4 h-4 mr-2" />
+                                      RESET
+                                    </button>
+                                  </div>
+                                </div>
+                              )}
+                            </div>
                           </RoleBasedWidget>
                           <RoleBasedWidget allowedRoles={[ROLES.SUPER_ADMIN]}>
                             <Button
                               variant="danger"
                               size="sm"
                               onClick={() => handleDeleteDevice(device)}
-                            >
-                              Delete
-                            </Button>
+                              icon={<DeleteIcon className="w-4 h-4" />}
+                            />
                           </RoleBasedWidget>
                         </div>
                       </TableCell>

@@ -1,10 +1,12 @@
 import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { vehicleService } from '../../api/services/vehicleService';
+import { deviceService } from '../../api/services/deviceService';
 import { confirmDelete, showSuccess, showError } from '../../utils/sweetAlert';
 import { useRefresh } from '../../contexts/RefreshContext';
 import type { Vehicle, VehicleFilters } from '../../types/vehicle';
 import { VEHICLE_TYPES } from '../../types/vehicle';
+import { getState, getStateBackgroundColor } from '../../utils/vehicleUtils';
 import Container from '../../components/ui/layout/Container';
 import Card from '../../components/ui/cards/Card';
 import CardHeader from '../../components/ui/cards/CardHeader';
@@ -23,6 +25,12 @@ import Spinner from '../../components/ui/common/Spinner';
 import Alert from '../../components/ui/common/Alert';
 import RoleBasedWidget from '../../components/role-based/RoleBasedWidget';
 import { ROLES } from '../../utils/roleUtils';
+import EditIcon from '@mui/icons-material/Edit';
+import DeleteIcon from '@mui/icons-material/Delete';
+import AccountBalanceWalletIcon from '@mui/icons-material/AccountBalanceWallet';
+import SendIcon from '@mui/icons-material/Send';
+import ArrowDropDownIcon from '@mui/icons-material/ArrowDropDown';
+import RefreshIcon from '@mui/icons-material/Refresh';
 
 const VehicleIndexPage: React.FC = () => {
   const navigate = useNavigate();
@@ -33,6 +41,7 @@ const VehicleIndexPage: React.FC = () => {
   const [error, setError] = useState<string | null>(null);
   const [filters, setFilters] = useState<VehicleFilters>({});
   const [searchQuery, setSearchQuery] = useState('');
+  const [dropdownOpen, setDropdownOpen] = useState<{ [key: string]: boolean }>({});
 
   useEffect(() => {
     loadVehicles();
@@ -118,6 +127,53 @@ const VehicleIndexPage: React.FC = () => {
     } else {
       setError('Device information not available for this vehicle');
     }
+  };
+
+  const handleServerPoint = async (vehicle: Vehicle) => {
+    try {
+      if (!vehicle.device?.phone) {
+        showError('Device phone number not available');
+        return;
+      }
+
+      const result = await deviceService.sendServerPoint(vehicle.device.phone);
+
+      if (result.success) {
+        showSuccess('Server point command sent successfully');
+      } else {
+        showError(result.error || 'Failed to send server point command');
+      }
+    } catch (error) {
+      console.error('Server point error:', error);
+      showError('Failed to send server point command');
+    }
+  };
+
+  const handleReset = async (vehicle: Vehicle) => {
+    try {
+      if (!vehicle.device?.phone) {
+        showError('Device phone number not available');
+        return;
+      }
+
+      const result = await deviceService.sendReset(vehicle.device.phone);
+
+      if (result.success) {
+        showSuccess('Reset command sent successfully');
+      } else {
+        showError(result.error || 'Failed to send reset command');
+      }
+    } catch (error) {
+      console.error('Reset error:', error);
+      showError('Failed to send reset command');
+    }
+  };
+
+  const toggleDropdown = (vehicleId: string) => {
+    setDropdownOpen(prev => ({
+      ...prev,
+      [vehicleId]: !prev[vehicleId]
+    }));
   };
 
 
@@ -349,8 +405,15 @@ const VehicleIndexPage: React.FC = () => {
                   </TableRow>
                 </TableHead>
                 <TableBody>
-                  {filteredVehicles.map((vehicle, index) => (
-                    <TableRow key={vehicle.id}>
+                  {filteredVehicles.map((vehicle, index) => {
+                    const vehicleState = getState(vehicle);
+                    const backgroundColor = getStateBackgroundColor(vehicleState);
+                    
+                    return (
+                    <TableRow 
+                      key={vehicle.id}
+                      style={{ backgroundColor }}
+                    >
                       <TableCell>{index + 1}</TableCell>
                       <TableCell>
                         <div className="space-y-1">
@@ -414,31 +477,67 @@ const VehicleIndexPage: React.FC = () => {
                             variant="outline"
                             size="sm"
                             onClick={() => handleEditVehicle(vehicle)}
-                          >
-                            Edit
-                          </Button>
+                            icon={<EditIcon className="w-4 h-4" />}
+                          />
                           <RoleBasedWidget allowedRoles={[ROLES.SUPER_ADMIN]}>
                             <Button
                               variant="primary"
                               size="sm"
                               onClick={() => handleRechargeVehicle(vehicle)}
-                            >
-                              Recharge
-                            </Button>
+                              icon={<AccountBalanceWalletIcon className="w-4 h-4" />}
+                            />
+                          </RoleBasedWidget>
+                          <RoleBasedWidget allowedRoles={[ROLES.SUPER_ADMIN]}>
+                            <div className="relative">
+                              <Button
+                                variant="secondary"
+                                size="sm"
+                                onClick={() => toggleDropdown(vehicle.id.toString())}
+                                icon={<SendIcon className="w-4 h-4" />}
+                              >
+                                <ArrowDropDownIcon className="w-4 h-4 ml-1" />
+                              </Button>
+                              {dropdownOpen[vehicle.id.toString()] && (
+                                <div className="absolute right-0 mt-1 w-48 bg-white rounded-md shadow-lg z-10 border border-gray-200">
+                                  <div className="py-1">
+                                    <button
+                                      className="flex items-center w-full px-4 py-2 text-sm text-gray-700 hover:bg-gray-100"
+                                      onClick={() => {
+                                        handleServerPoint(vehicle);
+                                        setDropdownOpen(prev => ({ ...prev, [vehicle.id.toString()]: false }));
+                                      }}
+                                    >
+                                      <SendIcon className="w-4 h-4 mr-2" />
+                                      SERVER POINT
+                                    </button>
+                                    <button
+                                      className="flex items-center w-full px-4 py-2 text-sm text-gray-700 hover:bg-gray-100"
+                                      onClick={() => {
+                                        handleReset(vehicle);
+                                        setDropdownOpen(prev => ({ ...prev, [vehicle.id.toString()]: false }));
+                                      }}
+                                    >
+                                      <RefreshIcon className="w-4 h-4 mr-2" />
+                                      RESET
+                                    </button>
+                                  </div>
+                                </div>
+                              )}
+                            </div>
                           </RoleBasedWidget>
                           <RoleBasedWidget allowedRoles={[ROLES.SUPER_ADMIN]}>
                             <Button
                               variant="danger"
                               size="sm"
                               onClick={() => handleDeleteVehicle(vehicle)}
-                            >
-                              Delete
-                            </Button>
+                              icon={<DeleteIcon className="w-4 h-4" />}
+                            />
                           </RoleBasedWidget>
                         </div>
                       </TableCell>
                     </TableRow>
-                  ))}
+                    );
+                  })}
                 </TableBody>
               </Table>
             </div>

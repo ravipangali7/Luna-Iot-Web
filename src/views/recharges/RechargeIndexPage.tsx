@@ -22,6 +22,7 @@ import Spinner from '../../components/ui/common/Spinner';
 import Alert from '../../components/ui/common/Alert';
 import RoleBasedWidget from '../../components/role-based/RoleBasedWidget';
 import { ROLES } from '../../utils/roleUtils';
+import DeleteIcon from '@mui/icons-material/Delete';
 
 const RechargeIndexPage: React.FC = () => {
   const navigate = useNavigate();
@@ -318,9 +319,8 @@ const RechargeIndexPage: React.FC = () => {
                               variant="danger"
                               size="sm"
                               onClick={() => handleDeleteRecharge(recharge)}
-                            >
-                              Delete
-                            </Button>
+                              icon={<DeleteIcon className="w-4 h-4" />}
+                            />
                           </RoleBasedWidget>
                         </div>
                       </TableCell>
