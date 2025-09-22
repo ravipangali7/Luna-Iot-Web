@@ -4,7 +4,7 @@ import type { Device, DeviceFormData } from '../../types/device';
 class DeviceService {
   async getAllDevices(): Promise<{ success: boolean; data?: Device[]; error?: string }> {
     try {
-      const response = await apiClient.get(`/api/device`);
+      const response = await apiClient.get(`/api/device/device`);
       if (response.data.success) {
         return { success: true, data: response.data.data };
       } else {
@@ -16,9 +16,51 @@ class DeviceService {
     }
   }
 
+  async getDevicesPaginated(page: number = 1): Promise<{ 
+    success: boolean; 
+    data?: { devices: Device[]; pagination: any }; 
+    error?: string 
+  }> {
+    try {
+      const response = await apiClient.get(`/api/device/device/paginated?page=${page}`, {
+        timeout: 120000 // 2 minutes for large responses
+      });
+      
+      if (response.data.success) {
+        return { success: true, data: response.data.data };
+      } else {
+        return { success: false, error: response.data.message || 'Failed to fetch paginated devices' };
+      }
+    } catch (error) {
+      console.error('Get paginated devices error:', error);
+      return { success: false, error: 'Network error: ' + (error as Error).message };
+    }
+  }
+
+  async searchDevices(query: string, page: number = 1): Promise<{ 
+    success: boolean; 
+    data?: { devices: Device[]; pagination: any }; 
+    error?: string 
+  }> {
+    try {
+      const response = await apiClient.get(`/api/device/device/search?q=${encodeURIComponent(query)}&page=${page}`, {
+        timeout: 120000 // 2 minutes for large responses
+      });
+      
+      if (response.data.success) {
+        return { success: true, data: response.data.data };
+      } else {
+        return { success: false, error: response.data.message || 'Failed to search devices' };
+      }
+    } catch (error) {
+      console.error('Search devices error:', error);
+      return { success: false, error: 'Network error: ' + (error as Error).message };
+    }
+  }
+
   async getDeviceByImei(imei: string): Promise<{ success: boolean; data?: Device; error?: string }> {
     try {
-      const response = await apiClient.get(`/api/device/${imei}`);
+      const response = await apiClient.get(`/api/device/device/${imei}`);
       
       if (response.data.success) {
         return { success: true, data: response.data.data };
@@ -33,7 +75,7 @@ class DeviceService {
 
   async createDevice(data: DeviceFormData): Promise<{ success: boolean; data?: Device; error?: string }> {
     try {
-      const response = await apiClient.post('/api/device/create', data);
+      const response = await apiClient.post('/api/device/device/create', data);
       
       if (response.data.success) {
         return { success: true, data: response.data.data };
@@ -48,7 +90,7 @@ class DeviceService {
 
   async updateDevice(imei: string, data: DeviceFormData): Promise<{ success: boolean; data?: Device; error?: string }> {
     try {
-      const response = await apiClient.put(`/api/device/update/${imei}`, data);
+      const response = await apiClient.put(`/api/device/device/update/${imei}`, data);
       
       if (response.data.success) {
         return { success: true, data: response.data.data };
@@ -63,7 +105,7 @@ class DeviceService {
 
   async deleteDevice(imei: string): Promise<{ success: boolean; error?: string }> {
     try {
-      const response = await apiClient.delete(`/api/device/delete/${imei}`);
+      const response = await apiClient.delete(`/api/device/device/delete/${imei}`);
       
       if (response.data.success) {
         return { success: true };
@@ -78,7 +120,7 @@ class DeviceService {
 
   async assignDeviceToUser(imei: string, userPhone: string): Promise<{ success: boolean; data?: unknown; error?: string }> {
     try {
-      const response = await apiClient.post('/api/device/assign', {
+      const response = await apiClient.post('/api/device/device/assign', {
         imei,
         userPhone
       });
@@ -96,7 +138,7 @@ class DeviceService {
 
   async removeDeviceAssignment(imei: string, userPhone: string): Promise<{ success: boolean; error?: string }> {
     try {
-      const response = await apiClient.delete('/api/device/assign', {
+      const response = await apiClient.delete('/api/device/device/assign', {
         data: { imei, userPhone },
       });
       
@@ -113,7 +155,7 @@ class DeviceService {
 
   async sendServerPoint(phone: string): Promise<{ success: boolean; data?: unknown; error?: string }> {
     try {
-      const response = await apiClient.post('/api/device/server-point', {
+      const response = await apiClient.post('/api/device/device/server-point', {
         phone
       });
       
@@ -130,7 +172,7 @@ class DeviceService {
 
   async sendReset(phone: string): Promise<{ success: boolean; data?: unknown; error?: string }> {
     try {
-      const response = await apiClient.post('/api/device/reset', {
+      const response = await apiClient.post('/api/device/device/reset', {
         phone
       });
       

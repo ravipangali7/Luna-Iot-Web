@@ -2,12 +2,9 @@ export interface User {
   id: number;
   name: string;
   phone: string;
-  status: string;
-  role: {
-    id: number;
-    name: string;
-    description: string;
-  };
+  status: string; // 'ACTIVE' or 'INACTIVE'
+  role: string; // Single role name (matches Django)
+  fcmToken?: string;
   createdAt: string;
   updatedAt: string;
 }
@@ -47,9 +44,8 @@ export interface Device {
   phone: string;
   sim: string;
   protocol: string;
-  iccid: string | null;
+  iccid: string;
   model: string;
-  status: string;
   createdAt: string;
   updatedAt: string;
 }
@@ -97,7 +93,7 @@ export interface Vehicle {
   latestLocation?: Location | null;
   latestRecharge?: Recharge | null;
   todayKm?: number;
-  ownershipType?: string;
+  ownershipType?: string; // 'Own', 'Shared', or 'Customer'
   userVehicles?: UserVehicle[];
   userVehicle?: UserVehicle | null;
   mainCustomer?: UserVehicle | null;

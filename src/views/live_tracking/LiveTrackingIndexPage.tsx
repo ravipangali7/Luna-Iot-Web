@@ -6,6 +6,7 @@ import type { Vehicle } from '../../types/vehicle';
 import VehicleUtils, { VehicleState, VehicleImageState } from '../../utils/vehicleUtils';
 import type { VehicleStateType } from '../../utils/vehicleUtils';
 import VehicleCard from '../../components/VehicleCard';
+import Pagination from '../../components/ui/pagination/Pagination';
 import { useSocketUpdates } from '../../hooks/useSocketUpdates';
 import './LiveTrackingIndexPage.css';
 
@@ -143,9 +144,13 @@ const MapComponent: React.FC<{
 
 const LiveTrackingIndexPage: React.FC = () => {
   const [vehicles, setVehicles] = useState<Vehicle[]>([]);
+  const [searchResults, setSearchResults] = useState<Vehicle[]>([]);
   const [filteredVehicles, setFilteredVehicles] = useState<Vehicle[]>([]);
   const [loading, setLoading] = useState(true);
   const [selectedFilter, setSelectedFilter] = useState<VehicleStateType | 'all'>('all');
+  const [searchQuery, setSearchQuery] = useState('');
+  const [searchInput, setSearchInput] = useState('');
+  const [isSearchMode, setIsSearchMode] = useState(false);
   const [statusCounts, setStatusCounts] = useState<StatusCounts>({
     all: 0,
     stop: 0,
@@ -157,6 +162,19 @@ const LiveTrackingIndexPage: React.FC = () => {
   });
   const [mapCenter] = useState<{ lat: number; lng: number }>({ lat: 28.3949, lng: 84.1240 }); // Nepal country center
   const navigate = useNavigate();
+  
+  // Pagination state
+  const [currentPage, setCurrentPage] = useState(1);
+  const [pagination, setPagination] = useState({
+    current_page: 1,
+    total_pages: 1,
+    total_items: 0,
+    page_size: 25,
+    has_next: false,
+    has_previous: false,
+    next_page: null,
+    previous_page: null
+  });
 
   // Use socket updates hook
   const { isConnected } = useSocketUpdates({ setVehicles });
@@ -199,20 +217,37 @@ const LiveTrackingIndexPage: React.FC = () => {
     setStatusCounts(counts);
   }, []);
 
-  const loadVehicles = useCallback(async () => {
+  // Load all vehicles for status counts (not paginated)
+  const loadAllVehiclesForCounts = useCallback(async () => {
     try {
-      setLoading(true);
       const response = await vehicleService.getAllVehicles();
       if (response.success && response.data) {
-        // Add fallback for missing status/location data
         const vehiclesWithFallbacks = response.data.map(vehicle => ({
           ...vehicle,
           latestStatus: vehicle.latestStatus || null,
           latestLocation: vehicle.latestLocation || null
         }));
-        
-        setVehicles(vehiclesWithFallbacks);
         calculateStatusCounts(vehiclesWithFallbacks);
+      }
+    } catch (error) {
+      console.error('Error loading all vehicles for counts:', error);
+    }
+  }, [calculateStatusCounts]);
+
+  const loadVehicles = useCallback(async () => {
+    try {
+      setLoading(true);
+      const response = await vehicleService.getVehiclesPaginated(currentPage);
+      
+      if (response.success && response.data) {
+        const vehiclesWithFallbacks = response.data.vehicles.map(vehicle => ({
+          ...vehicle,
+          latestStatus: vehicle.latestStatus || null,
+          latestLocation: vehicle.latestLocation || null
+        }));
+        setVehicles(vehiclesWithFallbacks);
+        setPagination(response.data.pagination);
+        setIsSearchMode(false);
       } else {
         console.error('Failed to load vehicles:', response.error);
       }
@@ -221,35 +256,109 @@ const LiveTrackingIndexPage: React.FC = () => {
     } finally {
       setLoading(false);
     }
-  }, [calculateStatusCounts]);
+  }, [currentPage]);
+
+  const loadSearchResults = useCallback(async (query: string, page: number = 1) => {
+    try {
+      setLoading(true);
+      const response = await vehicleService.searchVehicles(query.trim(), page);
+      
+      if (response.success && response.data) {
+        const vehiclesWithFallbacks = response.data.vehicles.map(vehicle => ({
+          ...vehicle,
+          latestStatus: vehicle.latestStatus || null,
+          latestLocation: vehicle.latestLocation || null
+        }));
+        setSearchResults(vehiclesWithFallbacks);
+        setPagination(response.data.pagination);
+        setIsSearchMode(true);
+      } else {
+        console.error('Failed to search vehicles:', response.error);
+      }
+    } catch (error) {
+      console.error('Error searching vehicles:', error);
+    } finally {
+      setLoading(false);
+    }
+  }, []);
 
   const filterVehicles = useCallback(() => {
+    const sourceVehicles = isSearchMode ? searchResults : vehicles;
     if (selectedFilter === 'all') {
-      setFilteredVehicles(vehicles);
+      setFilteredVehicles(sourceVehicles);
     } else {
-      const filtered = vehicles.filter(vehicle => VehicleUtils.getState(vehicle) === selectedFilter);
+      const filtered = sourceVehicles.filter(vehicle => VehicleUtils.getState(vehicle) === selectedFilter);
       setFilteredVehicles(filtered);
     }
-  }, [vehicles, selectedFilter]);
+  }, [vehicles, searchResults, selectedFilter, isSearchMode]);
 
+  // Load vehicles on component mount
   useEffect(() => {
     loadVehicles();
   }, [loadVehicles]);
+
+  // Load vehicles when currentPage changes (only in normal mode)
+  useEffect(() => {
+    if (!isSearchMode) {
+      loadVehicles();
+    }
+  }, [currentPage, loadVehicles, isSearchMode]);
 
   useEffect(() => {
     filterVehicles();
   }, [filterVehicles]);
 
-  // Update status counts when vehicles change (including socket updates)
+  // Update filtered vehicles when switching between search and normal mode
   useEffect(() => {
-    calculateStatusCounts(vehicles);
-  }, [vehicles, calculateStatusCounts]);
+    filterVehicles();
+  }, [isSearchMode, filterVehicles]);
+
+  // Load all vehicles for status counts on component mount
+  useEffect(() => {
+    loadAllVehiclesForCounts();
+  }, [loadAllVehiclesForCounts]);
 
   const handleFilterClick = (filter: VehicleStateType | 'all') => {
     setSelectedFilter(filter);
   };
 
-  const handleVehicleClick = (_vehicle: Vehicle) => {
+  const handlePageChange = (page: number) => {
+    setCurrentPage(page);
+  };
+
+  const handleSearchPageChange = async (page: number) => {
+    if (!searchQuery) return;
+    setCurrentPage(page);
+    loadSearchResults(searchQuery, page);
+  };
+
+  const handleSearchChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    setSearchInput(e.target.value);
+  };
+
+  const handleSearchSubmit = (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!searchInput.trim()) {
+      setSearchQuery('');
+      setIsSearchMode(false);
+      return;
+    }
+    
+    setSearchQuery(searchInput);
+    setCurrentPage(1); // Reset to first page when searching
+    loadSearchResults(searchInput, 1);
+  };
+
+  const handleClearSearch = () => {
+    setSearchInput('');
+    setSearchQuery('');
+    setIsSearchMode(false);
+    setCurrentPage(1);
+    // Load default pagination data when clearing search
+    loadVehicles();
+  };
+
+  const handleVehicleClick = () => {
     // if (vehicle.latestLocation?.latitude && vehicle.latestLocation?.longitude) {
     //   setMapCenter({
     //     lat: vehicle.latestLocation.latitude,
@@ -331,6 +440,34 @@ const LiveTrackingIndexPage: React.FC = () => {
           </div>
         </div>
         
+        {/* Search Bar */}
+        <div className="search-container">
+          <form onSubmit={handleSearchSubmit} className="search-form">
+            <div className="search-input-wrapper">
+              <input
+                type="text"
+                placeholder="Search vehicles..."
+                value={searchInput}
+                onChange={handleSearchChange}
+                className="search-input"
+              />
+              {searchInput && (
+                <button
+                  type="button"
+                  onClick={handleClearSearch}
+                  className="search-clear-btn"
+                  title="Clear search"
+                >
+                  ✕
+                </button>
+              )}
+              <button type="submit" className="search-submit-btn" title="Search">
+                🔍
+              </button>
+            </div>
+          </form>
+        </div>
+        
         {/* Status filters */}
         <div className="status-filters">
           <button
@@ -382,22 +519,24 @@ const LiveTrackingIndexPage: React.FC = () => {
       <div className="live-tracking-content">
         {/* Vehicle list */}
         <div className="vehicle-list">
-          {filteredVehicles.map((vehicle) => (
-            <VehicleCard
-              key={vehicle.imei}
-              vehicle={vehicle}
-              onVehicleClick={handleVehicleClick}
-              showLocation={true}
-              showAltitude={true}
-              compact={true}
-              onNavigate={handleNavigate}
-              onFindVehicle={handleFindVehicle}
-              onWeather={handleWeather}
-              onRelayControl={handleRelayControl}
-              onDelete={handleDelete}
-              onNearby={handleNearby}
-            />
-          ))}
+          <div className="vehicle-list-scrollable">
+            {filteredVehicles.map((vehicle) => (
+              <VehicleCard
+                key={vehicle.imei}
+                vehicle={vehicle}
+                onVehicleClick={handleVehicleClick}
+                showLocation={true}
+                showAltitude={true}
+                compact={true}
+                onNavigate={handleNavigate}
+                onFindVehicle={handleFindVehicle}
+                onWeather={handleWeather}
+                onRelayControl={handleRelayControl}
+                onDelete={handleDelete}
+                onNearby={handleNearby}
+              />
+            ))}
+          </div>
         </div>
 
         {/* Map */}
@@ -409,6 +548,21 @@ const LiveTrackingIndexPage: React.FC = () => {
           />
         </div>
       </div>
+
+      {/* Pagination at bottom */}
+      {pagination.total_pages > 1 && (
+        <div className="pagination-container">
+          <Pagination
+            currentPage={pagination.current_page}
+            totalPages={pagination.total_pages}
+            onPageChange={isSearchMode ? handleSearchPageChange : handlePageChange}
+            hasNext={pagination.has_next}
+            hasPrevious={pagination.has_previous}
+            totalItems={pagination.total_items}
+            pageSize={pagination.page_size}
+          />
+        </div>
+      )}
     </div>
   );
 };

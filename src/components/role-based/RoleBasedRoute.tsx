@@ -1,18 +1,22 @@
 import React from 'react';
 import { Navigate } from 'react-router-dom';
 import { useAuth } from '../../hooks/useAuth';
-import { hasRole } from '../../utils/roleUtils';
+import { hasRole, hasPermission, hasAnyPermission, hasAllPermissions } from '../../utils/roleUtils';
 
 interface RoleBasedRouteProps {
   children: React.ReactNode;
-  allowedRoles: string[];
+  allowedRoles?: string[];
+  requiredPermissions?: string[];
+  requireAllPermissions?: boolean; // If true, user must have ALL permissions; if false, ANY permission
   fallbackPath?: string;
   fallbackComponent?: React.ReactNode;
 }
 
 const RoleBasedRoute: React.FC<RoleBasedRouteProps> = ({
   children,
-  allowedRoles,
+  allowedRoles = [],
+  requiredPermissions = [],
+  requireAllPermissions = false,
   fallbackPath = '/live-tracking',
   fallbackComponent
 }) => {
@@ -33,6 +37,17 @@ const RoleBasedRoute: React.FC<RoleBasedRouteProps> = ({
   // Check role-based access
   if (allowedRoles.length > 0 && !hasRole(user, allowedRoles)) {
     return fallbackComponent ? <>{fallbackComponent}</> : <Navigate to={fallbackPath} replace />;
+  }
+
+  // Check permission-based access
+  if (requiredPermissions.length > 0) {
+    const hasRequiredPermissions = requireAllPermissions 
+      ? hasAllPermissions(user, requiredPermissions)
+      : hasAnyPermission(user, requiredPermissions);
+    
+    if (!hasRequiredPermissions) {
+      return fallbackComponent ? <>{fallbackComponent}</> : <Navigate to={fallbackPath} replace />;
+    }
   }
 
   return <>{children}</>;

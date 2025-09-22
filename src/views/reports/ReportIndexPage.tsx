@@ -254,7 +254,7 @@ const ReportIndexPage: React.FC = () => {
               <CardBody>
                 <div className="text-center">
                   <div className="text-2xl font-bold text-blue-600">
-                    {formatNumber(reportData.stats.totalKm, 1)} km
+                    {formatNumber(reportData?.stats?.totalKm || 0, 1)} km
                   </div>
                   <div className="text-sm text-gray-600">Total Distance</div>
                 </div>
@@ -264,7 +264,7 @@ const ReportIndexPage: React.FC = () => {
               <CardBody>
                 <div className="text-center">
                   <div className="text-2xl font-bold text-green-600">
-                    {formatDuration(fixNaN(reportData.stats.totalTime))}
+                    {formatDuration(fixNaN(reportData?.stats?.totalTime || 0))}
                   </div>
                   <div className="text-sm text-gray-600">Total Time</div>
                 </div>
@@ -274,7 +274,7 @@ const ReportIndexPage: React.FC = () => {
               <CardBody>
                 <div className="text-center">
                   <div className="text-2xl font-bold text-orange-600">
-                    {formatNumber(reportData.stats.averageSpeed, 1)} km/h
+                    {formatNumber(reportData?.stats?.averageSpeed || 0, 1)} km/h
                   </div>
                   <div className="text-sm text-gray-600">Avg Speed</div>
                 </div>
@@ -284,7 +284,7 @@ const ReportIndexPage: React.FC = () => {
               <CardBody>
                 <div className="text-center">
                   <div className="text-2xl font-bold text-red-600">
-                    {formatNumber(reportData.stats.maxSpeed, 0)} km/h
+                    {formatNumber(reportData?.stats?.maxSpeed || 0, 0)} km/h
                   </div>
                   <div className="text-sm text-gray-600">Max Speed</div>
                 </div>
@@ -298,7 +298,7 @@ const ReportIndexPage: React.FC = () => {
               <CardBody>
                 <div className="text-center">
                   <div className="text-2xl font-bold text-gray-600">
-                    {formatDuration(fixNaN(reportData.stats.totalIdleTime))}
+                    {formatDuration(fixNaN(reportData?.stats?.totalIdleTime || 0))}
                   </div>
                   <div className="text-sm text-gray-600">Idle Time</div>
                 </div>
@@ -308,7 +308,7 @@ const ReportIndexPage: React.FC = () => {
               <CardBody>
                 <div className="text-center">
                   <div className="text-2xl font-bold text-green-600">
-                    {formatDuration(fixNaN(reportData.stats.totalRunningTime))}
+                    {formatDuration(fixNaN(reportData?.stats?.totalRunningTime || 0))}
                   </div>
                   <div className="text-sm text-gray-600">Running Time</div>
                 </div>
@@ -318,7 +318,7 @@ const ReportIndexPage: React.FC = () => {
               <CardBody>
                 <div className="text-center">
                   <div className="text-2xl font-bold text-red-600">
-                    {formatDuration(fixNaN(reportData.stats.totalOverspeedTime))}
+                    {formatDuration(fixNaN(reportData?.stats?.totalOverspeedTime || 0))}
                   </div>
                   <div className="text-sm text-gray-600">Overspeed Time</div>
                 </div>
@@ -328,7 +328,7 @@ const ReportIndexPage: React.FC = () => {
               <CardBody>
                 <div className="text-center">
                   <div className="text-2xl font-bold text-orange-600">
-                    {formatDuration(fixNaN(reportData.stats.totalStopTime))}
+                    {formatDuration(fixNaN(reportData?.stats?.totalStopTime || 0))}
                   </div>
                   <div className="text-sm text-gray-600">Stop Time</div>
                 </div>
@@ -337,7 +337,7 @@ const ReportIndexPage: React.FC = () => {
           </div>
 
           {/* Speed and Distance Charts */}
-          {reportData.dailyData.length > 0 && (
+          {reportData?.dailyData && reportData.dailyData.length > 0 && (
             <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
               {/* Daily Speed Chart */}
               <Card>
@@ -347,7 +347,7 @@ const ReportIndexPage: React.FC = () => {
                 <CardBody>
                   <div className="h-80">
                     <ResponsiveContainer width="100%" height="100%">
-                      <LineChart data={formatChartData(reportData.dailyData)}>
+                      <LineChart data={formatChartData(reportData?.dailyData || [])}>
                         <CartesianGrid strokeDasharray="3 3" />
                         <XAxis 
                           dataKey="date" 
@@ -402,7 +402,7 @@ const ReportIndexPage: React.FC = () => {
                 <CardBody>
                   <div className="h-80">
                     <ResponsiveContainer width="100%" height="100%">
-                      <LineChart data={formatChartData(reportData.dailyData)}>
+                      <LineChart data={formatChartData(reportData?.dailyData || [])}>
                         <CartesianGrid strokeDasharray="3 3" />
                         <XAxis 
                           dataKey="date" 
@@ -439,7 +439,7 @@ const ReportIndexPage: React.FC = () => {
           )}
 
           {/* Daily Data Table */}
-          {reportData.dailyData.length > 0 && (
+          {reportData?.dailyData && reportData.dailyData.length > 0 && (
             <Card>
               <CardHeader>
                 <h3 className="text-lg font-semibold text-gray-900">Daily Summary</h3>
@@ -467,7 +467,7 @@ const ReportIndexPage: React.FC = () => {
                       </tr>
                     </thead>
                     <tbody className="bg-white divide-y divide-gray-200">
-                      {reportData.dailyData.map((day, index) => (
+                      {reportData?.dailyData?.map((day, index) => (
                         <tr key={index}>
                           <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">
                             {new Date(day.date).toLocaleDateString()}

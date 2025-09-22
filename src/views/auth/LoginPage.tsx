@@ -25,12 +25,12 @@ export default function LoginPage() {
       // Determine redirect path based on user role
       let redirectPath = '/dashboard'; // Default for Super Admin
       
-      if (user.role) {
-        const userRole = typeof user.role === 'string' ? user.role : user.role.name;
+      if (user.roles && user.roles.length > 0) {
+        const userRoleNames = user.roles.map(role => role.name);
         
-        if (userRole === ROLES.SUPER_ADMIN) {
+        if (userRoleNames.includes(ROLES.SUPER_ADMIN)) {
           redirectPath = '/dashboard';
-        } else if (userRole === ROLES.DEALER || userRole === ROLES.CUSTOMER) {
+        } else if (userRoleNames.includes(ROLES.DEALER) || userRoleNames.includes(ROLES.CUSTOMER)) {
           redirectPath = '/live-tracking';
         }
       }

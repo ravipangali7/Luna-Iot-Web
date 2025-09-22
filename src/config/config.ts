@@ -1,9 +1,14 @@
 // API Configuration
 export const API_CONFIG = {
+    // Node.js backend (old)
     // BASE_URL: 'http://38.54.71.218:7070',
     // SOCKET_URL: 'http://38.54.71.218:7070',
-    BASE_URL: 'https://www.system.mylunago.com/', 
-    SOCKET_URL: 'https://www.system.mylunago.com/', 
+    
+    // Python backend (new function-based APIs)
+    BASE_URL: 'https://py.mylunago.com',  // Local Python Django backend
+    // BASE_URL: 'http://38.54.71.218:7171/',  // Local Python Django backend
+    SOCKET_URL: 'http://38.54.71.218:6060',
+    
   } as const;
   
   // App Configuration

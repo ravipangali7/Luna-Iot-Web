@@ -8,7 +8,7 @@ class ReportService {
     endDate: string
   ): Promise<{ success: boolean; data?: ReportData; error?: string }> {
     try {
-      const response = await apiClient.get(`/api/location/report/${imei}`, {
+      const response = await apiClient.get(`/api/device/location/${imei}/report`, {
         params: {
           startDate,
           endDate,

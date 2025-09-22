@@ -4,9 +4,42 @@ import { authService } from '../api/services/authService';
 import type { User } from '../types/auth';
 import { 
   hasRole, 
+  hasPermission,
+  hasAnyPermission,
+  hasAllPermissions,
   isSuperAdmin, 
   isDealer, 
-  isCustomer
+  isCustomer,
+  can,
+  canAny,
+  canAll,
+  canView,
+  canCreate,
+  canEdit,
+  canDelete,
+  canPerformAction,
+  canViewVehicles,
+  canCreateVehicles,
+  canEditVehicles,
+  canDeleteVehicles,
+  canViewDevices,
+  canCreateDevices,
+  canEditDevices,
+  canDeleteDevices,
+  canViewUsers,
+  canCreateUsers,
+  canEditUsers,
+  canDeleteUsers,
+  canViewRecharges,
+  canCreateRecharges,
+  canViewReports,
+  canGenerateReports,
+  canViewLiveTracking,
+  canControlRelay,
+  canViewGeofences,
+  canCreateGeofences,
+  canEditGeofences,
+  canDeleteGeofences
 } from '../utils/roleUtils';
 
 interface AuthContextType {
@@ -19,6 +52,42 @@ interface AuthContextType {
   isSuperAdmin: () => boolean;
   isDealer: () => boolean;
   isCustomer: () => boolean;
+  // Permission-based helper methods
+  hasPermission: (permission: string) => boolean;
+  hasAnyPermission: (permissions: string[]) => boolean;
+  hasAllPermissions: (permissions: string[]) => boolean;
+  // Dynamic permission methods
+  can: (permission: string) => boolean;
+  canAny: (permissions: string[]) => boolean;
+  canAll: (permissions: string[]) => boolean;
+  canView: (resource: string) => boolean;
+  canCreate: (resource: string) => boolean;
+  canEdit: (resource: string) => boolean;
+  canDelete: (resource: string) => boolean;
+  canPerformAction: (resource: string, action: string) => boolean;
+  // Convenience permission methods (backward compatibility)
+  canViewVehicles: () => boolean;
+  canCreateVehicles: () => boolean;
+  canEditVehicles: () => boolean;
+  canDeleteVehicles: () => boolean;
+  canViewDevices: () => boolean;
+  canCreateDevices: () => boolean;
+  canEditDevices: () => boolean;
+  canDeleteDevices: () => boolean;
+  canViewUsers: () => boolean;
+  canCreateUsers: () => boolean;
+  canEditUsers: () => boolean;
+  canDeleteUsers: () => boolean;
+  canViewRecharges: () => boolean;
+  canCreateRecharges: () => boolean;
+  canViewReports: () => boolean;
+  canGenerateReports: () => boolean;
+  canViewLiveTracking: () => boolean;
+  canControlRelay: () => boolean;
+  canViewGeofences: () => boolean;
+  canCreateGeofences: () => boolean;
+  canEditGeofences: () => boolean;
+  canDeleteGeofences: () => boolean;
 }
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
@@ -101,6 +170,42 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     isSuperAdmin: () => user ? isSuperAdmin(user) : false,
     isDealer: () => user ? isDealer(user) : false,
     isCustomer: () => user ? isCustomer(user) : false,
+    // Permission-based helper methods
+    hasPermission: (permission: string) => user ? hasPermission(user, permission) : false,
+    hasAnyPermission: (permissions: string[]) => user ? hasAnyPermission(user, permissions) : false,
+    hasAllPermissions: (permissions: string[]) => user ? hasAllPermissions(user, permissions) : false,
+    // Dynamic permission methods
+    can: (permission: string) => user ? can(user, permission) : false,
+    canAny: (permissions: string[]) => user ? canAny(user, permissions) : false,
+    canAll: (permissions: string[]) => user ? canAll(user, permissions) : false,
+    canView: (resource: string) => user ? canView(user, resource) : false,
+    canCreate: (resource: string) => user ? canCreate(user, resource) : false,
+    canEdit: (resource: string) => user ? canEdit(user, resource) : false,
+    canDelete: (resource: string) => user ? canDelete(user, resource) : false,
+    canPerformAction: (resource: string, action: string) => user ? canPerformAction(user, resource, action) : false,
+    // Convenience permission methods (backward compatibility)
+    canViewVehicles: () => user ? canViewVehicles(user) : false,
+    canCreateVehicles: () => user ? canCreateVehicles(user) : false,
+    canEditVehicles: () => user ? canEditVehicles(user) : false,
+    canDeleteVehicles: () => user ? canDeleteVehicles(user) : false,
+    canViewDevices: () => user ? canViewDevices(user) : false,
+    canCreateDevices: () => user ? canCreateDevices(user) : false,
+    canEditDevices: () => user ? canEditDevices(user) : false,
+    canDeleteDevices: () => user ? canDeleteDevices(user) : false,
+    canViewUsers: () => user ? canViewUsers(user) : false,
+    canCreateUsers: () => user ? canCreateUsers(user) : false,
+    canEditUsers: () => user ? canEditUsers(user) : false,
+    canDeleteUsers: () => user ? canDeleteUsers(user) : false,
+    canViewRecharges: () => user ? canViewRecharges(user) : false,
+    canCreateRecharges: () => user ? canCreateRecharges(user) : false,
+    canViewReports: () => user ? canViewReports(user) : false,
+    canGenerateReports: () => user ? canGenerateReports(user) : false,
+    canViewLiveTracking: () => user ? canViewLiveTracking(user) : false,
+    canControlRelay: () => user ? canControlRelay(user) : false,
+    canViewGeofences: () => user ? canViewGeofences(user) : false,
+    canCreateGeofences: () => user ? canCreateGeofences(user) : false,
+    canEditGeofences: () => user ? canEditGeofences(user) : false,
+    canDeleteGeofences: () => user ? canDeleteGeofences(user) : false,
   };
 
   return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;

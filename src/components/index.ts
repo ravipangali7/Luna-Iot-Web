@@ -39,3 +39,8 @@ export { default as Alert } from './ui/common/Alert.tsx';
 export { default as Modal } from './ui/common/Modal.tsx';
 export { default as Tooltip } from './ui/common/Tooltip.tsx';
 export { default as Spinner } from './ui/common/Spinner.tsx';
+
+// Role-based Components
+export { default as RoleBasedRoute } from './role-based/RoleBasedRoute.tsx';
+export { default as RoleBasedWidget } from './role-based/RoleBasedWidget.tsx';
+export { default as PermissionBasedWidget } from './role-based/PermissionBasedWidget.tsx';

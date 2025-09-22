@@ -1,23 +1,32 @@
 export interface Role {
-    id: number;
-    name: string;
-    description: string;
-    permissions?: Permission[];
-  }
+  id: number;
+  name: string;
+  permissions: string[]; // Array of permission names
+}
   
   export interface Permission {
     id: number;
     name: string;
-    description: string;
+    description?: string;
+    content_type?: {
+      app_label: string;
+      model: string;
+    };
   }
   
   export interface User {
     id: number;
     name: string;
     phone: string;
-    status: string;
-    role: Role | string;
+    status: string; // 'ACTIVE' or 'INACTIVE' (matches Django)
+    role: string; // Primary role name for backward compatibility
+    roles: Role[]; // All user groups (roles) with their permissions - matches Django groups
+    permissions: string[]; // All permissions (group + direct)
+    directPermissions: string[]; // Only direct user permissions
+    availablePermissions?: Permission[]; // All available permissions for UI
     token?: string;
+    fcmToken?: string; // camelCase to match Django
+    email?: string;
     createdAt: string;
     updatedAt: string;
   }

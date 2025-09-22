@@ -3,11 +3,11 @@ export interface User {
   name: string;
   phone: string;
   status: string;
-  role: {
+  roles: {
     id: number;
     name: string;
     description: string;
-  };
+  }[];
   createdAt: string;
   updatedAt: string;
 }

@@ -446,7 +446,7 @@ const VehicleAccessManagePage: React.FC = () => {
                           <span className="font-medium">Email:</span> {selectedUser.email || 'N/A'}
                         </div>
                         <div>
-                          <span className="font-medium">Role:</span> {selectedUser.role?.name || 'N/A'}
+                          <span className="font-medium">Role:</span> {selectedUser.role || 'N/A'}
                         </div>
                       </div>
                     ) : null;

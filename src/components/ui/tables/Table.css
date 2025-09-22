@@ -21,6 +21,11 @@
     background-color: var(--color-gray-50);
 }
 
+/* Override striped background when custom background is set */
+.table__row[style*="--row-bg-color"] {
+    background-color: var(--row-bg-color) !important;
+}
+
 .table--bordered .table__cell,
 .table--bordered .table__header {
     border: 1px solid var(--color-gray-200);

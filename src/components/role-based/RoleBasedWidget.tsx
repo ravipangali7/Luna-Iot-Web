@@ -1,16 +1,20 @@
 import React from 'react';
 import { useAuth } from '../../hooks/useAuth';
-import { hasRole } from '../../utils/roleUtils';
+import { hasRole, hasPermission, hasAnyPermission, hasAllPermissions } from '../../utils/roleUtils';
 
 interface RoleBasedWidgetProps {
   children: React.ReactNode;
-  allowedRoles: string[];
+  allowedRoles?: string[];
+  requiredPermissions?: string[];
+  requireAllPermissions?: boolean; // If true, user must have ALL permissions; if false, ANY permission
   fallback?: React.ReactNode;
 }
 
 const RoleBasedWidget: React.FC<RoleBasedWidgetProps> = ({
   children,
-  allowedRoles,
+  allowedRoles = [],
+  requiredPermissions = [],
+  requireAllPermissions = false,
   fallback = null
 }) => {
   const { user } = useAuth();
@@ -22,6 +26,17 @@ const RoleBasedWidget: React.FC<RoleBasedWidgetProps> = ({
   // Check role-based access
   if (allowedRoles.length > 0 && !hasRole(user, allowedRoles)) {
     return fallback;
+  }
+
+  // Check permission-based access
+  if (requiredPermissions.length > 0) {
+    const hasRequiredPermissions = requireAllPermissions 
+      ? hasAllPermissions(user, requiredPermissions)
+      : hasAnyPermission(user, requiredPermissions);
+    
+    if (!hasRequiredPermissions) {
+      return fallback;
+    }
   }
 
   return <>{children}</>;

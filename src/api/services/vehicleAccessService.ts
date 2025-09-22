@@ -6,7 +6,7 @@ class VehicleAccessService {
   // Get all vehicles with their access information (like Flutter)
   async getAllVehiclesWithAccess(): Promise<{ success: boolean; data?: Vehicle[]; error?: string }> {
     try {
-      const response = await apiClient.get('/api/vehicle/detailed', {
+      const response = await apiClient.get('/api/fleet/vehicle/detailed', {
         timeout: 120000 // 2 minutes for large responses
       });
       
@@ -24,7 +24,7 @@ class VehicleAccessService {
   // Get vehicle access assignments for a specific vehicle (like Flutter)
   async getVehicleAccessByVehicle(imei: string): Promise<{ success: boolean; data?: VehicleAccess[]; error?: string }> {
     try {
-      const response = await apiClient.get(`/api/vehicle/${imei}/access`, {
+      const response = await apiClient.get(`/api/fleet/vehicle/${imei}/access`, {
         timeout: 30000
       });
       
@@ -42,7 +42,7 @@ class VehicleAccessService {
   // Create vehicle access (assign user to vehicle) - like Flutter
   async createVehicleAccess(data: VehicleAccessFormData, userPhone?: string): Promise<{ success: boolean; data?: VehicleAccess; error?: string }> {
     try {
-      const response = await apiClient.post('/api/vehicle/access', {
+      const response = await apiClient.post('/api/fleet/vehicle/access', {
         imei: data.imei,
         userPhone: userPhone, // Send phone instead of userId
         permissions: data.permissions
@@ -64,7 +64,7 @@ class VehicleAccessService {
   // Update vehicle access permissions - like Flutter
   async updateVehicleAccess(imei: string, userPhone: string, permissions: Record<string, boolean>): Promise<{ success: boolean; data?: VehicleAccess; error?: string }> {
     try {
-      const response = await apiClient.put('/api/vehicle/access', {
+      const response = await apiClient.put('/api/fleet/vehicle/access', {
         imei,
         userPhone,
         permissions
@@ -86,7 +86,7 @@ class VehicleAccessService {
   // Remove vehicle access (unassign user from vehicle) - like Flutter
   async deleteVehicleAccess(imei: string, userPhone: string): Promise<{ success: boolean; error?: string }> {
     try {
-      const response = await apiClient.delete('/api/vehicle/access', {
+      const response = await apiClient.delete('/api/fleet/vehicle/access', {
         data: { imei, userPhone },
         timeout: 30000
       });
@@ -105,7 +105,7 @@ class VehicleAccessService {
   // Remove vehicle access by user ID - for backend compatibility
   async deleteVehicleAccessById(imei: string, userId: number): Promise<{ success: boolean; error?: string }> {
     try {
-      const response = await apiClient.delete('/api/vehicle/access', {
+      const response = await apiClient.delete('/api/fleet/vehicle/access', {
         data: { imei, userId },
         timeout: 30000
       });
@@ -124,7 +124,7 @@ class VehicleAccessService {
   // Get available users for vehicle access assignment
   async getAvailableUsers(): Promise<{ success: boolean; data?: any[]; error?: string }> {
     try {
-      const response = await apiClient.get('/api/users', {
+      const response = await apiClient.get('/api/core/user/users', {
         timeout: 30000
       });
       
@@ -142,7 +142,7 @@ class VehicleAccessService {
   // Get available vehicles for vehicle access assignment
   async getAvailableVehicles(): Promise<{ success: boolean; data?: any[]; error?: string }> {
     try {
-      const response = await apiClient.get('/api/vehicle', {
+      const response = await apiClient.get('/api/fleet/vehicle', {
         timeout: 30000
       });
       

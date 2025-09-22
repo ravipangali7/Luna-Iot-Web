@@ -4,7 +4,7 @@ import type { User } from '../../types/auth';
 class AuthService {
   async login(phone: string, password: string) {
     try {
-      const response = await apiClient.post('/api/auth/login', {
+      const response = await apiClient.post('/api/core/auth/login', {
         phone,
         password,
       });
@@ -12,7 +12,7 @@ class AuthService {
       
       // Check the actual API response success field
       if (response.data.success === true) {
-        const userData = response.data.message as User;
+        const userData = response.data.data as User;
         const token = userData.token || '';
         
         // Store both token and phone in localStorage
@@ -42,15 +42,15 @@ class AuthService {
 
   async getCurrentUser() {
     try {
-      const response = await apiClient.get('/api/auth/me');
+      const response = await apiClient.get('/api/core/auth/me');
       
       if (response.data.success === true) {
-        const userData = response.data.message || response.data.user || response.data.data;
+        const userData = response.data.data as User;
         
         if (userData) {
           return {
             success: true,
-            user: userData as User,
+            user: userData,
           };
         }
       }
@@ -70,7 +70,7 @@ class AuthService {
 
   async logout() {
     try {
-      await apiClient.post('/api/auth/logout');
+      await apiClient.post('/api/core/auth/logout');
       // Clear both token and phone on logout
       localStorage.removeItem('token');
       localStorage.removeItem('phone');

@@ -4,7 +4,7 @@ import type { Recharge, RechargeFormData, RechargeFilters, RechargeStats, Rechar
 class RechargeService {
   async getAllRecharges(): Promise<{ success: boolean; data?: Recharge[]; error?: string }> {
     try {
-      const response = await apiClient.get(`/api/recharge`, {
+      const response = await apiClient.get(`/api/shared/recharge`, {
         timeout: 120000 // 2 minutes for large responses
       });
       
@@ -35,7 +35,7 @@ class RechargeService {
         ...(filters?.dateTo && { dateTo: filters.dateTo }),
       });
 
-      const response = await apiClient.get(`/api/recharge/paginated?${params}`, {
+      const response = await apiClient.get(`/api/shared/recharge/paginated?${params}`, {
         timeout: 120000
       });
       
@@ -52,7 +52,7 @@ class RechargeService {
 
   async getRechargeById(id: number): Promise<{ success: boolean; data?: Recharge; error?: string }> {
     try {
-      const response = await apiClient.get(`/api/recharge/${id}`, {
+      const response = await apiClient.get(`/api/shared/recharge/${id}`, {
         timeout: 30000
       });
       
@@ -69,7 +69,7 @@ class RechargeService {
 
   async getRechargesByDeviceId(deviceId: number): Promise<{ success: boolean; data?: Recharge[]; error?: string }> {
     try {
-      const response = await apiClient.get(`/api/recharge/device/${deviceId}`, {
+      const response = await apiClient.get(`/api/shared/recharge/device/${deviceId}`, {
         timeout: 30000
       });
       
@@ -86,7 +86,7 @@ class RechargeService {
 
   async getRechargeStats(deviceId: number): Promise<{ success: boolean; data?: RechargeStats; error?: string }> {
     try {
-      const response = await apiClient.get(`/api/recharge/device/${deviceId}/stats`, {
+      const response = await apiClient.get(`/api/shared/recharge/stats/${deviceId}`, {
         timeout: 30000
       });
       
@@ -103,7 +103,7 @@ class RechargeService {
 
   async getTotalRecharge(deviceId: number): Promise<{ success: boolean; data?: { totalAmount: number }; error?: string }> {
     try {
-      const response = await apiClient.get(`/api/recharge/device/${deviceId}/total`, {
+      const response = await apiClient.get(`/api/shared/recharge/total/${deviceId}`, {
         timeout: 30000
       });
       
@@ -120,7 +120,7 @@ class RechargeService {
 
   async createRecharge(data: RechargeFormData): Promise<{ success: boolean; data?: Recharge; error?: string }> {
     try {
-      const response = await apiClient.post('/api/recharge', data, {
+      const response = await apiClient.post('/api/shared/recharge/create', data, {
         timeout: 30000
       });
       
@@ -129,20 +129,21 @@ class RechargeService {
       } else {
         return { success: false, error: response.data.message || 'Failed to create recharge' };
       }
-    } catch (error: any) {
+    } catch (error: unknown) {
       console.error('Create recharge error:', error);
       
       // Handle different types of errors
-      if (error.response) {
+      if (error && typeof error === 'object' && 'response' in error) {
         // Server responded with error status
-        const errorMessage = error.response.data?.message || error.response.data?.error || 'Server error';
-        const statusCode = error.response.status;
+        const axiosError = error as { response: { data?: { message?: string; error?: string }; status: number } };
+        const errorMessage = axiosError.response.data?.message || axiosError.response.data?.error || 'Server error';
+        const statusCode = axiosError.response.status;
         
         return { 
           success: false, 
           error: `Error ${statusCode}: ${errorMessage}` 
         };
-      } else if (error.request) {
+      } else if (error && typeof error === 'object' && 'request' in error) {
         // Network error - no response received
         return { 
           success: false, 
@@ -150,9 +151,10 @@ class RechargeService {
         };
       } else {
         // Other error
+        const errorMessage = error instanceof Error ? error.message : 'Unknown error';
         return { 
           success: false, 
-          error: `Error: ${error.message}` 
+          error: `Error: ${errorMessage}` 
         };
       }
     }
@@ -160,7 +162,7 @@ class RechargeService {
 
   async deleteRecharge(id: number): Promise<{ success: boolean; error?: string }> {
     try {
-      const response = await apiClient.delete(`/api/recharge/${id}`, {
+      const response = await apiClient.delete(`/api/shared/recharge/delete/${id}`, {
         timeout: 30000
       });
       

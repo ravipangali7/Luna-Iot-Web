@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
 import { vehicleService } from '../../api/services/vehicleService';
 import type { Vehicle, VehicleFormData } from '../../types/vehicle';
@@ -33,13 +33,7 @@ const VehicleEditPage: React.FC = () => {
   });
   const [errors, setErrors] = useState<Record<string, string>>({});
 
-  useEffect(() => {
-    if (imei) {
-      loadVehicle();
-    }
-  }, [imei]);
-
-  const loadVehicle = async () => {
+  const loadVehicle = useCallback(async () => {
     if (!imei) return;
 
     try {
@@ -54,21 +48,27 @@ const VehicleEditPage: React.FC = () => {
           name: result.data.name,
           vehicleNo: result.data.vehicleNo,
           vehicleType: result.data.vehicleType,
-          odometer: result.data.odometer,
-          mileage: result.data.mileage,
-          speedLimit: result.data.speedLimit,
-          minimumFuel: result.data.minimumFuel,
+          odometer: result.data.odometer || 0,
+          mileage: result.data.mileage || 0,
+          speedLimit: result.data.speedLimit || 60,
+          minimumFuel: result.data.minimumFuel || 0,
           expireDate: result.data.expireDate ? new Date(result.data.expireDate).toISOString().split('T')[0] : ''
         });
       } else {
         setError(result.error || 'Failed to load vehicle');
       }
-    } catch (err) {
+    } catch {
       setError('An unexpected error occurred');
     } finally {
       setLoading(false);
     }
-  };
+  }, [imei]);
+
+  useEffect(() => {
+    if (imei) {
+      loadVehicle();
+    }
+  }, [imei, loadVehicle]);
 
   const validateForm = (): boolean => {
     const newErrors: Record<string, string> = {};
@@ -95,7 +95,7 @@ const VehicleEditPage: React.FC = () => {
     }
 
     // Speed limit validation
-    if (!formData.speedLimit || formData.speedLimit < 1 || formData.speedLimit > 200) {
+    if (formData.speedLimit === undefined || formData.speedLimit === null || formData.speedLimit < 1 || formData.speedLimit > 200) {
       newErrors.speedLimit = 'Speed limit must be between 1 and 200 km/h';
     }
 
@@ -134,7 +134,7 @@ const VehicleEditPage: React.FC = () => {
       } else {
         setError(result.error || 'Failed to update vehicle');
       }
-    } catch (err) {
+    } catch {
       setError('An unexpected error occurred');
     } finally {
       setSaving(false);
@@ -261,9 +261,9 @@ const VehicleEditPage: React.FC = () => {
                   <Input
                     type="number"
                     placeholder="Enter current odometer reading"
-                    value={formData.odometer.toString()}
+                    value={formData.odometer?.toString() || '0'}
                     onChange={(value) => handleInputChange('odometer', parseFloat(value) || 0)}
-                    error={errors.odometer?.toString()}
+                    error={errors.odometer}
                   />
                   <p className="text-xs text-gray-500 mt-1">
                     Current odometer reading in kilometers.
@@ -277,9 +277,9 @@ const VehicleEditPage: React.FC = () => {
                   <Input
                     type="number"
                     placeholder="Enter vehicle mileage"
-                    value={formData.mileage.toString()}
+                    value={formData.mileage?.toString() || '0'}
                     onChange={(value) => handleInputChange('mileage', parseFloat(value) || 0)}
-                    error={errors.mileage?.toString()}
+                    error={errors.mileage}
                   />
                   <p className="text-xs text-gray-500 mt-1">
                     Vehicle mileage in kilometers per liter.
@@ -293,9 +293,9 @@ const VehicleEditPage: React.FC = () => {
                   <Input
                     type="number"
                     placeholder="Enter minimum fuel level"
-                    value={formData.minimumFuel.toString()}
+                    value={formData.minimumFuel?.toString() || '0'}
                     onChange={(value) => handleInputChange('minimumFuel', parseFloat(value) || 0)}
-                    error={errors.minimumFuel?.toString()}
+                    error={errors.minimumFuel}
                   />
                   <p className="text-xs text-gray-500 mt-1">
                     Minimum fuel level percentage for alerts.
@@ -309,9 +309,9 @@ const VehicleEditPage: React.FC = () => {
                   <Input
                     type="number"
                     placeholder="Enter speed limit"
-                    value={formData.speedLimit.toString()}
-                    onChange={(value) => handleInputChange('speedLimit', parseInt(value) || 0)}
-                    error={errors.speedLimit?.toString()}
+                    value={formData.speedLimit?.toString() || '60'}
+                    onChange={(value) => handleInputChange('speedLimit', value ? parseInt(value) : 60)}
+                    error={errors.speedLimit}
                     required
                   />
                   <p className="text-xs text-gray-500 mt-1">

@@ -4,7 +4,7 @@ import { useAuth } from '../../hooks/useAuth';
 import Button from '../ui/buttons/Button';
 import Badge from '../ui/common/Badge';
 import logo from '../../assets/logo.png';
-import { ROLES } from '../../utils/roleUtils';
+import { ROLES, PERMISSIONS } from '../../utils/roleUtils';
 
 interface SidebarProps {
   isOpen: boolean;
@@ -19,21 +19,23 @@ interface NavItem {
   badge?: string;
   children?: NavItem[];
   allowedRoles?: string[];
+  requiredPermissions?: string[];
+  requireAllPermissions?: boolean;
 }
 
 const Sidebar: React.FC<SidebarProps> = ({ isOpen, onToggle }) => {
   const navigate = useNavigate();
   const location = useLocation();
-  const { user, logout } = useAuth();
+  const { user, logout, can, canAny, canAll } = useAuth();
   const [expandedItems, setExpandedItems] = useState<Set<string>>(new Set());
 
-  // Navigation configuration
+  // Navigation configuration with dynamic permissions
   const navigationItems: NavItem[] = [
     {
       id: 'dashboard',
       label: 'Dashboard',
       path: '/dashboard',
-      allowedRoles: [ROLES.SUPER_ADMIN],
+      allowedRoles: ['Super Admin'],
       icon: (
         <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
           <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 7v10a2 2 0 002 2h14a2 2 0 002-2V9a2 2 0 00-2-2H5a2 2 0 00-2-2z" />
@@ -45,7 +47,7 @@ const Sidebar: React.FC<SidebarProps> = ({ isOpen, onToggle }) => {
       id: 'vehicles',
       label: 'Vehicles',
       path: '/Vehicles',
-      allowedRoles: [ROLES.SUPER_ADMIN, ROLES.DEALER, ROLES.CUSTOMER],
+      allowedRoles: ['Super Admin', 'Dealer', 'Customer'],
       icon: (
         <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
           <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 7v8a2 2 0 002 2h6M8 7V5a2 2 0 012-2h4.586a1 1 0 01.707.293l4.414 4.414a1 1 0 01.293.707V15a2 2 0 01-2 2h-2M8 7H6a2 2 0 00-2 2v10a2 2 0 002 2h8a2 2 0 002-2v-2" />
@@ -56,8 +58,8 @@ const Sidebar: React.FC<SidebarProps> = ({ isOpen, onToggle }) => {
           id: 'live-tracking',
           label: 'Live Tracking',
           path: '/live-tracking',
-          allowedRoles: [ROLES.SUPER_ADMIN, ROLES.DEALER, ROLES.CUSTOMER],
-          icon: (
+      allowedRoles: ['Super Admin', 'Dealer', 'Customer'],
+      icon: (
             <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 20l-5.447-2.724A2 2 0 013 15.382V6.618a2 2 0 011.553-1.894L9 2m0 18v-16m0 16l6-2.727m0 0V4m0 13.273L21 17.382A2 2 0 0021 15.382V6.618a2 2 0 00-1.553-1.894L15 4" />
             </svg>
@@ -67,8 +69,8 @@ const Sidebar: React.FC<SidebarProps> = ({ isOpen, onToggle }) => {
           id: 'reports',
           label: 'Reports',
           path: '/reports',
-          allowedRoles: [ROLES.SUPER_ADMIN, ROLES.DEALER, ROLES.CUSTOMER],
-          icon: (
+      allowedRoles: ['Super Admin', 'Dealer', 'Customer'],
+      icon: (
             <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 17v-2m3 2v-4m3 4v-6m2 10H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
             </svg>
@@ -78,8 +80,8 @@ const Sidebar: React.FC<SidebarProps> = ({ isOpen, onToggle }) => {
           id: 'playback',
           label: 'Playback',
           path: '/playback',
-          allowedRoles: [ROLES.SUPER_ADMIN, ROLES.DEALER, ROLES.CUSTOMER],
-          icon: (
+      allowedRoles: ['Super Admin', 'Dealer', 'Customer'],
+      icon: (
             <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M14.828 14.828a4 4 0 01-5.656 0M9 10h1m4 0h1m-6 4h1m4 0h1m6-6V6a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2h12a2 2 0 002-2v-2M7 7h10M7 11h4m6 0h2M7 15h4m6 0h2" />
             </svg>
@@ -91,7 +93,7 @@ const Sidebar: React.FC<SidebarProps> = ({ isOpen, onToggle }) => {
       id: 'devices',
       label: 'Devices',
       path: '/devices',
-      allowedRoles: [ROLES.SUPER_ADMIN, ROLES.DEALER],
+      allowedRoles: ['Super Admin', 'Dealer'],
       icon: (
         <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
           <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 3v2m6-2v2M9 19v2m6-2v2M5 9H3m2 6H3m18-6h-2m2 6h-2M7 19h10a2 2 0 002-2V7a2 2 0 00-2-2H7a2 2 0 00-2 2v10a2 2 0 002 2zM9 9h6v6H9V9z" />
@@ -102,7 +104,7 @@ const Sidebar: React.FC<SidebarProps> = ({ isOpen, onToggle }) => {
       id: 'recharges',
       label: 'Recharges',
       path: '/recharges',
-      allowedRoles: [ROLES.SUPER_ADMIN],
+      allowedRoles: ['Super Admin'],
       icon: (
         <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
           <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8c1.11 0 2.08.402 2.599 1M12 8V7m0 1v8m0 0v1m0-1c-1.11 0-2.08-.402-2.599-1M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
@@ -113,7 +115,7 @@ const Sidebar: React.FC<SidebarProps> = ({ isOpen, onToggle }) => {
       id: 'all-vehicles',
       label: 'All Vehicles',
       path: '/vehicles',
-      allowedRoles: [ROLES.SUPER_ADMIN, ROLES.DEALER],
+      allowedRoles: ['Super Admin'],
       icon: (
         <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
           <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 7v8a2 2 0 002 2h6M8 7V5a2 2 0 012-2h4.586a1 1 0 01.707.293l4.414 4.414a1 1 0 01.293.707V15a2 2 0 01-2 2h-2M8 7H6a2 2 0 00-2 2v10a2 2 0 002 2h8a2 2 0 002-2v-2" />
@@ -124,19 +126,18 @@ const Sidebar: React.FC<SidebarProps> = ({ isOpen, onToggle }) => {
       id: 'vehicle-access',
       label: 'Vehicle Access',
       path: '/vehicle-access',
-      allowedRoles: [ROLES.SUPER_ADMIN, ROLES.DEALER],
+      allowedRoles: ['Super Admin'],
       icon: (
         <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
           <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12l2 2 4-4m5.618-4.016A11.955 11.955 0 0112 2.944a11.955 11.955 0 01-8.618 3.04A12.02 12.02 0 003 9c0 5.591 3.824 10.29 9 11.622 5.176-1.332 9-6.03 9-11.622 0-1.042-.133-2.052-.382-3.016z" />
         </svg>
       )
     },
-
     {
       id: 'geofences',
       label: 'Geofences',
       path: '/geofences',
-      allowedRoles: [ROLES.SUPER_ADMIN, ROLES.DEALER],
+      allowedRoles: ['Super Admin'],
       icon: (
         <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
           <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z" />
@@ -148,7 +149,7 @@ const Sidebar: React.FC<SidebarProps> = ({ isOpen, onToggle }) => {
       id: 'users',
       label: 'Users',
       path: '/users',
-      allowedRoles: [ROLES.SUPER_ADMIN],
+      allowedRoles: ['Super Admin'],
       icon: (
         <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
           <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4.354a4 4 0 110 5.292M15 21H3v-1a6 6 0 0112 0v1zm0 0h6v-1a6 6 0 00-9-5.197m13.5-9a2.5 2.5 0 11-5 0 2.5 2.5 0 015 0z" />
@@ -159,7 +160,6 @@ const Sidebar: React.FC<SidebarProps> = ({ isOpen, onToggle }) => {
           id: 'user-management',
           label: 'User Management',
           path: '/users/management',
-          allowedRoles: [ROLES.SUPER_ADMIN],
           icon: (
             <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z" />
@@ -171,7 +171,6 @@ const Sidebar: React.FC<SidebarProps> = ({ isOpen, onToggle }) => {
           id: 'roles',
           label: 'Roles & Permissions',
           path: '/users/roles',
-          allowedRoles: [ROLES.SUPER_ADMIN],
           icon: (
             <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12l2 2 4-4m5.618-4.016A11.955 11.955 0 0112 2.944a11.955 11.955 0 01-8.618 3.04A12.02 12.02 0 003 9c0 5.591 3.824 10.29 9 11.622 5.176-1.332 9-6.03 9-11.622 0-1.042-.133-2.052-.382-3.016z" />
@@ -184,7 +183,7 @@ const Sidebar: React.FC<SidebarProps> = ({ isOpen, onToggle }) => {
       id: 'settings',
       label: 'Settings',
       path: '/settings',
-      allowedRoles: [ROLES.SUPER_ADMIN],
+      allowedRoles: ['Super Admin'],
       icon: (
         <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
           <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z" />
@@ -194,35 +193,46 @@ const Sidebar: React.FC<SidebarProps> = ({ isOpen, onToggle }) => {
     }
   ];
 
-  // Filter navigation items based on user role
+  // Filter navigation items based on user permissions
   const filteredNavigationItems = useMemo(() => {
     if (!user) return [];
     
     const filterItems = (items: NavItem[]): NavItem[] => {
       return items.filter(item => {
-        // If no allowedRoles specified, show to all users
-        if (!item.allowedRoles || item.allowedRoles.length === 0) {
-          return true;
+        // Check role-based access (backward compatibility)
+        if (item.allowedRoles && item.allowedRoles.length > 0) {
+          if (!user.roles || user.roles.length === 0) return false;
+          
+          const userRoleNames = user.roles.map(role => role.name);
+          const hasRoleAccess = item.allowedRoles.some(role => {
+            switch (role.toLowerCase()) {
+              case 'super admin':
+                return userRoleNames.includes(ROLES.SUPER_ADMIN);
+              case 'dealer':
+                return userRoleNames.includes(ROLES.DEALER);
+              case 'customer':
+                return userRoleNames.includes(ROLES.CUSTOMER);
+              default:
+                return userRoleNames.includes(role);
+            }
+          });
+          
+          if (!hasRoleAccess) return false;
         }
         
-        // Check if user has any of the allowed roles
-        const userRole = typeof user.role === 'string' ? user.role : user.role.name;
-        if (!userRole) return false;
+        // Check permission-based access
+        if (item.requiredPermissions && item.requiredPermissions.length > 0) {
+          const hasPermissionAccess = item.requireAllPermissions 
+            ? canAll(item.requiredPermissions)
+            : canAny(item.requiredPermissions);
+          
+          if (!hasPermissionAccess) return false;
+        }
         
-        const hasAccess = item.allowedRoles.some(role => {
-          switch (role.toLowerCase()) {
-            case 'super admin':
-              return userRole === ROLES.SUPER_ADMIN;
-            case 'dealer':
-              return userRole === ROLES.DEALER;
-            case 'customer':
-              return userRole === ROLES.CUSTOMER;
-            default:
-              return userRole === role;
-          }
-        });
-        
-        if (!hasAccess) return false;
+        // If no specific requirements, show the item
+        if (!item.allowedRoles && !item.requiredPermissions) {
+          return true;
+        }
         
         // If item has children, filter them too
         if (item.children) {
@@ -238,7 +248,7 @@ const Sidebar: React.FC<SidebarProps> = ({ isOpen, onToggle }) => {
     };
     
     return filterItems(navigationItems);
-  }, [user, navigationItems]);
+  }, [user, canAny, canAll]);
 
   const handleLogout = async () => {
     logout();
@@ -380,7 +390,7 @@ const Sidebar: React.FC<SidebarProps> = ({ isOpen, onToggle }) => {
             <div className="flex-1 min-w-0">
               <p className="text-sm font-medium text-gray-900 truncate">{user?.name}</p>
               <p className="text-xs text-gray-500 truncate">
-                {typeof user?.role === 'string' ? user.role : user?.role?.name}
+                {user?.roles && user.roles.length > 0 ? user.roles[0].name : 'No Role'}
               </p>
             </div>
           </div>

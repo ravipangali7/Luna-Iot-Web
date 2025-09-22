@@ -5,7 +5,7 @@ class VehicleService {
   async getAllVehicles(): Promise<{ success: boolean; data?: Vehicle[]; error?: string }> {
     try {
 
-      const response = await apiClient.get(`/api/vehicle`, {
+      const response = await apiClient.get(`/api/fleet/vehicle`, {
         timeout: 120000 // 2 minutes for large responses
       });
       
@@ -22,7 +22,7 @@ class VehicleService {
 
   async getAllVehiclesDetailed(): Promise<{ success: boolean; data?: Vehicle[]; error?: string }> {
     try {
-      const response = await apiClient.get(`/api/vehicle/detailed`, {
+      const response = await apiClient.get(`/api/fleet/vehicle/detailed`, {
         timeout: 120000 // 2 minutes for large responses
       });
       
@@ -37,9 +37,51 @@ class VehicleService {
     }
   }
 
+  async getVehiclesPaginated(page: number = 1): Promise<{ 
+    success: boolean; 
+    data?: { vehicles: Vehicle[]; pagination: any }; 
+    error?: string 
+  }> {
+    try {
+      const response = await apiClient.get(`/api/fleet/vehicle/paginated?page=${page}`, {
+        timeout: 120000 // 2 minutes for large responses
+      });
+      
+      if (response.data.success) {
+        return { success: true, data: response.data.data };
+      } else {
+        return { success: false, error: response.data.message || 'Failed to fetch paginated vehicles' };
+      }
+    } catch (error) {
+      console.error('Get paginated vehicles error:', error);
+      return { success: false, error: 'Network error: ' + (error as Error).message };
+    }
+  }
+
+  async searchVehicles(query: string, page: number = 1): Promise<{ 
+    success: boolean; 
+    data?: { vehicles: Vehicle[]; pagination: any }; 
+    error?: string 
+  }> {
+    try {
+      const response = await apiClient.get(`/api/fleet/vehicle/search?q=${encodeURIComponent(query)}&page=${page}`, {
+        timeout: 120000 // 2 minutes for large responses
+      });
+      
+      if (response.data.success) {
+        return { success: true, data: response.data.data };
+      } else {
+        return { success: false, error: response.data.message || 'Failed to search vehicles' };
+      }
+    } catch (error) {
+      console.error('Search vehicles error:', error);
+      return { success: false, error: 'Network error: ' + (error as Error).message };
+    }
+  }
+
   async getVehicleByImei(imei: string): Promise<{ success: boolean; data?: Vehicle; error?: string }> {
     try {
-      const response = await apiClient.get(`/api/vehicle/${imei}`, {
+      const response = await apiClient.get(`/api/fleet/vehicle/${imei}`, {
         timeout: 30000
       });
       
@@ -56,7 +98,7 @@ class VehicleService {
 
   async createVehicle(data: VehicleFormData): Promise<{ success: boolean; data?: Vehicle; error?: string }> {
     try {
-      const response = await apiClient.post('/api/vehicle/create', data, {
+      const response = await apiClient.post('/api/fleet/vehicle/create', data, {
         timeout: 30000
       });
       
@@ -73,7 +115,7 @@ class VehicleService {
 
   async updateVehicle(imei: string, data: VehicleFormData): Promise<{ success: boolean; data?: Vehicle; error?: string }> {
     try {
-      const response = await apiClient.put(`/api/vehicle/update/${imei}`, data, {
+      const response = await apiClient.put(`/api/fleet/vehicle/update/${imei}`, data, {
         timeout: 30000
       });
       
@@ -90,7 +132,7 @@ class VehicleService {
 
   async deleteVehicle(imei: string): Promise<{ success: boolean; error?: string }> {
     try {
-      const response = await apiClient.delete(`/api/vehicle/delete/${imei}`, {
+      const response = await apiClient.delete(`/api/fleet/vehicle/delete/${imei}`, {
         timeout: 30000
       });
       
@@ -111,7 +153,7 @@ class VehicleService {
     permissions: Record<string, boolean>
   ): Promise<{ success: boolean; data?: unknown; error?: string }> {
     try {
-      const response = await apiClient.post('/api/vehicle/access', {
+      const response = await apiClient.post('/api/fleet/vehicle/access', {
         imei,
         userPhone,
         permissions
@@ -132,7 +174,7 @@ class VehicleService {
 
   async getVehiclesForAccessAssignment(): Promise<{ success: boolean; data?: Vehicle[]; error?: string }> {
     try {
-      const response = await apiClient.get('/api/vehicle/access/available', {
+      const response = await apiClient.get('/api/fleet/vehicle/access/available', {
         timeout: 30000
       });
       
@@ -149,7 +191,7 @@ class VehicleService {
 
   async getVehicleAccessAssignments(imei: string): Promise<{ success: boolean; data?: unknown[]; error?: string }> {
     try {
-      const response = await apiClient.get(`/api/vehicle/${imei}/access`, {
+      const response = await apiClient.get(`/api/fleet/vehicle/${imei}/access`, {
         timeout: 30000
       });
       
@@ -170,7 +212,7 @@ class VehicleService {
     permissions: Record<string, boolean>
   ): Promise<{ success: boolean; data?: unknown; error?: string }> {
     try {
-      const response = await apiClient.put('/api/vehicle/access', {
+      const response = await apiClient.put('/api/fleet/vehicle/access', {
         imei,
         userId,
         permissions
@@ -191,7 +233,7 @@ class VehicleService {
 
   async removeVehicleAccess(imei: string, userId: number): Promise<{ success: boolean; error?: string }> {
     try {
-      const response = await apiClient.delete('/api/vehicle/access', {
+      const response = await apiClient.delete('/api/fleet/vehicle/access', {
         data: { imei, userId },
         timeout: 30000
       });

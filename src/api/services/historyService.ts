@@ -14,7 +14,7 @@ class HistoryService {
 
       console.log('Fetching history data:', { imei, startDateStr, endDateStr });
 
-      const response = await apiClient.get(`/api/location/combined/${imei}`, {
+      const response = await apiClient.get(`/api/device/location/${imei}/combined-history`, {
         params: { startDate: startDateStr, endDate: endDateStr },
         timeout: 120000 // 2 minutes for potentially large history data
       });
