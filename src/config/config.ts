@@ -7,7 +7,7 @@ export const API_CONFIG = {
     // Python backend (new function-based APIs)
     BASE_URL: 'https://py.mylunago.com',  // Local Python Django backend
     // BASE_URL: 'http://38.54.71.218:7171/',  // Local Python Django backend
-    SOCKET_URL: 'http://system.mylunago.com',
+    SOCKET_URL: 'https://www.system.mylunago.com',
     
   } as const;
   
