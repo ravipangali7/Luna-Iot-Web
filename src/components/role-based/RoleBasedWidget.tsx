@@ -1,6 +1,6 @@
 import React from 'react';
 import { useAuth } from '../../hooks/useAuth';
-import { hasRole, hasPermission, hasAnyPermission, hasAllPermissions } from '../../utils/roleUtils';
+import { hasRole, hasAnyPermission, hasAllPermissions } from '../../utils/roleUtils';
 
 interface RoleBasedWidgetProps {
   children: React.ReactNode;

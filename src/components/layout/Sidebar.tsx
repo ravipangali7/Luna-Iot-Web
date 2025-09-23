@@ -4,7 +4,7 @@ import { useAuth } from '../../hooks/useAuth';
 import Button from '../ui/buttons/Button';
 import Badge from '../ui/common/Badge';
 import logo from '../../assets/logo.png';
-import { ROLES, PERMISSIONS } from '../../utils/roleUtils';
+import { ROLES } from '../../utils/roleUtils';
 
 interface SidebarProps {
   isOpen: boolean;
@@ -26,7 +26,7 @@ interface NavItem {
 const Sidebar: React.FC<SidebarProps> = ({ isOpen, onToggle }) => {
   const navigate = useNavigate();
   const location = useLocation();
-  const { user, logout, can, canAny, canAll } = useAuth();
+  const { user, logout, canAny, canAll } = useAuth();
   const [expandedItems, setExpandedItems] = useState<Set<string>>(new Set());
 
   // Navigation configuration with dynamic permissions

@@ -1,7 +1,7 @@
 import React from 'react';
 import { Navigate } from 'react-router-dom';
 import { useAuth } from '../../hooks/useAuth';
-import { hasRole, hasPermission, hasAnyPermission, hasAllPermissions } from '../../utils/roleUtils';
+import { hasRole, hasAnyPermission, hasAllPermissions } from '../../utils/roleUtils';
 
 interface RoleBasedRouteProps {
   children: React.ReactNode;
