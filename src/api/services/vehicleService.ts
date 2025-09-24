@@ -48,6 +48,7 @@ class VehicleService {
       });
       
       if (response.data.success) {
+        console.log(response.data.data)
         return { success: true, data: response.data.data };
       } else {
         return { success: false, error: response.data.message || 'Failed to fetch paginated vehicles' };

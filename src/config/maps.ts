@@ -3,8 +3,8 @@ export const GOOGLE_MAPS_CONFIG = {
   apiKey: 'AIzaSyDakyL49GU8gPjnK0jihVQuRDxh6lTx-O8',
   libraries: ['geometry'] as const,
   defaultCenter: {
-    lat: 27.7172, // Kathmandu, Nepal
-    lng: 85.3240
+    lat: 28.3949, // Kathmandu, Nepal
+    lng: 84.1240
   },
   defaultZoom: 15,
   mapTypes: {

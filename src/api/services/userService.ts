@@ -105,6 +105,23 @@ class UserService {
       return { success: false, error: 'Network error: ' + (error as Error).message };
     }
   }
+
+  async getAllRoles(): Promise<{ success: boolean; data?: Array<{ id: number; name: string }>; error?: string }> {
+    try {
+      const response = await apiClient.get('/api/core/roles', {
+        timeout: 30000
+      });
+      
+      if (response.data.success) {
+        return { success: true, data: response.data.data };
+      } else {
+        return { success: false, error: response.data.message || 'Failed to fetch roles' };
+      }
+    } catch (error) {
+      console.error('Get roles error:', error);
+      return { success: false, error: 'Network error: ' + (error as Error).message };
+    }
+  }
 }
 
 export const userService = new UserService();

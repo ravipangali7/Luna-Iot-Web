@@ -11,6 +11,9 @@ import { VehicleAccessIndexPage, VehicleAccessCreatePage, VehicleAccessEditPage,
 import { RechargeIndexPage, RechargeCreatePage } from './views/recharges';
 import { ReportIndexPage } from './views/reports';
 import { PlaybackIndexPage } from './views/playback';
+import { InstituteIndexPage, InstituteCreatePage, InstituteEditPage, InstituteShowPage } from './views/institute';
+import { InstituteServiceIndexPage, InstituteServiceCreatePage, InstituteServiceEditPage } from './views/institute/services';
+import { InstituteModuleCreatePage, InstituteModuleEditPage } from './views/institute/modules';
 import RoleBasedRoute from './components/role-based/RoleBasedRoute';
 import { ROLES } from './utils/roleUtils';
 
@@ -181,6 +184,57 @@ const AppRoutes: React.FC = () => {
         <Route path="playback" element={
           <RoleBasedRoute allowedRoles={[ROLES.SUPER_ADMIN, ROLES.DEALER, ROLES.CUSTOMER]}>
             <PlaybackIndexPage />
+          </RoleBasedRoute>
+        } />
+
+        {/* Institute Routes - Super Admin only */}
+        <Route path="institute" element={
+          <RoleBasedRoute allowedRoles={[ROLES.SUPER_ADMIN]}>
+            <InstituteIndexPage />
+          </RoleBasedRoute>
+        } />
+        <Route path="institute/create" element={
+          <RoleBasedRoute allowedRoles={[ROLES.SUPER_ADMIN]}>
+            <InstituteCreatePage />
+          </RoleBasedRoute>
+        } />
+        <Route path="institute/:id" element={
+          <RoleBasedRoute allowedRoles={[ROLES.SUPER_ADMIN]}>
+            <InstituteShowPage />
+          </RoleBasedRoute>
+        } />
+        <Route path="institute/:id/edit" element={
+          <RoleBasedRoute allowedRoles={[ROLES.SUPER_ADMIN]}>
+            <InstituteEditPage />
+          </RoleBasedRoute>
+        } />
+
+        {/* Institute Service Routes - Super Admin only */}
+        <Route path="institute/services" element={
+          <RoleBasedRoute allowedRoles={[ROLES.SUPER_ADMIN]}>
+            <InstituteServiceIndexPage />
+          </RoleBasedRoute>
+        } />
+        <Route path="institute/services/create" element={
+          <RoleBasedRoute allowedRoles={[ROLES.SUPER_ADMIN]}>
+            <InstituteServiceCreatePage />
+          </RoleBasedRoute>
+        } />
+        <Route path="institute/services/:id/edit" element={
+          <RoleBasedRoute allowedRoles={[ROLES.SUPER_ADMIN]}>
+            <InstituteServiceEditPage />
+          </RoleBasedRoute>
+        } />
+
+        {/* Institute Module Routes - Super Admin only */}
+        <Route path="institute/modules/create" element={
+          <RoleBasedRoute allowedRoles={[ROLES.SUPER_ADMIN]}>
+            <InstituteModuleCreatePage />
+          </RoleBasedRoute>
+        } />
+        <Route path="institute/modules/:id/edit" element={
+          <RoleBasedRoute allowedRoles={[ROLES.SUPER_ADMIN]}>
+            <InstituteModuleEditPage />
           </RoleBasedRoute>
         } />
       </Route>
