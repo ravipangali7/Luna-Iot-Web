@@ -186,6 +186,23 @@ class DeviceService {
       return { success: false, error: 'Network error: ' + (error as Error).message };
     }
   }
+
+  async getLightDevices(): Promise<{ success: boolean; data?: Device[]; error?: string }> {
+    try {
+      const response = await apiClient.get(`/api/device/device/light`, {
+        timeout: 30000
+      });
+      
+      if (response.data.success) {
+        return { success: true, data: response.data.data };
+      } else {
+        return { success: false, error: response.data.message || 'Failed to fetch light devices' };
+      }
+    } catch (error) {
+      console.error('Get light devices error:', error);
+      return { success: false, error: 'Network error: ' + (error as Error).message };
+    }
+  }
 }
 
 export const deviceService = new DeviceService();

@@ -10,6 +10,7 @@ import Select from '../../components/ui/forms/Select';
 import Button from '../../components/ui/buttons/Button';
 import Spinner from '../../components/ui/common/Spinner';
 import GoogleMapContainer from '../../components/maps/GoogleMapContainer';
+import { handleVehicleAction, VEHICLE_ACTIONS } from '../../utils/vehicleActionUtils';
 import type { Vehicle } from '../../types/vehicle';
 import type { History, Trip, PlaybackState } from '../../types/history';
 
@@ -72,7 +73,7 @@ const PlaybackIndexPage: React.FC = () => {
   const loadVehicles = async () => {
     try {
       setLoading(true);
-      const response = await vehicleService.getAllVehicles();
+      const response = await vehicleService.getLightVehicles();
       
       if (response.success && response.data) {
         setVehicles(response.data);
@@ -115,10 +116,137 @@ const PlaybackIndexPage: React.FC = () => {
     setEndDate(date);
   };
 
+  // Handle vehicle selection with inactive check
+  const handleVehicleChange = (vehicleImei: string) => {
+    const vehicle = vehicles.find(v => v.imei === vehicleImei);
+    if (vehicle) {
+      handleVehicleAction(
+        vehicle,
+        VEHICLE_ACTIONS.HISTORY,
+        () => {
+          setSelectedVehicle(vehicleImei);
+          setSelectedVehicleData(vehicle);
+        }
+      );
+    }
+  };
+
   const fetchHistoryData = useCallback(async () => {
     if (!selectedVehicle || !startDate || !endDate) {
       return;
     }
+
+    const calculateTrips = async (history: History[]) => {
+      // Simple trip calculation based on ignition status
+      const locationData = history.filter(h => h.type === 'location' && h.latitude && h.longitude);
+
+      const trips: Trip[] = [];
+      const segments: Array<{
+        startTime: string;
+        endTime: string;
+        startLocation: string;
+        endLocation: string;
+        distance: number;
+        duration: number;
+        avgSpeed: number;
+        maxSpeed: number;
+        startLat: number;
+        startLng: number;
+        endLat: number;
+        endLng: number;
+      }> = [];
+
+      let currentTrip: History[] = [];
+      let tripNumber = 1;
+
+      for (let i = 0; i < locationData.length; i++) {
+        const currentPoint = locationData[i];
+        currentTrip.push(currentPoint);
+
+        // Check if this is the end of a trip (next point is far away or ignition off)
+        const nextPoint = locationData[i + 1];
+        if (!nextPoint ||
+          (nextPoint.createdAt && currentPoint.createdAt &&
+            new Date(nextPoint.createdAt).getTime() - new Date(currentPoint.createdAt).getTime() > 5 * 60 * 1000)) {
+
+          if (currentTrip.length > 1) {
+            const startPoint = currentTrip[0];
+            const endPoint = currentTrip[currentTrip.length - 1];
+
+            // Calculate distance (simplified)
+            const distance = calculateDistance(
+              startPoint.latitude!, startPoint.longitude!,
+              endPoint.latitude!, endPoint.longitude!
+            );
+
+            // Calculate duration
+            const duration = startPoint.createdAt && endPoint.createdAt ?
+              (new Date(endPoint.createdAt).getTime() - new Date(startPoint.createdAt).getTime()) / (1000 * 60) : 0;
+
+            // Calculate average and max speed
+            const speeds = currentTrip.map(point => point.speed || 0).filter(speed => speed > 0);
+            const avgSpeed = speeds.length > 0 ? speeds.reduce((sum, speed) => sum + speed, 0) / speeds.length : 0;
+            const maxSpeed = speeds.length > 0 ? Math.max(...speeds) : 0;
+
+            trips.push({
+              tripNumber,
+              startTime: startPoint.createdAt || '',
+              endTime: endPoint.createdAt || '',
+              startLatitude: startPoint.latitude!,
+              startLongitude: startPoint.longitude!,
+              endLatitude: endPoint.latitude!,
+              endLongitude: endPoint.longitude!,
+              distance,
+              duration,
+              avgSpeed,
+              maxSpeed,
+              tripPoints: currentTrip
+            });
+
+            // Create segment for detailed view
+            segments.push({
+              startTime: startPoint.createdAt || '',
+              endTime: endPoint.createdAt || '',
+              startLocation: 'Loading...',
+              endLocation: 'Loading...',
+              distance,
+              duration,
+              avgSpeed,
+              maxSpeed,
+              startLat: startPoint.latitude!,
+              startLng: startPoint.longitude!,
+              endLat: endPoint.latitude!,
+              endLng: endPoint.longitude!
+            });
+
+            tripNumber++;
+          }
+          currentTrip = [];
+        }
+      }
+
+      setTrips(trips);
+      setTripSegments(segments);
+
+      // Load addresses for segments
+      setLoadingAddresses(true);
+      for (let i = 0; i < segments.length; i++) {
+        const segment = segments[i];
+        try {
+          const startAddress = await GeoUtils.getReverseGeoCode(segment.startLat, segment.startLng);
+          const endAddress = await GeoUtils.getReverseGeoCode(segment.endLat, segment.endLng);
+          
+          setTripSegments(prev => prev.map((s, index) => 
+            index === i 
+              ? { ...s, startLocation: startAddress, endLocation: endAddress }
+              : s
+          ));
+        } catch (error) {
+          console.error('Error loading address for segment:', error);
+        }
+      }
+      setLoadingAddresses(false);
+    };
 
     try {
       setLoadingHistory(true);
@@ -154,6 +282,18 @@ const PlaybackIndexPage: React.FC = () => {
     if (vehicleImei && vehicles.length > 0) {
       const vehicle = vehicles.find(v => v.imei === vehicleImei);
       if (vehicle) {
+        // Check if vehicle is inactive
+        if (!vehicle.is_active) {
+          handleVehicleAction(
+            vehicle,
+            VEHICLE_ACTIONS.HISTORY,
+            () => {
+              // This won't be called since the vehicle is inactive
+            }
+          );
+          return;
+        }
+        
         setSelectedVehicle(vehicleImei);
         setSelectedVehicleData(vehicle);
         
@@ -168,128 +308,6 @@ const PlaybackIndexPage: React.FC = () => {
     }
   }, [searchParams, vehicles, startDate, endDate, fetchHistoryData]);
 
-  const calculateTrips = async (history: History[]) => {
-    // Simple trip calculation based on ignition status
-    const locationData = history.filter(h => h.type === 'location' && h.latitude && h.longitude);
-
-    const trips: Trip[] = [];
-    const segments: Array<{
-      startTime: string;
-      endTime: string;
-      startLocation: string;
-      endLocation: string;
-      distance: number;
-      duration: number;
-      avgSpeed: number;
-      maxSpeed: number;
-      startLat: number;
-      startLng: number;
-      endLat: number;
-      endLng: number;
-    }> = [];
-
-    let currentTrip: History[] = [];
-    let tripNumber = 1;
-
-    for (let i = 0; i < locationData.length; i++) {
-      const currentPoint = locationData[i];
-      currentTrip.push(currentPoint);
-
-      // Check if this is the end of a trip (next point is far away or ignition off)
-      const nextPoint = locationData[i + 1];
-      if (!nextPoint ||
-        (nextPoint.createdAt && currentPoint.createdAt &&
-          new Date(nextPoint.createdAt).getTime() - new Date(currentPoint.createdAt).getTime() > 5 * 60 * 1000)) {
-
-        if (currentTrip.length > 1) {
-          const startPoint = currentTrip[0];
-          const endPoint = currentTrip[currentTrip.length - 1];
-
-          // Calculate distance (simplified)
-          const distance = calculateDistance(
-            startPoint.latitude!, startPoint.longitude!,
-            endPoint.latitude!, endPoint.longitude!
-          );
-
-          // Calculate duration
-          const duration = startPoint.createdAt && endPoint.createdAt ?
-            (new Date(endPoint.createdAt).getTime() - new Date(startPoint.createdAt).getTime()) / (1000 * 60) : 0;
-
-          // Calculate average and max speed
-          const speeds = currentTrip.map(point => point.speed || 0).filter(speed => speed > 0);
-          const avgSpeed = speeds.length > 0 ? speeds.reduce((sum, speed) => sum + speed, 0) / speeds.length : 0;
-          const maxSpeed = speeds.length > 0 ? Math.max(...speeds) : 0;
-
-          trips.push({
-            tripNumber,
-            startTime: startPoint.createdAt || '',
-            endTime: endPoint.createdAt || '',
-            startLatitude: startPoint.latitude!,
-            startLongitude: startPoint.longitude!,
-            endLatitude: endPoint.latitude!,
-            endLongitude: endPoint.longitude!,
-            distance,
-            duration,
-            avgSpeed,
-            maxSpeed,
-            tripPoints: currentTrip
-          });
-
-          // Create segment for detailed view
-          segments.push({
-            startTime: startPoint.createdAt || '',
-            endTime: endPoint.createdAt || '',
-            startLocation: 'Loading...',
-            endLocation: 'Loading...',
-            distance,
-            duration,
-            avgSpeed,
-            maxSpeed,
-            startLat: startPoint.latitude!,
-            startLng: startPoint.longitude!,
-            endLat: endPoint.latitude!,
-            endLng: endPoint.longitude!
-          });
-
-          tripNumber++;
-        }
-        currentTrip = [];
-      }
-    }
-
-    setTrips(trips);
-    setTripSegments(segments);
-
-    // Load addresses for all segments
-    await loadAddressesForSegments(segments);
-  };
-
-  const loadAddressesForSegments = async (segments: typeof tripSegments) => {
-    setLoadingAddresses(true);
-
-    try {
-      const updatedSegments = await Promise.all(
-        segments.map(async (segment) => {
-          const [startLocation, endLocation] = await Promise.all([
-            GeoUtils.getReverseGeoCode(segment.startLat, segment.startLng),
-            GeoUtils.getReverseGeoCode(segment.endLat, segment.endLng)
-          ]);
-
-          return {
-            ...segment,
-            startLocation,
-            endLocation
-          };
-        })
-      );
-
-      setTripSegments(updatedSegments);
-    } catch (error) {
-      console.error('Error loading addresses:', error);
-    } finally {
-      setLoadingAddresses(false);
-    }
-  };
 
   const calculateDistance = (lat1: number, lon1: number, lat2: number, lon2: number): number => {
     const R = 6371; // Earth's radius in kilometers
@@ -398,7 +416,7 @@ const PlaybackIndexPage: React.FC = () => {
               <Select
                 options={vehicleOptions}
                 value={selectedVehicle}
-                onChange={setSelectedVehicle}
+                onChange={handleVehicleChange}
               />
             </div>
             <div>

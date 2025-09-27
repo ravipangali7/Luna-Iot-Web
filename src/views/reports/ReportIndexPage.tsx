@@ -10,6 +10,7 @@ import Select from '../../components/ui/forms/Select';
 import Button from '../../components/ui/buttons/Button';
 import Spinner from '../../components/ui/common/Spinner';
 import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer } from 'recharts';
+import { handleVehicleAction, VEHICLE_ACTIONS } from '../../utils/vehicleActionUtils';
 import type { Vehicle } from '../../types/vehicle';
 import type { ReportData } from '../../types/report';
 
@@ -36,7 +37,7 @@ const ReportIndexPage: React.FC = () => {
   const loadVehicles = async () => {
     try {
       setLoading(true);
-      const response = await vehicleService.getAllVehicles();
+      const response = await vehicleService.getLightVehicles();
       
       if (response.success && response.data) {
         setVehicles(response.data);
@@ -79,6 +80,20 @@ const ReportIndexPage: React.FC = () => {
     setEndDate(date);
   };
 
+  // Handle vehicle selection with inactive check
+  const handleVehicleChange = (vehicleImei: string) => {
+    const vehicle = vehicles.find(v => v.imei === vehicleImei);
+    if (vehicle) {
+      handleVehicleAction(
+        vehicle,
+        VEHICLE_ACTIONS.REPORT,
+        () => {
+          setSelectedVehicle(vehicleImei);
+        }
+      );
+    }
+  };
+
   const generateReport = useCallback(async () => {
     if (!selectedVehicle || !startDate || !endDate) {
       return;
@@ -109,6 +124,18 @@ const ReportIndexPage: React.FC = () => {
     if (vehicleImei && vehicles.length > 0) {
       const vehicle = vehicles.find(v => v.imei === vehicleImei);
       if (vehicle) {
+        // Check if vehicle is inactive
+        if (!vehicle.is_active) {
+          handleVehicleAction(
+            vehicle,
+            VEHICLE_ACTIONS.REPORT,
+            () => {
+              // This won't be called since the vehicle is inactive
+            }
+          );
+          return;
+        }
+        
         setSelectedVehicle(vehicleImei);
         
         // Auto-load data when vehicle is pre-selected
@@ -140,23 +167,26 @@ const ReportIndexPage: React.FC = () => {
   };
 
   // Helper function to fix NaN values
-  const fixNaN = (value: any): number => {
-    if (isNaN(value) || value === null || value === undefined) {
+  const fixNaN = (value: unknown): number => {
+    if (isNaN(Number(value)) || value === null || value === undefined) {
       return 0;
     }
     return Number(value);
   };
 
   // Format data for charts - matching Flutter app precision
-  const formatChartData = (dailyData: any[]) => {
-    return dailyData.map((day, index) => ({
-      day: index + 1,
-      date: new Date(day.date).toLocaleDateString('en-US', { month: 'short', day: 'numeric' }),
-      averageSpeed: fixNaN(day.averageSpeed),
-      maxSpeed: fixNaN(day.maxSpeed),
-      totalKm: fixNaN(day.totalKm),
-      locationCount: fixNaN(day.locationCount)
-    }));
+  const formatChartData = (dailyData: unknown[]) => {
+    return dailyData.map((day, index) => {
+      const dayData = day as Record<string, unknown>;
+      return {
+        day: index + 1,
+        date: new Date(dayData.date as string).toLocaleDateString('en-US', { month: 'short', day: 'numeric' }),
+        averageSpeed: fixNaN(dayData.averageSpeed),
+        maxSpeed: fixNaN(dayData.maxSpeed),
+        totalKm: fixNaN(dayData.totalKm),
+        locationCount: fixNaN(dayData.locationCount)
+      };
+    });
   };
 
   const vehicleOptions = [
@@ -195,7 +225,7 @@ const ReportIndexPage: React.FC = () => {
               <Select
                 options={vehicleOptions}
                 value={selectedVehicle}
-                onChange={setSelectedVehicle}
+                onChange={handleVehicleChange}
               />
             </div>
             <div>
@@ -366,7 +396,7 @@ const ReportIndexPage: React.FC = () => {
                             borderRadius: '8px',
                             color: '#F9FAFB'
                           }}
-                          formatter={(value: any, name: string) => [
+                          formatter={(value: unknown, name: string) => [
                             `${formatNumber(Number(value), 1)} km/h`, 
                             name === 'averageSpeed' ? 'Average Speed' : 'Max Speed'
                           ]}
@@ -421,7 +451,7 @@ const ReportIndexPage: React.FC = () => {
                             borderRadius: '8px',
                             color: '#F9FAFB'
                           }}
-                          formatter={(value: any) => [`${formatNumber(Number(value), 1)} km`, 'Distance']}
+                          formatter={(value: unknown) => [`${formatNumber(Number(value), 1)} km`, 'Distance']}
                         />
                         <Line 
                           type="monotone" 

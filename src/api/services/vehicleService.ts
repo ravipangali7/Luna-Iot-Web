@@ -283,6 +283,23 @@ class VehicleService {
       return { success: false, error: 'Network error: ' + (error as Error).message };
     }
   }
+
+  async getLightVehicles(): Promise<{ success: boolean; data?: Vehicle[]; error?: string }> {
+    try {
+      const response = await apiClient.get(`/api/fleet/vehicle/light`, {
+        timeout: 30000
+      });
+      
+      if (response.data.success) {
+        return { success: true, data: response.data.data };
+      } else {
+        return { success: false, error: response.data.message || 'Failed to fetch light vehicles' };
+      }
+    } catch (error) {
+      console.error('Get light vehicles error:', error);
+      return { success: false, error: 'Network error: ' + (error as Error).message };
+    }
+  }
 }
 
 export const vehicleService = new VehicleService();

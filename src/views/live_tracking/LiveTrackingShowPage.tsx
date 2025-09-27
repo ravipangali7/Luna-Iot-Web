@@ -8,6 +8,7 @@ import type { Vehicle } from '../../types/vehicle';
 import VehicleUtils, { VehicleImageState } from '../../utils/vehicleUtils';
 import type { VehicleStateType } from '../../utils/vehicleUtils';
 import GeoUtils from '../../utils/geoUtils';
+import { handleVehicleAction, VEHICLE_ACTIONS } from '../../utils/vehicleActionUtils';
 import SpeedIcon from '@mui/icons-material/Speed';
 import LocationOnIcon from '@mui/icons-material/LocationOn';
 import DirectionsCarIcon from '@mui/icons-material/DirectionsCar';
@@ -155,6 +156,21 @@ const LiveTrackingShowPage: React.FC<LiveTrackingShowPageProps> = ({ imei: propI
       
       if (response.success && response.data) {
         const vehicleData = response.data;
+        
+        // Check if vehicle is inactive
+        if (!vehicleData.is_active) {
+          handleVehicleAction(
+            vehicleData,
+            VEHICLE_ACTIONS.LIVE_TRACKING,
+            () => {
+              // This won't be called since the vehicle is inactive
+            }
+          );
+          // Navigate back to live tracking index
+          navigate('/live-tracking');
+          return;
+        }
+        
         setVehicle(vehicleData);
         
         // Initialize location
@@ -205,7 +221,7 @@ const LiveTrackingShowPage: React.FC<LiveTrackingShowPageProps> = ({ imei: propI
     } finally {
       setLoading(false);
     }
-  }, [imei]);
+  }, [imei, navigate]);
 
   // Fetch address for current location
   const fetchAddress = useCallback(async (latitude: number, longitude: number) => {

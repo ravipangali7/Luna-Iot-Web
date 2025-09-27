@@ -7,6 +7,7 @@ import { useRefresh } from '../../contexts/RefreshContext';
 import type { Vehicle, VehicleFilters } from '../../types/vehicle';
 import { VEHICLE_TYPES } from '../../types/vehicle';
 import { getState, getStateBackgroundColor } from '../../utils/vehicleUtils';
+import { handleVehicleAction, VEHICLE_ACTIONS } from '../../utils/vehicleActionUtils';
 import Container from '../../components/ui/layout/Container';
 import Card from '../../components/ui/cards/Card';
 import CardBody from '../../components/ui/cards/CardBody';
@@ -172,10 +173,18 @@ const VehicleIndexPage: React.FC = () => {
   };
 
   const handleEditVehicle = (vehicle: Vehicle) => {
-    navigate(`/vehicles/edit/${vehicle.imei}`);
+    handleVehicleAction(
+      vehicle,
+      VEHICLE_ACTIONS.EDIT,
+      () => navigate(`/vehicles/edit/${vehicle.imei}`)
+    );
   };
 
   const handleDeleteVehicle = async (vehicle: Vehicle) => {
+    handleVehicleAction(
+      vehicle,
+      VEHICLE_ACTIONS.DELETE,
+      async () => {
     const confirmed = await confirmDelete(
       'Delete Vehicle',
       `Are you sure you want to delete vehicle ${vehicle.vehicleNo}? This action cannot be undone.`
@@ -194,17 +203,29 @@ const VehicleIndexPage: React.FC = () => {
         showError('Error', 'An unexpected error occurred: ' + (error as Error).message);
       }
     }
+      }
+    );
   };
 
   const handleRechargeVehicle = (vehicle: Vehicle) => {
+    handleVehicleAction(
+      vehicle,
+      VEHICLE_ACTIONS.RECHARGE,
+      () => {
     if (vehicle.device) {
       navigate(`/recharges/create?deviceId=${vehicle.device.id}&imei=${vehicle.imei}`);
     } else {
       setError('Device information not available for this vehicle');
     }
+      }
+    );
   };
 
   const handleServerPoint = async (vehicle: Vehicle) => {
+    handleVehicleAction(
+      vehicle,
+      VEHICLE_ACTIONS.SERVER_POINT,
+      async () => {
     try {
       if (!vehicle.device?.phone) {
         showError('Device phone number not available');
@@ -222,9 +243,15 @@ const VehicleIndexPage: React.FC = () => {
       console.error('Server point error:', error);
       showError('Failed to send server point command');
     }
+      }
+    );
   };
 
   const handleReset = async (vehicle: Vehicle) => {
+    handleVehicleAction(
+      vehicle,
+      VEHICLE_ACTIONS.RESET,
+      async () => {
     try {
       if (!vehicle.device?.phone) {
         showError('Device phone number not available');
@@ -241,7 +268,9 @@ const VehicleIndexPage: React.FC = () => {
     } catch (error) {
       console.error('Reset error:', error);
       showError('Failed to send reset command');
-    }
+        }
+      }
+    );
   };
 
   const handleActivateVehicle = async (vehicle: Vehicle) => {
