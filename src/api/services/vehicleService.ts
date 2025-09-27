@@ -249,6 +249,40 @@ class VehicleService {
       return { success: false, error: 'Network error: ' + (error as Error).message };
     }
   }
+
+  async activateVehicle(imei: string): Promise<{ success: boolean; data?: unknown; error?: string }> {
+    try {
+      const response = await apiClient.put(`/api/fleet/vehicle/${imei}/activate`, {}, {
+        timeout: 30000
+      });
+      
+      if (response.data.success) {
+        return { success: true, data: response.data.data };
+      } else {
+        return { success: false, error: response.data.message || 'Failed to activate vehicle' };
+      }
+    } catch (error) {
+      console.error('Activate vehicle error:', error);
+      return { success: false, error: 'Network error: ' + (error as Error).message };
+    }
+  }
+
+  async deactivateVehicle(imei: string): Promise<{ success: boolean; data?: unknown; error?: string }> {
+    try {
+      const response = await apiClient.put(`/api/fleet/vehicle/${imei}/deactivate`, {}, {
+        timeout: 30000
+      });
+      
+      if (response.data.success) {
+        return { success: true, data: response.data.data };
+      } else {
+        return { success: false, error: response.data.message || 'Failed to deactivate vehicle' };
+      }
+    } catch (error) {
+      console.error('Deactivate vehicle error:', error);
+      return { success: false, error: 'Network error: ' + (error as Error).message };
+    }
+  }
 }
 
 export const vehicleService = new VehicleService();

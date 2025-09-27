@@ -86,6 +86,7 @@ export interface Vehicle {
   speedLimit: number;
   minimumFuel: number;
   expireDate?: string | null;
+  is_active: boolean;
   createdAt: string;
   updatedAt: string;
   device?: Device | null;

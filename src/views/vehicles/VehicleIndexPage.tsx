@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { vehicleService } from '../../api/services/vehicleService';
 import { deviceService } from '../../api/services/deviceService';
@@ -31,6 +31,8 @@ import AccountBalanceWalletIcon from '@mui/icons-material/AccountBalanceWallet';
 import SendIcon from '@mui/icons-material/Send';
 import ArrowDropDownIcon from '@mui/icons-material/ArrowDropDown';
 import RefreshIcon from '@mui/icons-material/Refresh';
+import PlayArrowIcon from '@mui/icons-material/PlayArrow';
+import PauseIcon from '@mui/icons-material/Pause';
 
 const VehicleIndexPage: React.FC = () => {
   const navigate = useNavigate();
@@ -57,13 +59,59 @@ const VehicleIndexPage: React.FC = () => {
     previous_page: null
   });
 
+  const loadVehicles = useCallback(async () => {
+    try {
+      setLoading(true);
+      setError(null);
+
+      // Load paginated vehicles data
+      const result = await vehicleService.getVehiclesPaginated(currentPage);
+
+      if (result.success && result.data) {
+        setVehicles(result.data.vehicles);
+        setPagination(result.data.pagination);
+      } else {
+        setError(result.error || 'Failed to load vehicles');
+      }
+    } catch (error) {
+      setError('An unexpected error occurred: ' + (error as Error).message);
+    } finally {
+      setLoading(false);
+    }
+  }, [currentPage]);
+
+  const applyFilters = useCallback(() => {
+    let filtered = [...vehicles];
+
+    // Apply search query
+    if (searchQuery) {
+      filtered = filtered.filter(vehicle =>
+        vehicle.imei.toLowerCase().includes(searchQuery.toLowerCase()) ||
+        vehicle.vehicleNo.toLowerCase().includes(searchQuery.toLowerCase()) ||
+        vehicle.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
+        vehicle.vehicleType.toLowerCase().includes(searchQuery.toLowerCase()) ||
+        (vehicle.device?.phone || '').toLowerCase().includes(searchQuery.toLowerCase()) ||
+        getCustomerInfo(vehicle).toLowerCase().includes(searchQuery.toLowerCase()) ||
+        getCustomerPhone(vehicle).toLowerCase().includes(searchQuery.toLowerCase())
+      );
+    }
+
+    // Apply other filters
+    if (filters.vehicleType) {
+      filtered = filtered.filter(vehicle => vehicle.vehicleType === filters.vehicleType);
+    }
+    // Note: Status filter removed as Vehicle interface doesn't have a status field
+
+    setFilteredVehicles(filtered);
+  }, [vehicles, searchQuery, filters]);
+
   useEffect(() => {
     loadVehicles();
-  }, [refreshKey, currentPage]); // Reload when refresh is triggered or page changes
+  }, [refreshKey, currentPage, loadVehicles]); // Reload when refresh is triggered or page changes
 
   useEffect(() => {
     applyFilters();
-  }, [vehicles, filters, searchQuery]);
+  }, [applyFilters]);
 
   const handleSearch = async () => {
     if (!searchInput.trim()) {
@@ -121,52 +169,6 @@ const VehicleIndexPage: React.FC = () => {
     } finally {
       setLoading(false);
     }
-  };
-
-  const loadVehicles = async () => {
-    try {
-      setLoading(true);
-      setError(null);
-
-      // Load paginated vehicles data
-      const result = await vehicleService.getVehiclesPaginated(currentPage);
-
-      if (result.success && result.data) {
-        setVehicles(result.data.vehicles);
-        setPagination(result.data.pagination);
-      } else {
-        setError(result.error || 'Failed to load vehicles');
-      }
-    } catch (error) {
-      setError('An unexpected error occurred: ' + (error as Error).message);
-    } finally {
-      setLoading(false);
-    }
-  };
-
-  const applyFilters = () => {
-    let filtered = [...vehicles];
-
-    // Apply search query
-    if (searchQuery) {
-      filtered = filtered.filter(vehicle =>
-        vehicle.imei.toLowerCase().includes(searchQuery.toLowerCase()) ||
-        vehicle.vehicleNo.toLowerCase().includes(searchQuery.toLowerCase()) ||
-        vehicle.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
-        vehicle.vehicleType.toLowerCase().includes(searchQuery.toLowerCase()) ||
-        (vehicle.device?.phone || '').toLowerCase().includes(searchQuery.toLowerCase()) ||
-        getCustomerInfo(vehicle).toLowerCase().includes(searchQuery.toLowerCase()) ||
-        getCustomerPhone(vehicle).toLowerCase().includes(searchQuery.toLowerCase())
-      );
-    }
-
-    // Apply other filters
-    if (filters.vehicleType) {
-      filtered = filtered.filter(vehicle => vehicle.vehicleType === filters.vehicleType);
-    }
-    // Note: Status filter removed as Vehicle interface doesn't have a status field
-
-    setFilteredVehicles(filtered);
   };
 
   const handleEditVehicle = (vehicle: Vehicle) => {
@@ -239,6 +241,44 @@ const VehicleIndexPage: React.FC = () => {
     } catch (error) {
       console.error('Reset error:', error);
       showError('Failed to send reset command');
+    }
+  };
+
+  const handleActivateVehicle = async (vehicle: Vehicle) => {
+    try {
+      const result = await vehicleService.activateVehicle(vehicle.imei);
+      
+      if (result.success) {
+        showSuccess('Vehicle activated successfully');
+        // Update the vehicle in the local state
+        setVehicles(vehicles.map(v => 
+          v.imei === vehicle.imei ? { ...v, is_active: true } : v
+        ));
+      } else {
+        showError(result.error || 'Failed to activate vehicle');
+      }
+    } catch (error) {
+      console.error('Activate vehicle error:', error);
+      showError('Failed to activate vehicle');
+    }
+  };
+
+  const handleDeactivateVehicle = async (vehicle: Vehicle) => {
+    try {
+      const result = await vehicleService.deactivateVehicle(vehicle.imei);
+      
+      if (result.success) {
+        showSuccess('Vehicle deactivated successfully');
+        // Update the vehicle in the local state
+        setVehicles(vehicles.map(v => 
+          v.imei === vehicle.imei ? { ...v, is_active: false } : v
+        ));
+      } else {
+        showError(result.error || 'Failed to deactivate vehicle');
+      }
+    } catch (error) {
+      console.error('Deactivate vehicle error:', error);
+      showError('Failed to deactivate vehicle');
     }
   };
 
@@ -491,6 +531,7 @@ const VehicleIndexPage: React.FC = () => {
                       <TableHeader>Vehicle Info</TableHeader>
                       <TableHeader>Device Info</TableHeader>
                       <TableHeader>Vehicle Type</TableHeader>
+                      <TableHeader>Status</TableHeader>
                       <TableHeader>Customer Info</TableHeader>
                       <RoleBasedWidget allowedRoles={[ROLES.SUPER_ADMIN]}> <TableHeader>Last Recharge ago</TableHeader></RoleBasedWidget>
                       <RoleBasedWidget allowedRoles={[ROLES.SUPER_ADMIN, ROLES.DEALER]}> <TableHeader>Expire Date</TableHeader></RoleBasedWidget>
@@ -527,6 +568,14 @@ const VehicleIndexPage: React.FC = () => {
                         </TableCell>
                         <TableCell>
                           <Badge variant="info" size="sm">{vehicle.vehicleType}</Badge>
+                        </TableCell>
+                        <TableCell>
+                          <Badge 
+                            variant={vehicle.is_active ? 'success' : 'danger'} 
+                            size="sm"
+                          >
+                            {vehicle.is_active ? 'Active' : 'Inactive'}
+                          </Badge>
                         </TableCell>
                         <TableCell>
                           <div className="space-y-1">
@@ -583,6 +632,23 @@ const VehicleIndexPage: React.FC = () => {
                               onClick={() => handleEditVehicle(vehicle)}
                               icon={<EditIcon className="w-4 h-4" />}
                             />
+                            <RoleBasedWidget allowedRoles={[ROLES.SUPER_ADMIN]}>
+                              {vehicle.is_active ? (
+                                <Button
+                                  variant="warning"
+                                  size="sm"
+                                  onClick={() => handleDeactivateVehicle(vehicle)}
+                                  icon={<PauseIcon className="w-4 h-4" />}
+                                />
+                              ) : (
+                                <Button
+                                  variant="success"
+                                  size="sm"
+                                  onClick={() => handleActivateVehicle(vehicle)}
+                                  icon={<PlayArrowIcon className="w-4 h-4" />}
+                                />
+                              )}
+                            </RoleBasedWidget>
                             <RoleBasedWidget allowedRoles={[ROLES.SUPER_ADMIN]}>
                               <Button
                                 variant="primary"
