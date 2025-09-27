@@ -632,7 +632,7 @@ const VehicleIndexPage: React.FC = () => {
                               onClick={() => handleEditVehicle(vehicle)}
                               icon={<EditIcon className="w-4 h-4" />}
                             />
-                            <RoleBasedWidget allowedRoles={[ROLES.SUPER_ADMIN, ROLES.DEALER]}>
+                            {/* <RoleBasedWidget allowedRoles={[ROLES.SUPER_ADMIN, ROLES.DEALER]}> */}
                               {vehicle.is_active ? (
                                 <Button
                                   variant="warning"
@@ -648,7 +648,7 @@ const VehicleIndexPage: React.FC = () => {
                                   icon={<PlayArrowIcon className="w-4 h-4" />}
                                 />
                               )}
-                            </RoleBasedWidget>
+                            {/* </RoleBasedWidget> */}
                             <RoleBasedWidget allowedRoles={[ROLES.SUPER_ADMIN]}>
                               <Button
                                 variant="primary"
