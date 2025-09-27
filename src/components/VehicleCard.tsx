@@ -49,6 +49,7 @@ const VehicleCard: React.FC<VehicleCardProps> = ({
 
   const vehicleState = VehicleUtils.getState(vehicle);
   const lastUpdateTime = vehicle.latestStatus?.createdAt || vehicle.latestLocation?.createdAt || vehicle.updatedAt;
+  const isInactive = !vehicle.is_active;
   
   useEffect(() => {
     const loadLocationData = async () => {
@@ -93,18 +94,23 @@ const VehicleCard: React.FC<VehicleCardProps> = ({
   }, [vehicle.latestLocation, showLocation, showAltitude]);
 
 
-  const cardClass = `vehicle-card ${compact ? 'compact' : ''}`;
+  const cardClass = `vehicle-card ${compact ? 'compact' : ''} ${isInactive ? 'inactive' : ''}`;
 
   return (
-    <div className={cardClass} onClick={() => onVehicleClick(vehicle)}>
+    <div className={cardClass} onClick={() => !isInactive && onVehicleClick(vehicle)}>
       {/* Header badges */}
       <div className="vehicle-card-header">
-        {vehicle.ownershipType && (
+        {isInactive && (
+          <div className="vehicle-badge inactive-badge">
+            INACTIVE
+          </div>
+        )}
+        {!isInactive && vehicle.ownershipType && (
           <div className="vehicle-badge ownership-badge">
             {vehicle.ownershipType.toUpperCase()}
           </div>
         )}
-        {vehicle.latestStatus?.charging !== undefined && (
+        {!isInactive && vehicle.latestStatus?.charging !== undefined && (
           <>
             {
               vehicle.latestStatus.charging ? <></> : (
@@ -160,52 +166,56 @@ const VehicleCard: React.FC<VehicleCardProps> = ({
               </div>
             </div>
 
-            {/* Buttons and Data */}
-            <div className="buttons-data-section">
-              {/* Three Action Buttons */}
-              <div className="action-buttons">
-                <button className="action-button live-tracking-btn" onClick={() => onNavigate?.('live-tracking', vehicle)}>
-                  <FontAwesomeIcon icon={faMapPin} />
-                </button>
-                <button className="action-button playback-btn" onClick={() => onNavigate?.('playback', vehicle)}>
-                  <FontAwesomeIcon icon={faPlay} />
-                </button>
-                <button className="action-button report-btn" onClick={() => onNavigate?.('report', vehicle)}>
-                  <FontAwesomeIcon icon={faFileAlt} />
-                </button>
-              </div>
+            {/* Buttons and Data - Only show for active vehicles */}
+            {!isInactive && (
+              <div className="buttons-data-section">
+                {/* Three Action Buttons */}
+                <div className="action-buttons">
+                  <button className="action-button live-tracking-btn" onClick={() => onNavigate?.('live-tracking', vehicle)}>
+                    <FontAwesomeIcon icon={faMapPin} />
+                  </button>
+                  <button className="action-button playback-btn" onClick={() => onNavigate?.('playback', vehicle)}>
+                    <FontAwesomeIcon icon={faPlay} />
+                  </button>
+                  <button className="action-button report-btn" onClick={() => onNavigate?.('report', vehicle)}>
+                    <FontAwesomeIcon icon={faFileAlt} />
+                  </button>
+                </div>
 
-              {/* Data Items */}
-              <div className="data-items">
-                <div className="data-item">
-                  <FontAwesomeIcon icon={faRuler} className="data-icon" />
-                  <span className="data-text">{(vehicle.todayKm || 0).toFixed(2)} km</span>
-                </div>
-                <div className="data-item">
-                  <FontAwesomeIcon icon={faMountain} className="data-icon" />
-                  <span className="data-text">{altitude} m</span>
-                </div>
-                <div className="data-item">
-                  <FontAwesomeIcon icon={faBolt} className="data-icon" />
-                  <span className="data-text">{VehicleUtils.getDisplaySpeed(vehicle, vehicleState)} km/h</span>
+                {/* Data Items */}
+                <div className="data-items">
+                  <div className="data-item">
+                    <FontAwesomeIcon icon={faRuler} className="data-icon" />
+                    <span className="data-text">{(vehicle.todayKm || 0).toFixed(2)} km</span>
+                  </div>
+                  <div className="data-item">
+                    <FontAwesomeIcon icon={faMountain} className="data-icon" />
+                    <span className="data-text">{altitude} m</span>
+                  </div>
+                  <div className="data-item">
+                    <FontAwesomeIcon icon={faBolt} className="data-icon" />
+                    <span className="data-text">{VehicleUtils.getDisplaySpeed(vehicle, vehicleState)} km/h</span>
+                  </div>
                 </div>
               </div>
-            </div>
+            )}
           </div>
 
-          {/* Second Row - Geo Code and Last Data */}
-          <div className="geo-data-row">
-            <div className="geo-code">
-              <FontAwesomeIcon icon={faMapPin} className="geo-icon" />
-              <span className="geo-text">{isLoadingAddress ? 'Loading...' : address}</span>
+          {/* Second Row - Geo Code and Last Data - Only show for active vehicles */}
+          {!isInactive && (
+            <div className="geo-data-row">
+              <div className="geo-code">
+                <FontAwesomeIcon icon={faMapPin} className="geo-icon" />
+                <span className="geo-text">{isLoadingAddress ? 'Loading...' : address}</span>
+              </div>
+              <div className="last-data">
+                <FontAwesomeIcon icon={faClock} className="last-data-icon" />
+                <span className="last-data-text">
+                  {lastUpdateTime ? VehicleUtils.getTimeAgoFromUTC(lastUpdateTime) : 'No data'}
+                </span>
+              </div>
             </div>
-            <div className="last-data">
-              <FontAwesomeIcon icon={faClock} className="last-data-icon" />
-              <span className="last-data-text">
-                {lastUpdateTime ? VehicleUtils.getTimeAgoFromUTC(lastUpdateTime) : 'No data'}
-              </span>
-            </div>
-          </div>
+          )}
         </div>
       </div>
 

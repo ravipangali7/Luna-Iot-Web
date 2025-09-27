@@ -8,6 +8,7 @@ import type { VehicleStateType } from '../../utils/vehicleUtils';
 import VehicleCard from '../../components/VehicleCard';
 import Pagination from '../../components/ui/pagination/Pagination';
 import { useSocketUpdates } from '../../hooks/useSocketUpdates';
+import { showError } from '../../utils/sweetAlert';
 import './LiveTrackingIndexPage.css';
 
 interface StatusCounts {
@@ -358,18 +359,26 @@ const LiveTrackingIndexPage: React.FC = () => {
     loadVehicles();
   };
 
-  const handleVehicleClick = () => {
-    // if (vehicle.latestLocation?.latitude && vehicle.latestLocation?.longitude) {
-    //   setMapCenter({
-    //     lat: vehicle.latestLocation.latitude,
-    //     lng: vehicle.latestLocation.longitude
-    //   });
-    // }
-    // Navigate to vehicle detail page
-    // navigate(`/live-tracking/${vehicle.imei}`);
+  const handleVehicleClick = (vehicle: Vehicle) => {
+    // Check if vehicle is inactive
+    if (!vehicle.is_active) {
+      showError('Vehicle is inactive', 'This vehicle has been deactivated and cannot be accessed.');
+      return;
+    }
+    
+    // Navigate to live tracking show page
+    navigate(`/live-tracking/${vehicle.imei}`);
   };
 
   const handleNavigate = (route: string, vehicle?: Vehicle) => {
+    if (!vehicle) return;
+    
+    // Check if vehicle is inactive
+    if (!vehicle.is_active) {
+      showError('Vehicle is inactive', 'This vehicle has been deactivated and cannot be accessed.');
+      return;
+    }
+    
     if (route === 'live-tracking' && vehicle) {
       navigate(`/live-tracking/${vehicle.imei}`);
     } else if (route === 'playback' && vehicle) {
@@ -524,7 +533,7 @@ const LiveTrackingIndexPage: React.FC = () => {
               <VehicleCard
                 key={vehicle.imei}
                 vehicle={vehicle}
-                onVehicleClick={handleVehicleClick}
+                onVehicleClick={() => handleVehicleClick(vehicle)}
                 showLocation={true}
                 showAltitude={true}
                 compact={true}

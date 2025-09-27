@@ -159,14 +159,7 @@ const LiveTrackingShowPage: React.FC<LiveTrackingShowPageProps> = ({ imei: propI
         
         // Check if vehicle is inactive
         if (!vehicleData.is_active) {
-          handleVehicleAction(
-            vehicleData,
-            VEHICLE_ACTIONS.LIVE_TRACKING,
-            () => {
-              // This won't be called since the vehicle is inactive
-            }
-          );
-          // Navigate back to live tracking index
+          showError('Vehicle is inactive', 'This vehicle has been deactivated and cannot be tracked live.');
           navigate('/live-tracking');
           return;
         }
