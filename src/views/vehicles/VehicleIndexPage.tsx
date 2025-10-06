@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useCallback } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, useSearchParams } from 'react-router-dom';
 import { vehicleService } from '../../api/services/vehicleService';
 import { deviceService } from '../../api/services/deviceService';
 import { confirmDelete, showSuccess, showError } from '../../utils/sweetAlert';
@@ -37,6 +37,7 @@ import PauseIcon from '@mui/icons-material/Pause';
 
 const VehicleIndexPage: React.FC = () => {
   const navigate = useNavigate();
+  const [searchParams, setSearchParams] = useSearchParams();
   const { refreshKey } = useRefresh();
   const [vehicles, setVehicles] = useState<Vehicle[]>([]);
   const [filteredVehicles, setFilteredVehicles] = useState<Vehicle[]>([]);
@@ -46,6 +47,9 @@ const VehicleIndexPage: React.FC = () => {
   const [searchQuery, setSearchQuery] = useState('');
   const [searchInput, setSearchInput] = useState('');
   const [dropdownOpen, setDropdownOpen] = useState<{ [key: string]: boolean }>({});
+  const [isInitialized, setIsInitialized] = useState(false);
+  const [isSearching, setIsSearching] = useState(false);
+  const [isInSearchMode, setIsInSearchMode] = useState(false);
   
   // Pagination state
   const [currentPage, setCurrentPage] = useState(1);
@@ -107,29 +111,25 @@ const VehicleIndexPage: React.FC = () => {
   }, [vehicles, searchQuery, filters]);
 
   useEffect(() => {
-    loadVehicles();
-  }, [refreshKey, currentPage, loadVehicles]); // Reload when refresh is triggered or page changes
-
-  useEffect(() => {
-    applyFilters();
-  }, [applyFilters]);
-
-  const handleSearch = async () => {
-    if (!searchInput.trim()) {
-      setSearchQuery('');
-      return;
+    // Only load vehicles if there's no search query in URL and we're not in search mode
+    const urlSearchQuery = searchParams.get('q');
+    if (!urlSearchQuery && !searchQuery && isInitialized && !isSearching && !isInSearchMode) {
+      loadVehicles();
     }
-    
+  }, [refreshKey, currentPage, loadVehicles, searchParams, searchQuery, isInitialized, isSearching, isInSearchMode]); // Reload when refresh is triggered or page changes
+
+  const handleSearchFromUrl = useCallback(async (query: string, page: number = 1) => {
     try {
+      setIsSearching(true);
       setLoading(true);
-      const response = await vehicleService.searchVehicles(searchInput.trim(), 1);
+      setError(null);
+      const response = await vehicleService.searchVehicles(query.trim(), page);
       
       if (response.success && response.data) {
         setVehicles(response.data.vehicles);
         setPagination(response.data.pagination);
-        setSearchQuery(searchInput);
-        // Reset pagination when searching
-        setCurrentPage(1);
+        setCurrentPage(page);
+        setIsInSearchMode(true);
       } else {
         console.error('Search failed:', response.error);
         setError(response.error || 'Search failed');
@@ -139,12 +139,99 @@ const VehicleIndexPage: React.FC = () => {
       setError('Search failed: ' + (error as Error).message);
     } finally {
       setLoading(false);
+      setIsSearching(false);
+    }
+  }, []);
+
+  useEffect(() => {
+    applyFilters();
+  }, [applyFilters]);
+
+  // Handle URL parameters for search query
+  useEffect(() => {
+    const urlSearchQuery = searchParams.get('q');
+    const urlPage = searchParams.get('page');
+    
+    
+    if (urlSearchQuery) {
+      // URL has search query - perform search
+      setSearchInput(urlSearchQuery);
+      setSearchQuery(urlSearchQuery);
+      setCurrentPage(urlPage ? parseInt(urlPage) : 1);
+      handleSearchFromUrl(urlSearchQuery, urlPage ? parseInt(urlPage) : 1);
+    } else if (!isInitialized) {
+      // Initial load without search query
+      const page = urlPage ? parseInt(urlPage) : 1;
+      setCurrentPage(page);
+      setIsInSearchMode(false);
+      loadVehicles();
+    }
+    
+    setIsInitialized(true);
+  }, [searchParams, loadVehicles, handleSearchFromUrl, isInitialized]);
+
+  // Handle clearing search when navigating from other pages
+  useEffect(() => {
+    const urlSearchQuery = searchParams.get('q');
+    
+    // If we're on vehicles page without search query and we have an active search, clear it
+    // This handles navigation from sidebar/header
+    // Only clear if we're not currently searching and not loading
+    if (isInitialized && !urlSearchQuery && searchQuery && !isSearching && !loading) {
+      // Add a small delay to ensure search operations complete
+      const timeoutId = setTimeout(() => {
+        setSearchInput('');
+        setSearchQuery('');
+        setError(null);
+        setIsInSearchMode(false);
+        loadVehicles();
+      }, 100);
+      
+      return () => clearTimeout(timeoutId);
+    }
+  }, [searchParams, isInitialized, searchQuery, isSearching, loading, loadVehicles]);
+
+  const handleSearch = async () => {
+    if (!searchInput.trim()) {
+      setSearchQuery('');
+      // Clear URL parameters when clearing search
+      setSearchParams({});
+      return;
+    }
+    
+    try {
+      setIsSearching(true);
+      setLoading(true);
+      const response = await vehicleService.searchVehicles(searchInput.trim(), 1);
+      
+      if (response.success && response.data) {
+        setVehicles(response.data.vehicles);
+        setPagination(response.data.pagination);
+        setSearchQuery(searchInput);
+        // Reset pagination when searching
+        setCurrentPage(1);
+        // Update URL with search query
+        setSearchParams({ q: searchInput.trim() });
+        setIsInSearchMode(true);
+      } else {
+        console.error('Search failed:', response.error);
+        setError(response.error || 'Search failed');
+      }
+    } catch (error) {
+      console.error('Search error:', error);
+      setError('Search failed: ' + (error as Error).message);
+    } finally {
+      setLoading(false);
+      setIsSearching(false);
     }
   };
 
   const handleClearSearch = async () => {
     setSearchInput('');
     setSearchQuery('');
+    setIsInSearchMode(false);
+    // Clear URL parameters when clearing search
+    setSearchParams({});
     // Reload vehicles when clearing search
     await loadVehicles();
   };
@@ -153,6 +240,7 @@ const VehicleIndexPage: React.FC = () => {
     if (!searchQuery) return;
     
     try {
+      setIsSearching(true);
       setLoading(true);
       const response = await vehicleService.searchVehicles(searchQuery, page);
       
@@ -160,6 +248,9 @@ const VehicleIndexPage: React.FC = () => {
         setVehicles(response.data.vehicles);
         setPagination(response.data.pagination);
         setCurrentPage(page);
+        // Update URL with new page
+        setSearchParams({ q: searchQuery, page: page.toString() });
+        setIsInSearchMode(true);
       } else {
         console.error('Search page change failed:', response.error);
         setError(response.error || 'Failed to load search results');
@@ -169,6 +260,7 @@ const VehicleIndexPage: React.FC = () => {
       setError('Failed to load search results: ' + (error as Error).message);
     } finally {
       setLoading(false);
+      setIsSearching(false);
     }
   };
 
@@ -320,6 +412,10 @@ const VehicleIndexPage: React.FC = () => {
 
   const handlePageChange = (page: number) => {
     setCurrentPage(page);
+    // Update URL with new page (only if not in search mode)
+    if (!searchQuery) {
+      setSearchParams({ page: page.toString() });
+    }
   };
 
 
@@ -562,10 +658,16 @@ const VehicleIndexPage: React.FC = () => {
                       <TableHeader>Vehicle Type</TableHeader>
                       <TableHeader>Status</TableHeader>
                       <TableHeader>Customer Info</TableHeader>
-                      <RoleBasedWidget allowedRoles={[ROLES.SUPER_ADMIN]}> <TableHeader>Last Recharge ago</TableHeader></RoleBasedWidget>
-                      <RoleBasedWidget allowedRoles={[ROLES.SUPER_ADMIN, ROLES.DEALER]}> <TableHeader>Expire Date</TableHeader></RoleBasedWidget>
+                      <RoleBasedWidget allowedRoles={[ROLES.SUPER_ADMIN]}>
+                        <TableHeader>Last Recharge ago</TableHeader>
+                      </RoleBasedWidget>
+                      <RoleBasedWidget allowedRoles={[ROLES.SUPER_ADMIN, ROLES.DEALER]}>
+                        <TableHeader>Expire Date</TableHeader>
+                      </RoleBasedWidget>
                       <TableHeader>Last Data ago</TableHeader>
-                      <RoleBasedWidget allowedRoles={[ROLES.SUPER_ADMIN]}><TableHeader>Relay</TableHeader></RoleBasedWidget>
+                      <RoleBasedWidget allowedRoles={[ROLES.SUPER_ADMIN]}>
+                        <TableHeader>Relay</TableHeader>
+                      </RoleBasedWidget>
                       <TableHeader>Actions</TableHeader>
                     </TableRow>
                   </TableHead>

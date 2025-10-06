@@ -27,7 +27,16 @@ const RechargeCreatePage: React.FC = () => {
     amount: 0
   });
   const [validationErrors, setValidationErrors] = useState<Record<string, string>>({});
-  const [topupResult, setTopupResult] = useState<any>(null);
+  const [topupResult, setTopupResult] = useState<{
+    success: boolean;
+    simType: string;
+    reference: string;
+    transactionId?: string;
+    creditsConsumed?: number;
+    creditsAvailable?: number;
+    message: string;
+  } | null>(null);
+  const [isDevicePreSelected, setIsDevicePreSelected] = useState(false);
 
   useEffect(() => {
     loadDevices();
@@ -43,11 +52,13 @@ const RechargeCreatePage: React.FC = () => {
       const device = devices.find(d => d.id === deviceIdNum);
       if (device) {
         setFormData(prev => ({ ...prev, deviceId: deviceIdNum }));
+        setIsDevicePreSelected(true);
       }
     } else if (imei && devices.length > 0) {
       const device = devices.find(d => d.imei === imei);
       if (device) {
         setFormData(prev => ({ ...prev, deviceId: device.id }));
+        setIsDevicePreSelected(true);
       }
     }
   }, [searchParams, devices]);
@@ -106,21 +117,23 @@ const RechargeCreatePage: React.FC = () => {
       
       if (result.success) {
         setSuccess('Recharge and top-up completed successfully!');
-        setTopupResult((result.data as any)?.topupResult);
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
+        setTopupResult((result.data as any)?.topupResult || null);
         setTimeout(() => {
-          navigate('/recharges');
+          // Navigate back to the previous page
+          navigate(-1);
         }, 2000);
       } else {
         setError(result.error || 'Failed to create recharge');
       }
-    } catch (err) {
+    } catch {
       setError('An unexpected error occurred');
     } finally {
       setLoading(false);
     }
   };
 
-  const handleInputChange = (field: keyof RechargeFormData, value: any) => {
+  const handleInputChange = (field: keyof RechargeFormData, value: string | number) => {
     setFormData(prev => {
       const newFormData = {
         ...prev,
@@ -187,7 +200,8 @@ const RechargeCreatePage: React.FC = () => {
   };
 
   const handleCancel = () => {
-    navigate('/recharges');
+    // Navigate back to the previous page
+    navigate(-1);
   };
 
   const formatAmount = (amount: number) => {
@@ -195,6 +209,18 @@ const RechargeCreatePage: React.FC = () => {
       style: 'currency',
       currency: 'NPR'
     }).format(amount);
+  };
+
+  const formatDeviceDisplay = (device: Device) => {
+    const vehicleInfo = device.vehicles && device.vehicles.length > 0 
+      ? device.vehicles[0] 
+      : null;
+    
+    if (vehicleInfo) {
+      return `${device.phone} - ${vehicleInfo.vehicleNo} (${vehicleInfo.name})`;
+    } else {
+      return `${device.phone} - ${device.imei} (${device.model})`;
+    }
   };
 
   return (
@@ -289,20 +315,29 @@ const RechargeCreatePage: React.FC = () => {
               <div>
                 <label className="block text-sm font-medium text-gray-700 mb-2">
                   Device *
+                  {isDevicePreSelected && (
+                    <span className="text-sm text-gray-500 ml-2">(Pre-selected from URL)</span>
+                  )}
                 </label>
                 <Select
                   value={formData.deviceId.toString()}
                   onChange={(value) => handleInputChange('deviceId', value ? parseInt(value) : 0)}
+                  disabled={isDevicePreSelected}
                   options={[
                     { value: '0', label: 'Select a device...' },
                     ...devices.map(device => ({ 
                       value: device.id.toString(), 
-                      label: `${device.imei} - ${device.phone} (${device.model})` 
+                      label: formatDeviceDisplay(device)
                     }))
                   ]}
                 />
                 {validationErrors.deviceId && (
                   <p className="mt-1 text-sm text-red-600">{validationErrors.deviceId}</p>
+                )}
+                {isDevicePreSelected && (
+                  <p className="mt-1 text-sm text-blue-600">
+                    Device is pre-selected and cannot be changed
+                  </p>
                 )}
               </div>
 
@@ -337,8 +372,10 @@ const RechargeCreatePage: React.FC = () => {
                     <div className="flex justify-between">
                       <span className="text-gray-600">Device:</span>
                       <span className="font-medium">
-                        {devices.find(d => d.id === formData.deviceId)?.imei} 
-                        ({devices.find(d => d.id === formData.deviceId)?.phone})
+                        {(() => {
+                          const device = devices.find(d => d.id === formData.deviceId);
+                          return device ? formatDeviceDisplay(device) : 'Unknown device';
+                        })()}
                       </span>
                     </div>
                     <div className="flex justify-between">

@@ -367,7 +367,7 @@ const LiveTrackingIndexPage: React.FC = () => {
     }
     
     // Navigate to live tracking show page
-    navigate(`/live-tracking/${vehicle.imei}`);
+    // navigate(`/live-tracking/${vehicle.imei}`);
   };
 
   const handleNavigate = (route: string, vehicle?: Vehicle) => {

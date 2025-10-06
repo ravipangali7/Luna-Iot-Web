@@ -48,6 +48,13 @@ export interface Device {
   model: string;
   createdAt: string;
   updatedAt: string;
+  vehicles?: Array<{
+    id: number;
+    imei: string;
+    name: string;
+    vehicleNo: string;
+    vehicleType: string;
+  }>;
 }
 
 export interface Location {
