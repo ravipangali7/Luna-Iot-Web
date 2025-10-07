@@ -146,6 +146,39 @@ const Sidebar: React.FC<SidebarProps> = ({ isOpen, onToggle }) => {
       )
     },
     {
+      id: 'monitoring',
+      label: 'Monitoring',
+      path: '/monitoring',
+      allowedRoles: ['Super Admin', 'Dealer', 'Customer'],
+      icon: (
+        <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z" />
+        </svg>
+      ),
+      children: [
+        {
+          id: 'device-monitoring',
+          label: 'Device M.',
+          path: '/monitoring/device',
+          icon: (
+            <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 3v2m6-2v2M9 19v2m6-2v2M5 9H3m2 6H3m18-6h-2m2 6h-2M7 19h10a2 2 0 002-2V7a2 2 0 00-2-2H7a2 2 0 00-2 2v10a2 2 0 002 2zM9 9h6v6H9V9z" />
+            </svg>
+          )
+        },
+        {
+          id: 'vehicle-monitoring',
+          label: 'Vehicle M.',
+          path: '/monitoring/vehicle',
+          icon: (
+            <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 7v8a2 2 0 002 2h6M8 7V5a2 2 0 012-2h4.586a1 1 0 01.707.293l4.414 4.414a1 1 0 01.293.707V15a2 2 0 01-2 2h-2M8 7H6a2 2 0 00-2 2v10a2 2 0 002 2h8a2 2 0 002-2v-2" />
+            </svg>
+          )
+        }
+      ]
+    },
+    {
       id: 'users',
       label: 'Users',
       path: '/users',
@@ -383,9 +416,10 @@ const Sidebar: React.FC<SidebarProps> = ({ isOpen, onToggle }) => {
         fixed inset-y-0 left-0 z-50 w-[14rem] bg-white shadow-lg transform transition-transform duration-300 ease-in-out
         ${isOpen ? 'translate-x-0' : '-translate-x-full'}
         lg:translate-x-0 lg:static lg:inset-0
+        flex flex-col h-full
       `}>
         {/* Sidebar Header */}
-        <div className="flex items-center justify-between h-20 px-6 border-b border-gray-200">
+        <div className="flex items-center justify-between h-20 px-6 border-b border-gray-200 flex-shrink-0">
           <div className="flex flex-col items-start space-x-3">
             <img src={logo} alt="Luna IOT" className="h-8 w-auto" />
           </div>
@@ -401,13 +435,13 @@ const Sidebar: React.FC<SidebarProps> = ({ isOpen, onToggle }) => {
           </button>
         </div>
 
-        {/* Navigation */}
-        <nav className="flex-1 px-4 py-6 space-y-2 overflow-y-auto">
+        {/* Navigation - Scrollable area */}
+        <nav className="flex-1 px-4 py-6 space-y-2 overflow-y-auto min-h-0">
           {filteredNavigationItems.map(item => renderNavItem(item))}
         </nav>
 
-        {/* User Profile & Logout */}
-        <div className="border-t border-gray-200 p-4">
+        {/* User Profile & Logout - Fixed at bottom */}
+        <div className="border-t border-gray-200 p-4 flex-shrink-0">
           <div className="flex items-center space-x-3 mb-4">
             <div 
               className="h-10 w-10 rounded-full flex items-center justify-center"

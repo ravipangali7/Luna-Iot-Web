@@ -1,191 +1,317 @@
 import { io, Socket } from 'socket.io-client';
-import { API_CONFIG } from '../config/config';
+
+export interface DeviceMonitoringMessage {
+  message: string;
+  timestamp?: string;
+}
+
+export interface StatusUpdate {
+  imei: string;
+  [key: string]: unknown;
+}
+
+export interface LocationUpdate {
+  imei: string;
+  [key: string]: unknown;
+}
 
 class SocketService {
   private socket: Socket | null = null;
-  private isConnected = false;
-  private reconnectAttempts = 0;
-  private maxReconnectAttempts = 5;
-  private reconnectDelay = 1000;
+  private serverUrl: string;
+  private isConnected: boolean = false;
+  private deviceMonitoringMessages: DeviceMonitoringMessage[] = [];
+  private statusUpdates: Map<string, StatusUpdate> = new Map();
+  private locationUpdates: Map<string, LocationUpdate> = new Map();
+  private currentTrackingImei: string | null = null;
+
+  // Event listeners
+  private listeners: {
+    onConnectionChange?: (connected: boolean) => void;
+    onMessageReceived?: (message: DeviceMonitoringMessage) => void;
+    onStatusUpdate?: (imei: string, status: StatusUpdate) => void;
+    onLocationUpdate?: (imei: string, location: LocationUpdate) => void;
+  } = {};
 
   constructor() {
-    this.connect();
+    // Use the same socket URL as the Flutter app
+    this.serverUrl = 'https://www.system.mylunago.com';
   }
 
-  private connect(): void {
+  connect(): void {
+    // If already connected, don't reconnect
+    if (this.socket && this.isConnected) {
+      return;
+    }
+
+    // If socket exists but not connected, dispose it first
+    if (this.socket) {
+      this.socket.disconnect();
+      this.socket = null;
+    }
+
     try {
-      // Connect to the socket server
-      this.socket = io(API_CONFIG.SOCKET_URL, {
-        transports: ['websocket', 'polling'],
-        timeout: 20000,
-        forceNew: true,
+      this.socket = io(this.serverUrl, {
+        transports: ['websocket'],
         autoConnect: true,
         reconnection: true,
-        reconnectionAttempts: this.maxReconnectAttempts,
-        reconnectionDelay: this.reconnectDelay,
-        reconnectionDelayMax: 5000,
-        upgrade: true,
-        rememberUpgrade: true
+        reconnectionDelay: 1000,
+        reconnectionAttempts: 10,
+        timeout: 20000,
+        forceNew: true,
       });
 
-      this.socket.on('connect', () => {
-        console.log('✅ Socket connected:', this.socket?.id);
-        this.isConnected = true;
-        this.reconnectAttempts = 0;
-      });
-
-      this.socket.on('disconnect', (reason: string) => {
-        console.log('❌ Socket disconnected:', reason);
-        this.isConnected = false;
-
-        if (reason === 'io server disconnect') {
-          // Server disconnected, try to reconnect
-          this.handleReconnect();
-        }
-      });
-
-      this.socket.on('connect_error', (error: any) => {
-        console.error('❌ Socket connection error:', error);
-        this.isConnected = false;
-        this.handleReconnect();
-      });
-
-      this.socket.on('reconnect', (attemptNumber: number) => {
-        console.log('🔄 Socket reconnected after', attemptNumber, 'attempts');
-        this.isConnected = true;
-        this.reconnectAttempts = 0;
-      });
-
-      this.socket.on('reconnect_error', (error: any) => {
-        console.error('Socket reconnection error:', error);
-      });
-
-      this.socket.on('reconnect_failed', (error: any) => {
-        console.error('Socket reconnection failed:', error);
-        this.isConnected = false;
-      });
-
+      this.setupEventListeners();
     } catch (error) {
-      console.error('Failed to initialize socket:', error);
+      console.error('❌ Error connecting to socket:', error);
     }
   }
 
-  private handleReconnect(): void {
-    if (this.reconnectAttempts < this.maxReconnectAttempts) {
-      this.reconnectAttempts++;
-      const delay = this.reconnectDelay * Math.pow(2, this.reconnectAttempts - 1);
+  private setupEventListeners(): void {
+    if (!this.socket) {
+      console.error('❌ Socket is null in setupEventListeners');
+      return;
+    }
 
-      console.log(`Attempting to reconnect in ${delay}ms (attempt ${this.reconnectAttempts}/${this.maxReconnectAttempts})`);
+    // Socket event listeners
+    this.socket.on('connect', () => {
+      console.log('🔌 Socket Connected to:', this.serverUrl);
+      this.isConnected = true;
+      this.listeners.onConnectionChange?.(true);
+    });
 
-      setTimeout(() => {
-        if (this.socket) {
-          this.socket.connect();
+    this.socket.on('disconnect', () => {
+      console.log('🔌 Socket Disconnected');
+      this.isConnected = false;
+      this.listeners.onConnectionChange?.(false);
+    });
+
+    this.socket.on('connect_error', (error) => {
+      console.error('Socket connect error:', error);
+      this.isConnected = false;
+      this.listeners.onConnectionChange?.(false);
+    });
+
+    this.socket.on('reconnect', () => {
+      console.log('🔌 Socket Reconnected');
+      this.isConnected = true;
+      this.listeners.onConnectionChange?.(true);
+    });
+
+    // Listen for Device Monitoring messages
+    this.socket.on('device_monitoring', (data: unknown) => {
+      try {
+        let messageText = '';
+
+        if (data && typeof data === 'object' && 'message' in data) {
+          // New format: { message: "text" }
+          if (data.message != null) {
+            messageText = data.message.toString();
+          }
+        } else if (typeof data === 'string') {
+          // Old format: direct string
+          messageText = data;
         } else {
-          this.connect();
+          // Fallback
+          messageText = data?.toString() || '';
         }
-      }, delay);
+
+        if (messageText) {
+          console.log('📡 Device Monitoring Message:', messageText);
+          const message: DeviceMonitoringMessage = {
+            message: messageText,
+            timestamp: new Date().toISOString(),
+          };
+          this.deviceMonitoringMessages.push(message);
+          this.listeners.onMessageReceived?.(message);
+        }
+      } catch (err) {
+        console.error('Error processing device monitoring message:', err);
+        const errorMessage: DeviceMonitoringMessage = {
+          message: `Error processing: ${data}`,
+          timestamp: new Date().toISOString(),
+        };
+        this.deviceMonitoringMessages.push(errorMessage);
+        this.listeners.onMessageReceived?.(errorMessage);
+      }
+    });
+
+    // Listen for Status Updates
+    this.socket.on('status_update', (data: unknown) => {
+      this.handleStatusUpdate(data);
+      // Also notify vehicle status callbacks
+      this.vehicleStatusCallbacks.forEach(callback => callback(data));
+    });
+
+    // Listen for Location Updates
+    this.socket.on('location_update', (data: unknown) => {
+      this.handleLocationUpdate(data);
+      // Also notify vehicle location callbacks
+      this.vehicleLocationCallbacks.forEach(callback => callback(data));
+    });
+
+    // Listen for Vehicle Updates
+    this.socket.on('vehicle_update', (data: unknown) => {
+      this.vehicleUpdateCallbacks.forEach(callback => callback(data));
+    });
+  }
+
+  private handleStatusUpdate(data: unknown): void {
+    try {
+      if (!data) {
+        console.log('Received null status update data');
+        return;
+      }
+
+      if (data && typeof data === 'object' && 'imei' in data) {
+        const imei = (data as { imei: unknown }).imei?.toString();
+        if (imei) {
+          // Only process if no tracking IMEI is set OR if this matches the tracking IMEI
+          if (!this.currentTrackingImei || this.currentTrackingImei === imei) {
+            const statusUpdate = { ...data } as StatusUpdate;
+            this.statusUpdates.set(imei, statusUpdate);
+            this.listeners.onStatusUpdate?.(imei, statusUpdate);
+          }
+        }
+      } else {
+        console.log('Status update data is not an object:', typeof data);
+      }
+    } catch (err) {
+      console.error('Error handling status update:', err);
+    }
+  }
+
+  private handleLocationUpdate(data: unknown): void {
+    try {
+      if (!data) {
+        console.log('Received null location update data');
+        return;
+      }
+
+      if (data && typeof data === 'object' && 'imei' in data) {
+        const imei = (data as { imei: unknown }).imei?.toString();
+        if (imei) {
+          // Only process if no tracking IMEI is set OR if this matches the tracking IMEI
+          if (!this.currentTrackingImei || this.currentTrackingImei === imei) {
+            const locationUpdate = { ...data } as LocationUpdate;
+            this.locationUpdates.set(imei, locationUpdate);
+            this.listeners.onLocationUpdate?.(imei, locationUpdate);
+          }
+        }
+      } else {
+        console.log('Location update data is not an object:', typeof data);
+      }
+    } catch (err) {
+      console.error('Error handling location update:', err);
+    }
+  }
+
+  sendMessage(message: string): void {
+    if (this.isConnected && this.socket) {
+      this.socket.emit('send_message', { message });
     } else {
-      console.error('Max reconnection attempts reached');
+      console.log('Not connected to server');
     }
   }
 
-  // Subscribe to vehicle status updates
-  subscribeToVehicleStatus(callback: (data: any) => void): void {
-    if (this.socket) {
-      this.socket.on('status_update', callback);
-    }
-  }
-
-  // Subscribe to vehicle location updates
-  subscribeToVehicleLocation(callback: (data: any) => void): void {
-    if (this.socket) {
-      this.socket.on('location_update', callback);
-    }
-  }
-
-  // Subscribe to all vehicle updates (combines status and location)
-  subscribeToVehicleUpdates(callback: (data: any) => void): void {
-    if (this.socket) {
-      // Listen to both status and location updates
-      this.socket.on('status_update', callback);
-      this.socket.on('location_update', callback);
-    }
-  }
-
-  // Unsubscribe from vehicle status updates
-  unsubscribeFromVehicleStatus(callback: (data: any) => void): void {
-    if (this.socket) {
-      this.socket.off('status_update', callback);
-    }
-  }
-
-  // Unsubscribe from vehicle location updates
-  unsubscribeFromVehicleLocation(callback: (data: any) => void): void {
-    if (this.socket) {
-      this.socket.off('location_update', callback);
-    }
-  }
-
-  // Unsubscribe from all vehicle updates
-  unsubscribeFromVehicleUpdates(callback: (data: any) => void): void {
-    if (this.socket) {
-      this.socket.off('status_update', callback);
-      this.socket.off('location_update', callback);
-    }
-  }
-
-  // Emit events to server
-  emit(event: string, data: any): void {
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    if (this.socket && this.isConnected) {
-      this.socket.emit(event, data);
-    } else {
-      console.warn('Socket not connected, cannot emit event:', event);
-    }
-  }
-
-  // Get connection status
-  getConnectionStatus(): boolean {
-    return this.isConnected && this.socket?.connected === true;
-  }
-
-  // Get socket instance
-  getSocket(): Socket | null {
-    return this.socket;
-  }
-
-  // Disconnect socket
   disconnect(): void {
     if (this.socket) {
       this.socket.disconnect();
       this.socket = null;
-      this.isConnected = false;
     }
+    this.isConnected = false;
+    this.listeners.onConnectionChange?.(false);
   }
 
-  // Reconnect socket
+  clearMessages(): void {
+    this.deviceMonitoringMessages = [];
+  }
+
+  // Getters
+  get connected(): boolean {
+    return this.isConnected;
+  }
+
+  get messages(): DeviceMonitoringMessage[] {
+    return [...this.deviceMonitoringMessages];
+  }
+
+  getStatusForImei(imei: string): StatusUpdate | undefined {
+    return this.statusUpdates.get(imei);
+  }
+
+  getLocationForImei(imei: string): LocationUpdate | undefined {
+    return this.locationUpdates.get(imei);
+  }
+
+  // Set the current tracking IMEI - only process updates for this IMEI
+  setTrackingImei(imei: string | null): void {
+    this.currentTrackingImei = imei;
+  }
+
+  // Clear tracking IMEI - process all updates
+  clearTrackingImei(): void {
+    this.currentTrackingImei = null;
+  }
+
+  // Event listener management
+  onConnectionChange(callback: (connected: boolean) => void): void {
+    this.listeners.onConnectionChange = callback;
+  }
+
+  onMessageReceived(callback: (message: DeviceMonitoringMessage) => void): void {
+    this.listeners.onMessageReceived = callback;
+  }
+
+  onStatusUpdate(callback: (imei: string, status: StatusUpdate) => void): void {
+    this.listeners.onStatusUpdate = callback;
+  }
+
+  onLocationUpdate(callback: (imei: string, location: LocationUpdate) => void): void {
+    this.listeners.onLocationUpdate = callback;
+  }
+
+  // Additional methods for compatibility with existing code
+  getConnectionStatus(): boolean {
+    return this.isConnected;
+  }
+
   reconnect(): void {
     this.disconnect();
-    this.reconnectAttempts = 0;
     this.connect();
   }
 
-  // Subscribe to device monitoring messages
-  subscribeToDeviceMonitoring(callback: (data: any) => void): void {
-    if (this.socket) {
-      this.socket.on('device_monitoring', callback);
-    }
+  // Vehicle update subscription methods
+  private vehicleUpdateCallbacks: Set<(data: unknown) => void> = new Set();
+
+  subscribeToVehicleUpdates(callback: (data: unknown) => void): void {
+    this.vehicleUpdateCallbacks.add(callback);
   }
 
-  // Unsubscribe from device monitoring messages
-  unsubscribeFromDeviceMonitoring(callback: (data: any) => void): void {
-    if (this.socket) {
-      this.socket.off('device_monitoring', callback);
-    }
+  unsubscribeFromVehicleUpdates(callback: (data: unknown) => void): void {
+    this.vehicleUpdateCallbacks.delete(callback);
+  }
+
+  // Vehicle location and status subscription methods
+  private vehicleLocationCallbacks: Set<(data: unknown) => void> = new Set();
+  private vehicleStatusCallbacks: Set<(data: unknown) => void> = new Set();
+
+  subscribeToVehicleLocation(callback: (data: unknown) => void): void {
+    this.vehicleLocationCallbacks.add(callback);
+  }
+
+  unsubscribeFromVehicleLocation(callback: (data: unknown) => void): void {
+    this.vehicleLocationCallbacks.delete(callback);
+  }
+
+  subscribeToVehicleStatus(callback: (data: unknown) => void): void {
+    this.vehicleStatusCallbacks.add(callback);
+  }
+
+  unsubscribeFromVehicleStatus(callback: (data: unknown) => void): void {
+    this.vehicleStatusCallbacks.delete(callback);
   }
 }
 
-// Create singleton instance
-const socketService = new SocketService();
-
+// Create a singleton instance
+export const socketService = new SocketService();
 export default socketService;

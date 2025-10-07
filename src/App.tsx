@@ -21,6 +21,8 @@ import './styles/variables.css';
 import './styles/components.css';
 import LiveTrackingIndexPage from './views/live_tracking/LiveTrackingIndexPage';
 import LiveTrackingShowPage from './views/live_tracking/LiveTrackingShowPage';
+import DeviceMonitoringPage from './views/DeviceMonitoringPage';
+import VehicleMonitoringPage from './views/VehicleMonitoringPage';
 
 // Protected Route Component
 const ProtectedRoute: React.FC<{ children: React.ReactNode }> = ({ children }) => {
@@ -184,6 +186,18 @@ const AppRoutes: React.FC = () => {
         <Route path="playback" element={
           <RoleBasedRoute allowedRoles={[ROLES.SUPER_ADMIN, ROLES.DEALER, ROLES.CUSTOMER]}>
             <PlaybackIndexPage />
+          </RoleBasedRoute>
+        } />
+
+        {/* Monitoring Routes - All roles can access */}
+        <Route path="monitoring/device" element={
+          <RoleBasedRoute allowedRoles={[ROLES.SUPER_ADMIN, ROLES.DEALER, ROLES.CUSTOMER]}>
+            <DeviceMonitoringPage />
+          </RoleBasedRoute>
+        } />
+        <Route path="monitoring/vehicle" element={
+          <RoleBasedRoute allowedRoles={[ROLES.SUPER_ADMIN, ROLES.DEALER, ROLES.CUSTOMER]}>
+            <VehicleMonitoringPage />
           </RoleBasedRoute>
         } />
 

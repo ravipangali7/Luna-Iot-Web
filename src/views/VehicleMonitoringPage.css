@@ -1,0 +1,328 @@
+/* Vehicle Monitoring Page Styles - Based on Live Tracking */
+
+.vehicle-monitoring-container {
+  display: flex;
+  flex-direction: column;
+  height: 100vh;
+  background-color: #f5f5f5;
+}
+
+/* Header - exact same as live tracking */
+.live-tracking-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 8px 12px;
+  background: white;
+  box-shadow: 0 1px 2px rgba(0,0,0,0.1);
+  z-index: 1000;
+  gap: 12px;
+}
+
+.header-title {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.header-title h3 {
+  margin: 0;
+  color: #333;
+  font-size: 13px;
+  font-weight: 600;
+}
+
+.title-icon {
+  font-size: 10px;
+}
+
+.connection-status {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  padding: 2px 6px;
+  border-radius: 8px;
+  font-size: 9px;
+  font-weight: 500;
+}
+
+.connection-status.connected {
+  background-color: #E8F5E8;
+  color: #2E7D32;
+}
+
+.connection-status.disconnected {
+  background-color: #FFEBEE;
+  color: #C62828;
+}
+
+.status-dot {
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  background-color: currentColor;
+  animation: pulse 2s infinite;
+}
+
+@keyframes pulse {
+  0% { opacity: 1; }
+  50% { opacity: 0.5; }
+  100% { opacity: 1; }
+}
+
+/* Background loading indicator */
+.background-loading-indicator {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding: 2px 8px;
+  background-color: #E3F2FD;
+  border: 1px solid #2196F3;
+  border-radius: 12px;
+  font-size: 9px;
+  color: #1976D2;
+  margin-left: 8px;
+}
+
+.loading-spinner-small {
+  width: 10px;
+  height: 10px;
+  border: 2px solid #E3F2FD;
+  border-top: 2px solid #1976D2;
+  border-radius: 50%;
+  animation: spin 1s linear infinite;
+}
+
+.loading-text-small {
+  font-weight: 500;
+  white-space: nowrap;
+}
+
+/* Status filters - exact same as live tracking */
+.status-filters {
+  display: flex;
+  gap: 4px;
+  flex-wrap: wrap;
+}
+
+.filter-button {
+  padding: 4px 8px;
+  border: 1px solid #e0e0e0;
+  background: purple    ;
+  border-radius: 4px;
+  font-size: 9px;
+  font-weight: 500;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  white-space: nowrap;
+  color: white;
+}
+
+.filter-button:hover {
+  background: #f8f9fa;
+  border-color: #ccc;
+}
+
+.filter-button.active {
+  background: #1976D2;
+  color: white;
+  border-color: #1976D2;
+}
+
+.filter-button.stopped.active {
+  background: #f44336;
+  border-color: #f44336;
+}
+
+.filter-button.running.active {
+  background: #4caf50;
+  border-color: #4caf50;
+}
+
+.filter-button.overspeed.active {
+  background: #ff9800;
+  border-color: #ff9800;
+}
+
+.filter-button.idle.active {
+  background: #ffeb3b;
+  border-color: #ffeb3b;
+  color: #333;
+}
+
+.filter-button.inactive.active {
+  background: #2196f3;
+  border-color: #2196f3;
+}
+
+.filter-button.no_data.active {
+  background: #9e9e9e;
+  border-color: #9e9e9e;
+}
+
+/* Main content - full width map */
+.vehicle-monitoring-content {
+  flex: 1;
+  display: flex;
+  position: relative;
+}
+
+.map-container-full {
+  flex: 1;
+  position: relative;
+}
+
+.map {
+  width: 100%;
+  height: 100%;
+}
+
+.map-marker {
+  transition: transform 0.2s ease;
+}
+
+.map-marker:hover {
+  transform: scale(1.1);
+}
+
+/* Loading and Error States */
+.loading-container {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  height: 100vh;
+  background-color: #f5f5f5;
+}
+
+.loading-spinner {
+  width: 40px;
+  height: 40px;
+  border: 4px solid #e0e0e0;
+  border-top: 4px solid #1976D2;
+  border-radius: 50%;
+  animation: spin 1s linear infinite;
+  margin-bottom: 16px;
+}
+
+@keyframes spin {
+  0% { transform: rotate(0deg); }
+  100% { transform: rotate(360deg); }
+}
+
+.loading-text {
+  color: #666;
+  font-size: 14px;
+  font-weight: 500;
+  margin-bottom: 16px;
+}
+
+.loading-progress {
+  width: 100%;
+  max-width: 400px;
+  margin-top: 16px;
+}
+
+.progress-bar {
+  width: 100%;
+  height: 8px;
+  background-color: #e0e0e0;
+  border-radius: 4px;
+  overflow: hidden;
+  margin-bottom: 8px;
+}
+
+.progress-fill {
+  height: 100%;
+  background: linear-gradient(90deg, #1976D2, #42A5F5);
+  border-radius: 4px;
+  transition: width 0.3s ease;
+  animation: progress-shimmer 2s infinite;
+}
+
+@keyframes progress-shimmer {
+  0% { background-position: -200px 0; }
+  100% { background-position: calc(200px + 100%) 0; }
+}
+
+.progress-text {
+  color: #666;
+  font-size: 12px;
+  text-align: center;
+  font-weight: 500;
+}
+
+.error-container {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  height: 100vh;
+  background-color: #f5f5f5;
+  text-align: center;
+}
+
+.error-icon {
+  font-size: 48px;
+  margin-bottom: 16px;
+}
+
+.error-message {
+  color: #f44336;
+  font-size: 16px;
+  font-weight: 500;
+  margin-bottom: 24px;
+  max-width: 400px;
+}
+
+.retry-button {
+  padding: 12px 24px;
+  background: #1976D2;
+  color: white;
+  border: none;
+  border-radius: 6px;
+  font-size: 14px;
+  font-weight: 500;
+  cursor: pointer;
+  transition: background-color 0.2s ease;
+}
+
+.retry-button:hover {
+  background: #1565C0;
+}
+
+/* Responsive Design */
+@media (max-width: 768px) {
+  .live-tracking-header {
+    flex-direction: column;
+    align-items: stretch;
+    gap: 8px;
+    padding: 12px;
+  }
+  
+  .header-title {
+    justify-content: center;
+  }
+  
+  .status-filters {
+    justify-content: center;
+    gap: 2px;
+  }
+  
+  .filter-button {
+    font-size: 8px;
+    padding: 3px 6px;
+  }
+}
+
+@media (max-width: 480px) {
+  .status-filters {
+    flex-wrap: wrap;
+    gap: 1px;
+  }
+  
+  .filter-button {
+    font-size: 7px;
+    padding: 2px 4px;
+  }
+}

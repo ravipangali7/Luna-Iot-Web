@@ -1,3 +1,5 @@
+import { GOOGLE_MAPS_CONFIG } from "./maps";
+
 // API Configuration
 export const API_CONFIG = {
     // Node.js backend (old)
@@ -32,4 +34,9 @@ export const API_CONFIG = {
       DANGER_COLOR: '#ef4444',
       INFO_COLOR: '#3b82f6',
     },
+  } as const;
+
+  // Maps Configuration
+  export const MAPS_CONFIG = {
+    GOOGLE_MAPS_API_KEY: GOOGLE_MAPS_CONFIG.apiKey
   } as const;
