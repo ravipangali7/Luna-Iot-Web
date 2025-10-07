@@ -16,9 +16,9 @@ export default function LoginPage() {
   const [phone, setPhone] = useState('');
   const [password, setPassword] = useState('');
   const [error, setError] = useState('');
-  const [recaptchaVerified, setRecaptchaVerified] = useState(false);
   const { login, isLoading, user } = useAuth(); // Get user from auth context
   const navigate = useNavigate();
+
 
   // Role-based redirect after login
   useEffect(() => {
@@ -40,49 +40,11 @@ export default function LoginPage() {
     }
   }, [user, navigate]);
 
-  // reCAPTCHA callback function
-  const onRecaptchaChange = (token: string | null) => {
-    setRecaptchaVerified(!!token);
-  };
-
-  // Make callback available globally for reCAPTCHA and render reCAPTCHA
-  useEffect(() => {
-    // Set up global callback
-    (window as any).onRecaptchaChange = onRecaptchaChange;
-    
-    // Render reCAPTCHA when component mounts
-    const renderRecaptcha = () => {
-      if ((window as any).grecaptcha && (window as any).grecaptcha.render) {
-        const element = document.querySelector('.g-recaptcha');
-        if (element && !element.hasChildNodes()) {
-          (window as any).grecaptcha.render(element, {
-            'sitekey': '6LeXVOErAAAAAPZnzDfq8xe_IBpvF96OuRn4HjSJ',
-            'callback': onRecaptchaChange
-          });
-        }
-      }
-    };
-
-    // Try to render immediately
-    renderRecaptcha();
-
-    // Also try after a short delay in case script is still loading
-    const timer = setTimeout(renderRecaptcha, 1000);
-
-    return () => {
-      delete (window as any).onRecaptchaChange;
-      clearTimeout(timer);
-    };
-  }, []);
 
   const handleLogin = async (e: React.FormEvent) => {
     e.preventDefault();
     setError('');
 
-    if (!recaptchaVerified) {
-      setError('Please complete the reCAPTCHA verification.');
-      return;
-    }
 
     try {
       
@@ -193,17 +155,13 @@ export default function LoginPage() {
                 />
               </div>
 
-              {/* reCAPTCHA */}
-              <div className="pt-2">
-                <div className="g-recaptcha"></div>
-              </div>
 
               <div className="pt-2">
                 <Button
                   type="submit"
                   variant="primary"
                   size="md"
-                  disabled={isLoading || !recaptchaVerified}
+                  disabled={isLoading}
                   loading={isLoading}
                   className="w-full h-10 text-sm font-semibold"
                 >
