@@ -22,6 +22,7 @@ import './styles/components.css';
 import LiveTrackingIndexPage from './views/live_tracking/LiveTrackingIndexPage';
 import LiveTrackingShowPage from './views/live_tracking/LiveTrackingShowPage';
 import DeviceMonitoringPage from './views/DeviceMonitoringPage';
+import DeviceMonitoringShowPage from './views/DeviceMonitoringShowPage';
 import VehicleMonitoringPage from './views/VehicleMonitoringPage';
 
 // Protected Route Component
@@ -193,6 +194,11 @@ const AppRoutes: React.FC = () => {
         <Route path="monitoring/device" element={
           <RoleBasedRoute allowedRoles={[ROLES.SUPER_ADMIN, ROLES.DEALER, ROLES.CUSTOMER]}>
             <DeviceMonitoringPage />
+          </RoleBasedRoute>
+        } />
+        <Route path="monitoring/device/:imei" element={
+          <RoleBasedRoute allowedRoles={[ROLES.SUPER_ADMIN, ROLES.DEALER, ROLES.CUSTOMER]}>
+            <DeviceMonitoringShowPage />
           </RoleBasedRoute>
         } />
         <Route path="monitoring/vehicle" element={

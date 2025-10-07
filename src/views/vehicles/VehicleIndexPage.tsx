@@ -403,6 +403,10 @@ const VehicleIndexPage: React.FC = () => {
     }
   };
 
+  const handleDeviceMonitoring = (vehicle: Vehicle) => {
+    navigate(`/monitoring/device/${vehicle.imei}`);
+  };
+
   const toggleDropdown = (vehicleId: string) => {
     setDropdownOpen(prev => ({
       ...prev,
@@ -695,6 +699,14 @@ const VehicleIndexPage: React.FC = () => {
                           <div className="space-y-1">
                             <div className="font-mono text-sm">{vehicle.imei}</div>
                             <Badge variant="secondary" size="sm">{vehicle.device?.phone || 'N/A'}</Badge>
+                            <div className="mt-2">
+                              <button
+                              className="bg-gray-700 text-white pt-1 pb-2 pl-1 pr-5 shadow-md"
+                              onClick={() => handleDeviceMonitoring(vehicle)}
+                              >
+                                {'>_'}
+                              </button>
+                            </div>
                           </div>
                         </TableCell>
                         <TableCell>
