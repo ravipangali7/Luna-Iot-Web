@@ -137,6 +137,11 @@ const LiveTrackingShowPage: React.FC<LiveTrackingShowPageProps> = ({ imei: propI
 
   // Load vehicle data
   const loadVehicleData = useCallback(async () => {
+    if (!imei) {
+      showError('Invalid IMEI', 'No IMEI provided for vehicle tracking.');
+      return;
+    }
+    
     try {
       setLoading(true);
       const response = await vehicleService.getVehicleByImei(imei);
