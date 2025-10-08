@@ -192,17 +192,17 @@ const AppRoutes: React.FC = () => {
 
         {/* Monitoring Routes - All roles can access */}
         <Route path="monitoring/device" element={
-          <RoleBasedRoute allowedRoles={[ROLES.SUPER_ADMIN, ROLES.DEALER, ROLES.CUSTOMER]}>
+          <RoleBasedRoute allowedRoles={[ROLES.SUPER_ADMIN]}>
             <DeviceMonitoringPage />
           </RoleBasedRoute>
         } />
         <Route path="monitoring/device/:imei" element={
-          <RoleBasedRoute allowedRoles={[ROLES.SUPER_ADMIN, ROLES.DEALER, ROLES.CUSTOMER]}>
+          <RoleBasedRoute allowedRoles={[ROLES.SUPER_ADMIN]}>
             <DeviceMonitoringShowPage />
           </RoleBasedRoute>
         } />
         <Route path="monitoring/vehicle" element={
-          <RoleBasedRoute allowedRoles={[ROLES.SUPER_ADMIN, ROLES.DEALER, ROLES.CUSTOMER]}>
+          <RoleBasedRoute allowedRoles={[ROLES.SUPER_ADMIN]}>
             <VehicleMonitoringPage />
           </RoleBasedRoute>
         } />
