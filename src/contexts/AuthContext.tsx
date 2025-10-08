@@ -2,6 +2,7 @@ import { createContext, useState, useEffect } from 'react';
 import type { ReactNode } from 'react';
 import { authService } from '../api/services/authService';
 import type { User } from '../types/auth';
+import socketService from '../services/socketService';
 import { 
   hasRole, 
   hasPermission,
@@ -108,14 +109,19 @@ export function AuthProvider({ children }: { children: ReactNode }) {
           
           if (response.success && response.user) {
             setUser(response.user);
+            // Update socket service with current user for role-based access
+            socketService.setCurrentUser(response.user);
           } else {
             localStorage.removeItem('token');
             localStorage.removeItem('phone');
             setUser(null);
+            // Clear user from socket service
+            socketService.setCurrentUser(null);
           }
         } else {
-          console.log('No token or phone found, user not authenticated');
           setUser(null);
+          // Clear user from socket service
+          socketService.setCurrentUser(null);
         }
       } catch (error) {
         console.error('Auth check error:', error);
@@ -123,9 +129,10 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         localStorage.removeItem('token');
         localStorage.removeItem('phone');
         setUser(null);
+        // Clear user from socket service
+        socketService.setCurrentUser(null);
       } finally {
         setIsLoading(false);
-        console.log('Auth check completed, isLoading set to false');
       }
     };
 
@@ -139,10 +146,10 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       
       if (response.success && response.user) {
         setUser(response.user);
-        console.log('Login successful, user set and credentials saved');
+        // Update socket service with current user for role-based access
+        socketService.setCurrentUser(response.user);
         return true;
       } else {
-        console.log('Login failed:', response);
         return false;
       }
     } catch (error) {
@@ -154,8 +161,9 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   };
 
   const logout = () => {
-    console.log('Logging out, clearing user and credentials');
     setUser(null);
+    // Clear user from socket service
+    socketService.setCurrentUser(null);
     // authService.logout() will handle clearing localStorage
     authService.logout();
   };

@@ -1,30 +1,41 @@
 import React, { useState, useEffect, useRef } from 'react';
 import socketService, { type DeviceMonitoringMessage } from '../services/socketService';
+import { useAuth } from '../hooks/useAuth';
+import { ROLES } from '../utils/roleUtils';
 
 const DeviceMonitoringPage: React.FC = () => {
+  const { user } = useAuth();
   const [isConnected, setIsConnected] = useState(false);
   const [messages, setMessages] = useState<DeviceMonitoringMessage[]>([]);
   const [autoScroll, setAutoScroll] = useState(true);
   const messagesEndRef = useRef<HTMLDivElement>(null);
 
+  // Check if user is super admin
+  const isSuperAdmin = user?.roles?.some(role => role.name === ROLES.SUPER_ADMIN) || false;
+
   useEffect(() => {
-    // Connect to socket
-    socketService.connect();
+    // Only connect to socket if user is super admin
+    if (isSuperAdmin) {
+      // Connect to socket
+      socketService.connect();
 
-    // Set up event listeners
-    socketService.onConnectionChange((connected) => {
-      setIsConnected(connected);
-    });
+      // Set up event listeners
+      socketService.onConnectionChange((connected) => {
+        setIsConnected(connected);
+      });
 
-    socketService.onMessageReceived((message) => {
-      setMessages(prev => [...prev, message]);
-    });
+      socketService.onMessageReceived((message) => {
+        setMessages(prev => [...prev, message]);
+      });
+    }
 
     // Cleanup on unmount
     return () => {
-      socketService.disconnect();
+      if (isSuperAdmin) {
+        socketService.disconnect();
+      }
     };
-  }, []);
+  }, [isSuperAdmin]);
 
   // Auto-scroll to bottom when new messages arrive
   useEffect(() => {
@@ -34,9 +45,27 @@ const DeviceMonitoringPage: React.FC = () => {
   }, [messages, autoScroll]);
 
   const refreshMonitoring = () => {
-    socketService.clearMessages();
-    setMessages([]);
+    if (isSuperAdmin) {
+      socketService.clearMessages();
+      setMessages([]);
+    }
   };
+
+  // Show access denied message for non-super-admin users
+  if (!isSuperAdmin) {
+    return (
+      <div className="h-[90vh] bg-black text-red-400 font-mono overflow-hidden flex flex-col items-center justify-center">
+        <div className="text-center">
+          <div className="text-6xl mb-4">🚫</div>
+          <h1 className="text-2xl font-bold mb-2">Access Denied</h1>
+          <p className="text-lg mb-4">Device Monitoring is restricted to Super Administrators only.</p>
+          <p className="text-sm text-gray-400">
+            Your role: {user?.roles?.map(role => role.name).join(', ') || 'No role assigned'}
+          </p>
+        </div>
+      </div>
+    );
+  }
 
 
   return (

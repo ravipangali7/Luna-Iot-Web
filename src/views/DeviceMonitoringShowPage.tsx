@@ -1,6 +1,8 @@
 import React, { useState, useEffect, useRef, useCallback } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import socketService, { type DeviceMonitoringMessage } from '../services/socketService';
+import { useAuth } from '../hooks/useAuth';
+import { ROLES } from '../utils/roleUtils';
 import { deviceService } from '../api/services/deviceService';
 import { vehicleService } from '../api/services/vehicleService';
 import type { Device } from '../types/device';
@@ -16,6 +18,7 @@ import ArrowBackIcon from '@mui/icons-material/ArrowBack';
 const DeviceMonitoringShowPage: React.FC = () => {
   const { imei } = useParams<{ imei: string }>();
   const navigate = useNavigate();
+  const { user } = useAuth();
   const [isConnected, setIsConnected] = useState(false);
   const [messages, setMessages] = useState<DeviceMonitoringMessage[]>([]);
   const [filteredMessages, setFilteredMessages] = useState<DeviceMonitoringMessage[]>([]);
@@ -25,6 +28,9 @@ const DeviceMonitoringShowPage: React.FC = () => {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const messagesEndRef = useRef<HTMLDivElement>(null);
+
+  // Check if user is super admin
+  const isSuperAdmin = user?.roles?.some(role => role.name === ROLES.SUPER_ADMIN) || false;
 
   const loadDeviceData = useCallback(async () => {
     if (!imei) return;
@@ -66,6 +72,13 @@ const DeviceMonitoringShowPage: React.FC = () => {
       return;
     }
 
+    // Only proceed if user is super admin
+    if (!isSuperAdmin) {
+      setError('Access denied - Super Admin required');
+      setLoading(false);
+      return;
+    }
+
     // Load device and vehicle data
     loadDeviceData();
 
@@ -85,7 +98,7 @@ const DeviceMonitoringShowPage: React.FC = () => {
     return () => {
       socketService.disconnect();
     };
-  }, [imei, loadDeviceData]);
+  }, [imei, loadDeviceData, isSuperAdmin]);
 
   // Filter messages for this specific IMEI
   useEffect(() => {

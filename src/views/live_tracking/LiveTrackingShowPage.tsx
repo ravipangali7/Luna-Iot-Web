@@ -111,19 +111,6 @@ const LiveTrackingShowPage: React.FC<LiveTrackingShowPageProps> = ({ imei: propI
   // Use IMEI from URL params if available, otherwise use prop
   const imei = urlImei || propImei;
   
-  // Validate IMEI
-  if (!imei) {
-    return (
-      <div className="live-tracking-error">
-        <h3>Invalid Vehicle</h3>
-        <p>No vehicle IMEI provided</p>
-        <button onClick={() => navigate('/live-tracking')} className="back-button">
-          Go to Live Tracking
-        </button>
-      </div>
-    );
-  }
-  
   const [vehicle, setVehicle] = useState<Vehicle | null>(null);
   const [loading, setLoading] = useState(true);
   const [currentLocation, setCurrentLocation] = useState<LocationData | null>(null);
@@ -139,6 +126,7 @@ const LiveTrackingShowPage: React.FC<LiveTrackingShowPageProps> = ({ imei: propI
   const [weatherData, setWeatherData] = useState<any>(null);
   const [altitude, setAltitude] = useState<string>('...');
   const [loadingAltitude, setLoadingAltitude] = useState(false);
+  const [isSocketConnected, setIsSocketConnected] = useState(false);
 
   const mapControllerRef = useRef<any>(null);
   const mapRef = useRef<any>(null);
@@ -338,7 +326,6 @@ const LiveTrackingShowPage: React.FC<LiveTrackingShowPageProps> = ({ imei: propI
         };
       });
 
-      console.log('📍 Location updated:', newLocation);
     } catch (error) {
       console.error('Error handling location update:', error);
     }
@@ -373,7 +360,6 @@ const LiveTrackingShowPage: React.FC<LiveTrackingShowPageProps> = ({ imei: propI
       const newVehicleState = VehicleUtils.getState(updatedVehicle);
       setVehicleState(newVehicleState);
 
-      console.log('🔋 Status updated:', newStatus);
     } catch (error) {
       console.error('Error handling status update:', error);
     }
@@ -382,6 +368,11 @@ const LiveTrackingShowPage: React.FC<LiveTrackingShowPageProps> = ({ imei: propI
   // Start real-time tracking
   const startRealTimeTracking = useCallback(() => {
     if (!vehicle || isTracking) return;
+
+    // Ensure socket is connected first
+    if (!socketService.getConnectionStatus()) {
+      socketService.connect();
+    }
 
     setIsTracking(true);
 
@@ -397,7 +388,6 @@ const LiveTrackingShowPage: React.FC<LiveTrackingShowPageProps> = ({ imei: propI
     socketService.subscribeToVehicleLocation(locationHandler);
     socketService.subscribeToVehicleStatus(statusHandler);
 
-    console.log('🚀 Started real-time tracking for vehicle:', vehicle.imei);
   }, [vehicle, isTracking, handleLocationUpdate, handleStatusUpdate]);
 
   // Stop real-time tracking
@@ -416,7 +406,6 @@ const LiveTrackingShowPage: React.FC<LiveTrackingShowPageProps> = ({ imei: propI
       statusUpdateHandlerRef.current = null;
     }
 
-    console.log('🛑 Stopped real-time tracking');
   }, [isTracking]);
 
   // Initialize map
@@ -522,6 +511,17 @@ const LiveTrackingShowPage: React.FC<LiveTrackingShowPageProps> = ({ imei: propI
     loadVehicleData();
   }, [loadVehicleData]);
 
+  // Set up socket connection status monitoring
+  useEffect(() => {
+    // Set up connection status listener
+    socketService.onConnectionChange((connected) => {
+      setIsSocketConnected(connected);
+    });
+
+    // Initial connection status
+    setIsSocketConnected(socketService.getConnectionStatus());
+  }, []);
+
   // Start real-time tracking when vehicle is loaded
   useEffect(() => {
     if (vehicle && !isTracking) {
@@ -548,6 +548,18 @@ const LiveTrackingShowPage: React.FC<LiveTrackingShowPageProps> = ({ imei: propI
     };
   }, [stopRealTimeTracking]);
 
+  // Validate IMEI
+  if (!imei) {
+    return (
+      <div className="live-tracking-error">
+        <h3>Invalid Vehicle</h3>
+        <p>No vehicle IMEI provided</p>
+        <button onClick={() => navigate('/live-tracking')} className="back-button">
+          Go to Live Tracking
+        </button>
+      </div>
+    );
+  }
 
   if (loading) {
     return (
@@ -582,9 +594,9 @@ const LiveTrackingShowPage: React.FC<LiveTrackingShowPageProps> = ({ imei: propI
           <span className="vehicle-info-item"><DirectionsCarIcon   /> {vehicle.vehicleNo}</span>
           <span className="vehicle-info-item"><LocationOnIcon /> {currentAddress}</span>
           <span className="vehicle-info-item"><SpeedIcon /> {currentLocation?.speed?.toFixed(0) || 0} KM/H</span>
-          {/* <span className={`tracking-status ${isTracking ? 'tracking-active' : 'tracking-inactive'}`}>
-            {isTracking ? '🟢 LIVE' : '🔴 OFFLINE'}
-          </span> */}
+          <span className={`tracking-status ${isSocketConnected ? 'tracking-active' : 'tracking-inactive'}`}>
+            {isSocketConnected ? '🟢 LIVE' : '🔴 DISCONNECTED'}
+          </span>
         </div>
       </div>
 

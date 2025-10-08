@@ -1,4 +1,7 @@
 import { io, Socket } from 'socket.io-client';
+import { API_CONFIG } from '../config/config';
+import { ROLES } from '../utils/roleUtils';
+import type { User } from '../types/auth';
 
 export interface DeviceMonitoringMessage {
   message: string;
@@ -23,6 +26,7 @@ class SocketService {
   private statusUpdates: Map<string, StatusUpdate> = new Map();
   private locationUpdates: Map<string, LocationUpdate> = new Map();
   private currentTrackingImei: string | null = null;
+  private currentUser: User | null = null;
 
   // Event listeners
   private listeners: {
@@ -33,8 +37,21 @@ class SocketService {
   } = {};
 
   constructor() {
-    // Use the same socket URL as the Flutter app
-    this.serverUrl = 'https://www.system.mylunago.com';
+    // Use the socket URL from config
+    this.serverUrl = API_CONFIG.SOCKET_URL;
+  }
+
+  // Set current user for role-based access control
+  setCurrentUser(user: User | null): void {
+    this.currentUser = user;
+  }
+
+  // Check if current user is super admin
+  private isSuperAdmin(): boolean {
+    if (!this.currentUser?.roles || this.currentUser.roles.length === 0) {
+      return false;
+    }
+    return this.currentUser.roles.some(role => role.name === ROLES.SUPER_ADMIN);
   }
 
   connect(): void {
@@ -61,44 +78,55 @@ class SocketService {
       });
 
       this.setupEventListeners();
-    } catch (error) {
-      console.error('❌ Error connecting to socket:', error);
+    } catch {
+      this.isConnected = false;
+      this.listeners.onConnectionChange?.(false);
     }
   }
 
   private setupEventListeners(): void {
     if (!this.socket) {
-      console.error('❌ Socket is null in setupEventListeners');
       return;
     }
 
     // Socket event listeners
     this.socket.on('connect', () => {
-      console.log('🔌 Socket Connected to:', this.serverUrl);
       this.isConnected = true;
       this.listeners.onConnectionChange?.(true);
     });
 
     this.socket.on('disconnect', () => {
-      console.log('🔌 Socket Disconnected');
       this.isConnected = false;
       this.listeners.onConnectionChange?.(false);
     });
 
-    this.socket.on('connect_error', (error) => {
-      console.error('Socket connect error:', error);
+    this.socket.on('connect_error', () => {
+      this.isConnected = false;
+      this.listeners.onConnectionChange?.(false);
+    });
+
+    this.socket.on('reconnect_error', () => {
+      this.isConnected = false;
+      this.listeners.onConnectionChange?.(false);
+    });
+
+    this.socket.on('reconnect_failed', () => {
       this.isConnected = false;
       this.listeners.onConnectionChange?.(false);
     });
 
     this.socket.on('reconnect', () => {
-      console.log('🔌 Socket Reconnected');
       this.isConnected = true;
       this.listeners.onConnectionChange?.(true);
     });
 
-    // Listen for Device Monitoring messages
+    // Listen for Device Monitoring messages (Super Admin only)
     this.socket.on('device_monitoring', (data: unknown) => {
+      // Check if user is super admin before processing device monitoring data
+      if (!this.isSuperAdmin()) {
+        return;
+      }
+
       try {
         let messageText = '';
 
@@ -116,7 +144,6 @@ class SocketService {
         }
 
         if (messageText) {
-          console.log('📡 Device Monitoring Message:', messageText);
           const message: DeviceMonitoringMessage = {
             message: messageText,
             timestamp: new Date().toISOString(),
@@ -124,8 +151,7 @@ class SocketService {
           this.deviceMonitoringMessages.push(message);
           this.listeners.onMessageReceived?.(message);
         }
-      } catch (err) {
-        console.error('Error processing device monitoring message:', err);
+      } catch {
         const errorMessage: DeviceMonitoringMessage = {
           message: `Error processing: ${data}`,
           timestamp: new Date().toISOString(),
@@ -158,7 +184,6 @@ class SocketService {
   private handleStatusUpdate(data: unknown): void {
     try {
       if (!data) {
-        console.log('Received null status update data');
         return;
       }
 
@@ -172,18 +197,15 @@ class SocketService {
             this.listeners.onStatusUpdate?.(imei, statusUpdate);
           }
         }
-      } else {
-        console.log('Status update data is not an object:', typeof data);
       }
-    } catch (err) {
-      console.error('Error handling status update:', err);
+    } catch {
+      // Silent error handling
     }
   }
 
   private handleLocationUpdate(data: unknown): void {
     try {
       if (!data) {
-        console.log('Received null location update data');
         return;
       }
 
@@ -197,19 +219,15 @@ class SocketService {
             this.listeners.onLocationUpdate?.(imei, locationUpdate);
           }
         }
-      } else {
-        console.log('Location update data is not an object:', typeof data);
       }
-    } catch (err) {
-      console.error('Error handling location update:', err);
+    } catch {
+      // Silent error handling
     }
   }
 
   sendMessage(message: string): void {
     if (this.isConnected && this.socket) {
       this.socket.emit('send_message', { message });
-    } else {
-      console.log('Not connected to server');
     }
   }
 

@@ -9,6 +9,7 @@ import VehicleCard from '../../components/VehicleCard';
 import Pagination from '../../components/ui/pagination/Pagination';
 import { useSocketUpdates } from '../../hooks/useSocketUpdates';
 import { showError } from '../../utils/sweetAlert';
+import socketService from '../../services/socketService';
 import './LiveTrackingIndexPage.css';
 
 interface StatusCounts {
@@ -398,24 +399,28 @@ const LiveTrackingIndexPage: React.FC = () => {
     }
   };
 
-  const handleWeather = (vehicle: Vehicle) => {
-    console.log('Show weather for vehicle:', vehicle);
+  const handleWeather = () => {
     // Add weather modal logic here
   };
 
-  const handleRelayControl = (vehicle: Vehicle) => {
-    console.log('Show relay control for vehicle:', vehicle);
+  const handleRelayControl = () => {
     // Add relay control modal logic here
   };
 
-  const handleDelete = (vehicle: Vehicle) => {
-    console.log('Delete vehicle:', vehicle);
+  const handleDelete = () => {
     // Add delete confirmation logic here
   };
 
-  const handleNearby = (vehicle: Vehicle) => {
-    console.log('Show nearby places for vehicle:', vehicle);
+  const handleNearby = () => {
     // Add nearby places modal logic here
+  };
+
+  const handleReconnect = () => {
+    // Force reconnect
+    socketService.disconnect();
+    setTimeout(() => {
+      socketService.connect();
+    }, 1000);
   };
 
   const getFilterButtonClass = (filter: VehicleStateType | 'all') => {
@@ -446,6 +451,15 @@ const LiveTrackingIndexPage: React.FC = () => {
             <span className="status-text">
               {isConnected ? 'Connected' : 'Disconnected'}
             </span>
+            {!isConnected && (
+              <button 
+                onClick={handleReconnect}
+                className="reconnect-btn"
+                title="Reconnect to server"
+              >
+                🔄
+              </button>
+            )}
           </div>
         </div>
         
