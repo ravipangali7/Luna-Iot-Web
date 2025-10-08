@@ -1,7 +1,9 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { deviceService } from '../../api/services/deviceService';
+import { subscriptionPlanService } from '../../api/services/subscriptionPlanService';
 import type { DeviceFormData } from '../../types/device';
+import type { SubscriptionPlan } from '../../types/subscriptionPlan';
 import Container from '../../components/ui/layout/Container';
 import Card from '../../components/ui/cards/Card';
 import CardHeader from '../../components/ui/cards/CardHeader';
@@ -22,9 +24,30 @@ const DeviceCreatePage: React.FC = () => {
     sim: '',
     protocol: '',
     iccid: '',
-    model: ''
+    model: '',
+    subscription_plan: null
   });
   const [errors, setErrors] = useState<Partial<DeviceFormData>>({});
+  const [subscriptionPlans, setSubscriptionPlans] = useState<SubscriptionPlan[]>([]);
+  const [loadingPlans, setLoadingPlans] = useState(true);
+
+  useEffect(() => {
+    fetchSubscriptionPlans();
+  }, []);
+
+  const fetchSubscriptionPlans = async () => {
+    try {
+      setLoadingPlans(true);
+      const response = await subscriptionPlanService.getAllSubscriptionPlans();
+      if (response.success && response.data) {
+        setSubscriptionPlans(response.data);
+      }
+    } catch (err) {
+      console.error('Error fetching subscription plans:', err);
+    } finally {
+      setLoadingPlans(false);
+    }
+  };
 
   const validateForm = (): boolean => {
     const newErrors: Partial<DeviceFormData> = {};
@@ -67,7 +90,7 @@ const DeviceCreatePage: React.FC = () => {
     return Object.keys(newErrors).length === 0;
   };
 
-  const handleInputChange = (field: keyof DeviceFormData, value: string) => {
+  const handleInputChange = (field: keyof DeviceFormData, value: string | number | null) => {
     setFormData(prev => ({ ...prev, [field]: value }));
     // Clear error when user starts typing
     if (errors[field]) {
@@ -218,6 +241,28 @@ const DeviceCreatePage: React.FC = () => {
                   />
                   <p className="text-xs text-gray-500 mt-1">
                     ICCID is optional. If provided, it must be 19-20 digits.
+                  </p>
+                </div>
+
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">
+                    Subscription Plan
+                  </label>
+                  <Select
+                    value={formData.subscription_plan?.toString() || ''}
+                    onChange={(value) => handleInputChange('subscription_plan', value ? parseInt(value) : null)}
+                    error={errors.subscription_plan?.toString()}
+                    options={[
+                      { value: '', label: 'Select subscription plan (optional)' },
+                      ...subscriptionPlans.map(plan => ({
+                        value: plan.id.toString(),
+                        label: `${plan.title} - Rs ${plan.price}`
+                      }))
+                    ]}
+                    disabled={loadingPlans}
+                  />
+                  <p className="text-xs text-gray-500 mt-1">
+                    Subscription plan is optional. You can assign it later.
                   </p>
                 </div>
               </div>

@@ -14,6 +14,7 @@ import { PlaybackIndexPage } from './views/playback';
 import { InstituteIndexPage, InstituteCreatePage, InstituteEditPage, InstituteShowPage } from './views/institute';
 import { InstituteServiceIndexPage, InstituteServiceCreatePage, InstituteServiceEditPage } from './views/institute/services';
 import { InstituteModuleCreatePage, InstituteModuleEditPage } from './views/institute/modules';
+import { SubscriptionPlanIndexPage, SubscriptionPlanCreatePage, SubscriptionPlanEditPage } from './views/subscriptionPlans';
 import RoleBasedRoute from './components/role-based/RoleBasedRoute';
 import { ROLES } from './utils/roleUtils';
 
@@ -255,6 +256,23 @@ const AppRoutes: React.FC = () => {
         <Route path="institute/modules/:id/edit" element={
           <RoleBasedRoute allowedRoles={[ROLES.SUPER_ADMIN]}>
             <InstituteModuleEditPage />
+          </RoleBasedRoute>
+        } />
+
+        {/* Subscription Plan Routes - Super Admin and Manager only */}
+        <Route path="subscription-plans" element={
+          <RoleBasedRoute allowedRoles={[ROLES.SUPER_ADMIN]}>
+            <SubscriptionPlanIndexPage />
+          </RoleBasedRoute>
+        } />
+        <Route path="subscription-plans/create" element={
+          <RoleBasedRoute allowedRoles={[ROLES.SUPER_ADMIN]}>
+            <SubscriptionPlanCreatePage />
+          </RoleBasedRoute>
+        } />
+        <Route path="subscription-plans/:id/edit" element={
+          <RoleBasedRoute allowedRoles={[ROLES.SUPER_ADMIN]}>
+            <SubscriptionPlanEditPage />
           </RoleBasedRoute>
         } />
       </Route>

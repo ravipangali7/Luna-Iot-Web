@@ -3,6 +3,8 @@ import type { User } from '../types/auth';
 // Role constants (using Django Group names)
 export const ROLES = {
   SUPER_ADMIN: 'Super Admin',
+  ADMIN: 'Super Admin', // Alias for SUPER_ADMIN
+  MANAGER: 'Manager',
   DEALER: 'Dealer',
   CUSTOMER: 'Customer'
 } as const;
@@ -56,9 +58,17 @@ export const hasRole = (user: User, allowedRoles: string[]): boolean => {
   
   return user.roles.some(userRole => 
     allowedRoles.some(allowedRole => {
+      // Check if allowedRole is defined and not null
+      if (!allowedRole || typeof allowedRole !== 'string') {
+        return false;
+      }
+      
       switch (allowedRole.toLowerCase()) {
         case 'super admin':
+        case 'admin':
           return userRole.name === ROLES.SUPER_ADMIN;
+        case 'manager':
+          return userRole.name === ROLES.MANAGER;
         case 'dealer':
           return userRole.name === ROLES.DEALER;
         case 'customer':
@@ -98,6 +108,14 @@ export const hasAllPermissions = (user: User, permissions: string[]): boolean =>
 // Convenience functions for common role checks (now using Django Groups)
 export const isSuperAdmin = (user: User): boolean => {
   return user?.roles?.some(role => role.name === ROLES.SUPER_ADMIN) || false;
+};
+
+export const isAdmin = (user: User): boolean => {
+  return isSuperAdmin(user); // Alias for isSuperAdmin
+};
+
+export const isManager = (user: User): boolean => {
+  return user?.roles?.some(role => role.name === ROLES.MANAGER) || false;
 };
 
 export const isDealer = (user: User): boolean => {

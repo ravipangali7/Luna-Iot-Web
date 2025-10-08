@@ -473,6 +473,7 @@ const DeviceIndexPage: React.FC = () => {
                       <TableHeader>General Info</TableHeader>
                       <TableHeader>SIM Info</TableHeader>
                       <TableHeader>Device Info</TableHeader>
+                      <TableHeader>Subscription Plan</TableHeader>
                       <TableHeader>Dealer Info</TableHeader>
                       <TableHeader>Vehicle Info</TableHeader>
                       <TableHeader>Customer Info</TableHeader>
@@ -501,6 +502,18 @@ const DeviceIndexPage: React.FC = () => {
                           <div className="space-y-1">
                             <div className="text-sm">{device.protocol}</div>
                             <Badge variant="info" size="sm">{device.model}</Badge>
+                          </div>
+                        </TableCell>
+                        <TableCell>
+                          <div className="space-y-1">
+                            {device.subscription_plan ? (
+                              <>
+                                <div className="text-sm font-medium">{device.subscription_plan.title}</div>
+                                <Badge variant="success" size="sm">Rs {device.subscription_plan.price}</Badge>
+                              </>
+                            ) : (
+                              <Badge variant="secondary" size="sm">No Plan</Badge>
+                            )}
                           </div>
                         </TableCell>
                         <TableCell>

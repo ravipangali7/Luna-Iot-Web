@@ -49,6 +49,11 @@ export interface Device {
   iccid: string | null;
   model: string;
   status: string;
+  subscription_plan?: {
+    id: number;
+    title: string;
+    price: number;
+  } | null;
   userDevices: UserDevice[];
   vehicles?: Vehicle[];
   createdAt: string;
@@ -62,6 +67,7 @@ export interface DeviceFormData {
   protocol: string;
   iccid: string;
   model: string;
+  subscription_plan?: number | null;
 }
 
 export interface DeviceFilters {
