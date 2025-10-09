@@ -130,7 +130,7 @@ const VehicleEditPage: React.FC = () => {
       const result = await vehicleService.updateVehicle(imei, formData);
       
       if (result.success) {
-        navigate('/vehicles');
+        navigate(-1);
       } else {
         setError(result.error || 'Failed to update vehicle');
       }
@@ -142,7 +142,7 @@ const VehicleEditPage: React.FC = () => {
   };
 
   const handleCancel = () => {
-    navigate('/vehicles');
+    navigate(-1);
   };
 
   if (loading) {

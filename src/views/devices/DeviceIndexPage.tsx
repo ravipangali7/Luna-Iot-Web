@@ -1,7 +1,8 @@
-import React, { useState, useEffect } from 'react';
-import { useNavigate } from 'react-router-dom';
+import React, { useState, useEffect, useCallback } from 'react';
+import { useNavigate, useSearchParams } from 'react-router-dom';
 import { deviceService } from '../../api/services/deviceService';
 import { confirmDelete, showSuccess, showError } from '../../utils/sweetAlert';
+import { useRefresh } from '../../contexts/RefreshContext';
 import type { Device, DeviceFilters } from '../../types/device';
 import Container from '../../components/ui/layout/Container';
 import Card from '../../components/ui/cards/Card';
@@ -30,6 +31,8 @@ import RefreshIcon from '@mui/icons-material/Refresh';
 
 const DeviceIndexPage: React.FC = () => {
   const navigate = useNavigate();
+  const [searchParams, setSearchParams] = useSearchParams();
+  const { refreshKey } = useRefresh();
   const [devices, setDevices] = useState<Device[]>([]);
   const [filteredDevices, setFilteredDevices] = useState<Device[]>([]);
   const [loading, setLoading] = useState(true);
@@ -38,6 +41,9 @@ const DeviceIndexPage: React.FC = () => {
   const [searchQuery, setSearchQuery] = useState('');
   const [searchInput, setSearchInput] = useState('');
   const [dropdownOpen, setDropdownOpen] = useState<{ [key: string]: boolean }>({});
+  const [isInitialized, setIsInitialized] = useState(false);
+  const [isSearching, setIsSearching] = useState(false);
+  const [isInSearchMode, setIsInSearchMode] = useState(false);
   
   // Pagination state
   const [currentPage, setCurrentPage] = useState(1);
@@ -52,73 +58,7 @@ const DeviceIndexPage: React.FC = () => {
     previous_page: null
   });
 
-  useEffect(() => {
-    loadDevices();
-  }, [currentPage]);
-
-  useEffect(() => {
-    applyFilters();
-  }, [devices, filters, searchQuery]);
-
-  const handleSearch = async () => {
-    if (!searchInput.trim()) {
-      setSearchQuery('');
-      return;
-    }
-    
-    try {
-      setLoading(true);
-      const response = await deviceService.searchDevices(searchInput.trim(), 1);
-      
-      if (response.success && response.data) {
-        setDevices(response.data.devices);
-        setPagination(response.data.pagination);
-        setSearchQuery(searchInput);
-        // Reset pagination when searching
-        setCurrentPage(1);
-      } else {
-        console.error('Search failed:', response.error);
-        setError(response.error || 'Search failed');
-      }
-    } catch (error) {
-      console.error('Search error:', error);
-      setError('Search failed: ' + (error as Error).message);
-    } finally {
-      setLoading(false);
-    }
-  };
-
-  const handleClearSearch = async () => {
-    setSearchInput('');
-    setSearchQuery('');
-    // Reload devices when clearing search
-    await loadDevices();
-  };
-
-  const handleSearchPageChange = async (page: number) => {
-    if (!searchQuery) return;
-    
-    try {
-      setLoading(true);
-      const response = await deviceService.searchDevices(searchQuery, page);
-      
-      if (response.success && response.data) {
-        setDevices(response.data.devices);
-        setPagination(response.data.pagination);
-        setCurrentPage(page);
-      } else {
-        console.error('Search page change failed:', response.error);
-        setError(response.error || 'Failed to load search results');
-      }
-    } catch (error) {
-      console.error('Search page change error:', error);
-      setError('Failed to load search results: ' + (error as Error).message);
-    } finally {
-      setLoading(false);
-    }
-  };
-
-  const loadDevices = async () => {
+  const loadDevices = useCallback(async () => {
     try {
       setLoading(true);
       setError(null);
@@ -137,41 +77,157 @@ const DeviceIndexPage: React.FC = () => {
     } finally {
       setLoading(false);
     }
+  }, [currentPage]);
+
+  useEffect(() => {
+    // Only load devices if there's no search query in URL and we're not in search mode
+    const urlSearchQuery = searchParams.get('q');
+    if (!urlSearchQuery && !searchQuery && isInitialized && !isSearching && !isInSearchMode) {
+      loadDevices();
+    }
+  }, [refreshKey, currentPage, loadDevices, searchParams, searchQuery, isInitialized, isSearching, isInSearchMode]);
+
+  const handleSearchFromUrl = useCallback(async (query: string, page: number = 1) => {
+    try {
+      setIsSearching(true);
+      setLoading(true);
+      setError(null);
+      const response = await deviceService.searchDevices(query.trim(), page);
+      
+      if (response.success && response.data) {
+        setDevices(response.data.devices);
+        setPagination(response.data.pagination);
+        setCurrentPage(page);
+        setIsInSearchMode(true);
+      } else {
+        console.error('Search failed:', response.error);
+        setError(response.error || 'Search failed');
+      }
+    } catch (error) {
+      console.error('Search error:', error);
+      setError('Search failed: ' + (error as Error).message);
+    } finally {
+      setLoading(false);
+      setIsSearching(false);
+    }
+  }, []);
+
+
+  // Handle URL parameters for search query
+  useEffect(() => {
+    const urlSearchQuery = searchParams.get('q');
+    const urlPage = searchParams.get('page');
+    
+    
+    if (urlSearchQuery) {
+      // URL has search query - perform search
+      setSearchInput(urlSearchQuery);
+      setSearchQuery(urlSearchQuery);
+      setCurrentPage(urlPage ? parseInt(urlPage) : 1);
+      handleSearchFromUrl(urlSearchQuery, urlPage ? parseInt(urlPage) : 1);
+    } else if (!isInitialized) {
+      // Initial load without search query
+      const page = urlPage ? parseInt(urlPage) : 1;
+      setCurrentPage(page);
+      setIsInSearchMode(false);
+      loadDevices();
+    }
+    
+    setIsInitialized(true);
+  }, [searchParams, loadDevices, handleSearchFromUrl, isInitialized]);
+
+  // Handle clearing search when navigating from other pages
+  useEffect(() => {
+    const urlSearchQuery = searchParams.get('q');
+    
+    // If we're on devices page without search query and we have an active search, clear it
+    // This handles navigation from sidebar/header
+    // Only clear if we're not currently searching and not loading
+    if (isInitialized && !urlSearchQuery && searchQuery && !isSearching && !loading) {
+      // Add a small delay to ensure search operations complete
+      const timeoutId = setTimeout(() => {
+        setSearchInput('');
+        setSearchQuery('');
+        setError(null);
+        setIsInSearchMode(false);
+        loadDevices();
+      }, 100);
+      
+      return () => clearTimeout(timeoutId);
+    }
+  }, [searchParams, isInitialized, searchQuery, isSearching, loading, loadDevices]);
+
+  const handleSearch = async () => {
+    if (!searchInput.trim()) {
+      setSearchQuery('');
+      // Clear URL parameters when clearing search
+      setSearchParams({});
+      return;
+    }
+    
+    try {
+      setIsSearching(true);
+      setLoading(true);
+      const response = await deviceService.searchDevices(searchInput.trim(), 1);
+      
+      if (response.success && response.data) {
+        setDevices(response.data.devices);
+        setPagination(response.data.pagination);
+        setSearchQuery(searchInput);
+        // Reset pagination when searching
+        setCurrentPage(1);
+        // Update URL with search query
+        setSearchParams({ q: searchInput.trim() });
+        setIsInSearchMode(true);
+      } else {
+        console.error('Search failed:', response.error);
+        setError(response.error || 'Search failed');
+      }
+    } catch (error) {
+      console.error('Search error:', error);
+      setError('Search failed: ' + (error as Error).message);
+    } finally {
+      setLoading(false);
+      setIsSearching(false);
+    }
   };
 
-  const applyFilters = () => {
-    let filtered = [...devices];
+  const handleClearSearch = async () => {
+    setSearchInput('');
+    setSearchQuery('');
+    setIsInSearchMode(false);
+    // Clear URL parameters when clearing search
+    setSearchParams({});
+    // Reload devices when clearing search
+    await loadDevices();
+  };
 
-    // Apply search query
-    if (searchQuery) {
-      filtered = filtered.filter(device =>
-        device.imei.toLowerCase().includes(searchQuery.toLowerCase()) ||
-        device.phone.toLowerCase().includes(searchQuery.toLowerCase()) ||
-        device.model.toLowerCase().includes(searchQuery.toLowerCase()) ||
-        device.sim.toLowerCase().includes(searchQuery.toLowerCase()) ||
-        (device.iccid || '').toLowerCase().includes(searchQuery.toLowerCase()) ||
-        device.protocol.toLowerCase().includes(searchQuery.toLowerCase()) ||
-        getDealerInfo(device).toLowerCase().includes(searchQuery.toLowerCase()) ||
-        getDealerPhone(device).toLowerCase().includes(searchQuery.toLowerCase()) ||
-        getVehicleInfo(device).toLowerCase().includes(searchQuery.toLowerCase()) ||
-        getVehicleNo(device).toLowerCase().includes(searchQuery.toLowerCase()) ||
-        getCustomerInfo(device).toLowerCase().includes(searchQuery.toLowerCase()) ||
-        getCustomerPhone(device).toLowerCase().includes(searchQuery.toLowerCase())
-      );
+  const handleSearchPageChange = async (page: number) => {
+    if (!searchQuery) return;
+    
+    try {
+      setIsSearching(true);
+      setLoading(true);
+      const response = await deviceService.searchDevices(searchQuery, page);
+      
+      if (response.success && response.data) {
+        setDevices(response.data.devices);
+        setPagination(response.data.pagination);
+        setCurrentPage(page);
+        // Update URL with new page
+        setSearchParams({ q: searchQuery, page: page.toString() });
+        setIsInSearchMode(true);
+      } else {
+        console.error('Search page change failed:', response.error);
+        setError(response.error || 'Failed to load search results');
+      }
+    } catch (error) {
+      console.error('Search page change error:', error);
+      setError('Failed to load search results: ' + (error as Error).message);
+    } finally {
+      setLoading(false);
+      setIsSearching(false);
     }
-
-    // Apply other filters
-    if (filters.sim) {
-      filtered = filtered.filter(device => device.sim === filters.sim);
-    }
-    if (filters.protocol) {
-      filtered = filtered.filter(device => device.protocol === filters.protocol);
-    }
-    if (filters.model) {
-      filtered = filtered.filter(device => device.model === filters.model);
-    }
-
-    setFilteredDevices(filtered);
   };
 
   const handleEditDevice = (device: Device) => {
@@ -252,6 +308,10 @@ const DeviceIndexPage: React.FC = () => {
 
   const handlePageChange = (page: number) => {
     setCurrentPage(page);
+    // Update URL with new page (only if not in search mode)
+    if (!searchQuery) {
+      setSearchParams({ page: page.toString() });
+    }
   };
 
 
@@ -363,6 +423,45 @@ const DeviceIndexPage: React.FC = () => {
     }
     return '';
   };
+
+  const applyFilters = useCallback(() => {
+    let filtered = [...devices];
+
+    // Apply search query
+    if (searchQuery) {
+      filtered = filtered.filter(device =>
+        device.imei.toLowerCase().includes(searchQuery.toLowerCase()) ||
+        device.phone.toLowerCase().includes(searchQuery.toLowerCase()) ||
+        device.model.toLowerCase().includes(searchQuery.toLowerCase()) ||
+        device.sim.toLowerCase().includes(searchQuery.toLowerCase()) ||
+        (device.iccid || '').toLowerCase().includes(searchQuery.toLowerCase()) ||
+        device.protocol.toLowerCase().includes(searchQuery.toLowerCase()) ||
+        getDealerInfo(device).toLowerCase().includes(searchQuery.toLowerCase()) ||
+        getDealerPhone(device).toLowerCase().includes(searchQuery.toLowerCase()) ||
+        getVehicleInfo(device).toLowerCase().includes(searchQuery.toLowerCase()) ||
+        getVehicleNo(device).toLowerCase().includes(searchQuery.toLowerCase()) ||
+        getCustomerInfo(device).toLowerCase().includes(searchQuery.toLowerCase()) ||
+        getCustomerPhone(device).toLowerCase().includes(searchQuery.toLowerCase())
+      );
+    }
+
+    // Apply other filters
+    if (filters.sim) {
+      filtered = filtered.filter(device => device.sim === filters.sim);
+    }
+    if (filters.protocol) {
+      filtered = filtered.filter(device => device.protocol === filters.protocol);
+    }
+    if (filters.model) {
+      filtered = filtered.filter(device => device.model === filters.model);
+    }
+
+    setFilteredDevices(filtered);
+  }, [devices, searchQuery, filters]);
+
+  useEffect(() => {
+    applyFilters();
+  }, [applyFilters]);
 
   if (loading) {
     return (

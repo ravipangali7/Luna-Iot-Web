@@ -147,7 +147,7 @@ const DeviceEditPage: React.FC = () => {
       const result = await deviceService.updateDevice(imei, formData);
       
       if (result.success) {
-        navigate('/devices');
+        navigate(-1);
       } else {
         setError(result.error || 'Failed to update device');
       }
@@ -159,7 +159,7 @@ const DeviceEditPage: React.FC = () => {
   };
 
   const handleCancel = () => {
-    navigate('/devices');
+    navigate(-1);
   };
 
   if (loading) {
