@@ -22,6 +22,7 @@ import './styles/variables.css';
 import './styles/components.css';
 import LiveTrackingIndexPage from './views/live_tracking/LiveTrackingIndexPage';
 import LiveTrackingShowPage from './views/live_tracking/LiveTrackingShowPage';
+import SharedTrackPage from './views/shared_track/SharedTrackPage';
 import DeviceMonitoringPage from './views/DeviceMonitoringPage';
 import DeviceMonitoringShowPage from './views/DeviceMonitoringShowPage';
 import VehicleMonitoringPage from './views/VehicleMonitoringPage';
@@ -83,6 +84,9 @@ const AppRoutes: React.FC = () => {
           <LoginPage />
         </PublicRoute>
       } />
+
+      {/* Public Shared Track Route - No authentication required */}
+      <Route path="/share-track/:token" element={<SharedTrackPage />} />
 
       {/* Protected routes with layout */}
       <Route path="/" element={

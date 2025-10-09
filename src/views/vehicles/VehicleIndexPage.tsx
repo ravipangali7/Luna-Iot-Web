@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useCallback } from 'react';
+import React, { useState, useEffect, useCallback, useContext } from 'react';
 import { useNavigate, useSearchParams } from 'react-router-dom';
 import { vehicleService } from '../../api/services/vehicleService';
 import { deviceService } from '../../api/services/deviceService';
@@ -36,8 +36,10 @@ import PlayArrowIcon from '@mui/icons-material/PlayArrow';
 import PauseIcon from '@mui/icons-material/Pause';
 import PowerSettingsNewIcon from '@mui/icons-material/PowerSettingsNew';
 import PowerOffIcon from '@mui/icons-material/PowerOff';
+import { AuthContext } from '../../contexts/AuthContext';
 
 const VehicleIndexPage: React.FC = () => {
+  const auth = useContext(AuthContext);
   const navigate = useNavigate();
   const [searchParams, setSearchParams] = useSearchParams();
   const { refreshKey } = useRefresh();
@@ -111,6 +113,11 @@ const VehicleIndexPage: React.FC = () => {
 
     setFilteredVehicles(filtered);
   }, [vehicles, searchQuery, filters]);
+
+  const canControlRelayForVehicle = useCallback((vehicle: Vehicle): boolean => {
+    if (auth?.isSuperAdmin && auth.isSuperAdmin()) return true;
+    return vehicle.userVehicle?.relay === true;
+  }, [auth]);
 
   useEffect(() => {
     // Only load vehicles if there's no search query in URL and we're not in search mode
@@ -878,27 +885,8 @@ const VehicleIndexPage: React.FC = () => {
                                 tooltip="Recharge Vehicle"
                               />
                             </RoleBasedWidget>
-                            {/* Relay - show only for Super Admin OR when userVehicle.relay is true */}
-                            <RoleBasedWidget allowedRoles={[ROLES.SUPER_ADMIN]}>
-                              {vehicle.latestStatus?.relay ? (
-                                <ActionButton
-                                  variant="warning"
-                                  size="sm"
-                                  onClick={() => handleRelayOff(vehicle)}
-                                  icon={<PowerOffIcon className="w-3 h-3" />}
-                                  tooltip="Turn Relay OFF"
-                                />
-                              ) : (
-                                <ActionButton
-                                  variant="success"
-                                  size="sm"
-                                  onClick={() => handleRelayOn(vehicle)}
-                                  icon={<PowerSettingsNewIcon className="w-3 h-3" />}
-                                  tooltip="Turn Relay ON"
-                                />
-                              )}
-                            </RoleBasedWidget>
-                            {(vehicle.userVehicle && vehicle.userVehicle.relay === true) ? (
+                            {/* Relay: show action if user can control for this vehicle; else show Not Available */}
+                            {canControlRelayForVehicle(vehicle) ? (
                               vehicle.latestStatus?.relay ? (
                                 <ActionButton
                                   variant="warning"
@@ -916,7 +904,9 @@ const VehicleIndexPage: React.FC = () => {
                                   tooltip="Turn Relay ON"
                                 />
                               )
-                            ) : null}
+                            ) : (
+                              <Badge variant="secondary">Not Available</Badge>
+                            )}
                             <RoleBasedWidget allowedRoles={[ROLES.SUPER_ADMIN]}>
                               <div className="relative">
                                 <ActionButton
