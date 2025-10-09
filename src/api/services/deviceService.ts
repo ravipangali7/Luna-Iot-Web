@@ -187,6 +187,40 @@ class DeviceService {
     }
   }
 
+  async sendRelayOn(phone: string): Promise<{ success: boolean; data?: unknown; error?: string }> {
+    try {
+      const response = await apiClient.post('/api/device/device/relay-on', {
+        phone
+      });
+      
+      if (response.data.success) {
+        return { success: true, data: response.data.data };
+      } else {
+        return { success: false, error: response.data.message || 'Failed to send relay on command' };
+      }
+    } catch (error) {
+      console.error('Send relay on error:', error);
+      return { success: false, error: 'Network error: ' + (error as Error).message };
+    }
+  }
+
+  async sendRelayOff(phone: string): Promise<{ success: boolean; data?: unknown; error?: string }> {
+    try {
+      const response = await apiClient.post('/api/device/device/relay-off', {
+        phone
+      });
+      
+      if (response.data.success) {
+        return { success: true, data: response.data.data };
+      } else {
+        return { success: false, error: response.data.message || 'Failed to send relay off command' };
+      }
+    } catch (error) {
+      console.error('Send relay off error:', error);
+      return { success: false, error: 'Network error: ' + (error as Error).message };
+    }
+  }
+
   async getLightDevices(): Promise<{ success: boolean; data?: Device[]; error?: string }> {
     try {
       const response = await apiClient.get(`/api/device/device/light`, {

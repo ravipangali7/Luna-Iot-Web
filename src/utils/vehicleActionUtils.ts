@@ -47,6 +47,8 @@ export const VEHICLE_ACTIONS = {
   RECHARGE: 'Recharge Vehicle',
   SERVER_POINT: 'Send Server Point',
   RESET: 'Reset Device',
+  RELAY_ON: 'Turn Relay ON',
+  RELAY_OFF: 'Turn Relay OFF',
   GEOFENCE: 'Manage Geofence',
   SHARE_TRACKING: 'Share Tracking',
 } as const;

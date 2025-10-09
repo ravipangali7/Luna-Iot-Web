@@ -4,6 +4,7 @@ import { instituteService, type Institute, type InstituteModule } from '../../ap
 import { showSuccess, showError, confirmDelete } from '../../utils/sweetAlert';
 import RoleBasedWidget from '../../components/role-based/RoleBasedWidget';
 import Button from '../../components/ui/buttons/Button';
+import ActionButton from '../../components/ui/buttons/ActionButton';
 import Card from '../../components/ui/cards/Card';
 import CardHeader from '../../components/ui/cards/CardHeader';
 import CardBody from '../../components/ui/cards/CardBody';
@@ -317,20 +318,22 @@ const InstituteShowPage: React.FC = () => {
                     <TableCell>
                       <div className="flex space-x-2">
                         <RoleBasedWidget allowedRoles={['Super Admin']}>
-                          <Button
+                          <ActionButton
                             onClick={() => handleEditModule(module.id)}
-                            variant="secondary"
+                            variant="outline"
                             size="sm"
+                            tooltip="Edit Module"
                           >
                             Edit
-                          </Button>
-                          <Button
+                          </ActionButton>
+                          <ActionButton
                             onClick={() => handleDeleteModule(module.id, `${institute.name} - ${module.group_name}`)}
                             variant="danger"
                             size="sm"
+                            tooltip="Delete Module"
                           >
                             Delete
-                          </Button>
+                          </ActionButton>
                         </RoleBasedWidget>
                       </div>
                     </TableCell>

@@ -12,6 +12,7 @@ import Container from '../../components/ui/layout/Container';
 import Card from '../../components/ui/cards/Card';
 import CardBody from '../../components/ui/cards/CardBody';
 import Button from '../../components/ui/buttons/Button';
+import ActionButton from '../../components/ui/buttons/ActionButton';
 import Input from '../../components/ui/forms/Input';
 import Select from '../../components/ui/forms/Select';
 import Table from '../../components/ui/tables/Table';
@@ -30,10 +31,11 @@ import EditIcon from '@mui/icons-material/Edit';
 import DeleteIcon from '@mui/icons-material/Delete';
 import AccountBalanceWalletIcon from '@mui/icons-material/AccountBalanceWallet';
 import SendIcon from '@mui/icons-material/Send';
-import ArrowDropDownIcon from '@mui/icons-material/ArrowDropDown';
 import RefreshIcon from '@mui/icons-material/Refresh';
 import PlayArrowIcon from '@mui/icons-material/PlayArrow';
 import PauseIcon from '@mui/icons-material/Pause';
+import PowerSettingsNewIcon from '@mui/icons-material/PowerSettingsNew';
+import PowerOffIcon from '@mui/icons-material/PowerOff';
 
 const VehicleIndexPage: React.FC = () => {
   const navigate = useNavigate();
@@ -360,6 +362,78 @@ const VehicleIndexPage: React.FC = () => {
     } catch (error) {
       console.error('Reset error:', error);
       showError('Failed to send reset command');
+        }
+      }
+    );
+  };
+
+  const handleRelayOn = async (vehicle: Vehicle) => {
+    handleVehicleAction(
+      vehicle,
+      VEHICLE_ACTIONS.RELAY_ON,
+      async () => {
+    try {
+      if (!vehicle.device?.phone) {
+        showError('Device phone number not available');
+        return;
+      }
+
+      const result = await deviceService.sendRelayOn(vehicle.device.phone);
+
+      if (result.success) {
+        showSuccess('Relay ON command sent successfully');
+        // Update the vehicle in the local state
+        setVehicles(vehicles.map(v => 
+          v.imei === vehicle.imei ? { 
+            ...v, 
+            latestStatus: v.latestStatus ? { 
+              ...v.latestStatus, 
+              relay: true 
+            } : undefined
+          } : v
+        ));
+      } else {
+        showError(result.error || 'Failed to send relay ON command');
+      }
+    } catch (error) {
+      console.error('Relay ON error:', error);
+      showError('Failed to send relay ON command');
+        }
+      }
+    );
+  };
+
+  const handleRelayOff = async (vehicle: Vehicle) => {
+    handleVehicleAction(
+      vehicle,
+      VEHICLE_ACTIONS.RELAY_OFF,
+      async () => {
+    try {
+      if (!vehicle.device?.phone) {
+        showError('Device phone number not available');
+        return;
+      }
+
+      const result = await deviceService.sendRelayOff(vehicle.device.phone);
+
+      if (result.success) {
+        showSuccess('Relay OFF command sent successfully');
+        // Update the vehicle in the local state
+        setVehicles(vehicles.map(v => 
+          v.imei === vehicle.imei ? { 
+            ...v, 
+            latestStatus: v.latestStatus ? { 
+              ...v.latestStatus, 
+              relay: false 
+            } : undefined
+          } : v
+        ));
+      } else {
+        showError(result.error || 'Failed to send relay OFF command');
+      }
+    } catch (error) {
+      console.error('Relay OFF error:', error);
+      showError('Failed to send relay OFF command');
         }
       }
     );
@@ -768,69 +842,91 @@ const VehicleIndexPage: React.FC = () => {
                           </TableCell>
                         </RoleBasedWidget>
                         <TableCell>
-                          <div className="flex space-x-2">
-                            <Button
+                          <div className="action-buttons">
+                            <ActionButton
                               variant="outline"
                               size="sm"
                               onClick={() => handleEditVehicle(vehicle)}
-                              icon={<EditIcon className="w-4 h-4" />}
+                              icon={<EditIcon className="w-3 h-3" />}
+                              tooltip="Edit Vehicle"
                             />
                             {/* <RoleBasedWidget allowedRoles={[ROLES.SUPER_ADMIN, ROLES.DEALER]}> */}
                               {vehicle.is_active ? (
-                                <Button
+                                <ActionButton
                                   variant="warning"
                                   size="sm"
                                   onClick={() => handleDeactivateVehicle(vehicle)}
-                                  icon={<PauseIcon className="w-4 h-4" />}
+                                  icon={<PauseIcon className="w-3 h-3" />}
+                                  tooltip="Deactivate Vehicle"
                                 />
                               ) : (
-                                <Button
+                                <ActionButton
                                   variant="success"
                                   size="sm"
                                   onClick={() => handleActivateVehicle(vehicle)}
-                                  icon={<PlayArrowIcon className="w-4 h-4" />}
+                                  icon={<PlayArrowIcon className="w-3 h-3" />}
+                                  tooltip="Activate Vehicle"
                                 />
                               )}
                             {/* </RoleBasedWidget> */}
                             <RoleBasedWidget allowedRoles={[ROLES.SUPER_ADMIN]}>
-                              <Button
+                              <ActionButton
                                 variant="primary"
                                 size="sm"
                                 onClick={() => handleRechargeVehicle(vehicle)}
-                                icon={<AccountBalanceWalletIcon className="w-4 h-4" />}
+                                icon={<AccountBalanceWalletIcon className="w-3 h-3" />}
+                                tooltip="Recharge Vehicle"
                               />
                             </RoleBasedWidget>
                             <RoleBasedWidget allowedRoles={[ROLES.SUPER_ADMIN]}>
+                              {vehicle.latestStatus?.relay ? (
+                                <ActionButton
+                                  variant="warning"
+                                  size="sm"
+                                  onClick={() => handleRelayOff(vehicle)}
+                                  icon={<PowerOffIcon className="w-3 h-3" />}
+                                  tooltip="Turn Relay OFF"
+                                />
+                              ) : (
+                                <ActionButton
+                                  variant="success"
+                                  size="sm"
+                                  onClick={() => handleRelayOn(vehicle)}
+                                  icon={<PowerSettingsNewIcon className="w-3 h-3" />}
+                                  tooltip="Turn Relay ON"
+                                />
+                              )}
+                            </RoleBasedWidget>
+                            <RoleBasedWidget allowedRoles={[ROLES.SUPER_ADMIN]}>
                               <div className="relative">
-                                <Button
+                                <ActionButton
                                   variant="secondary"
                                   size="sm"
                                   onClick={() => toggleDropdown(vehicle.id.toString())}
-                                  icon={<SendIcon className="w-4 h-4" />}
-                                >
-                                  <ArrowDropDownIcon className="w-4 h-4 ml-1" />
-                                </Button>
+                                  icon={<SendIcon className="w-3 h-3" />}
+                                  tooltip="Vehicle Commands"
+                                />
                                 {dropdownOpen[vehicle.id.toString()] && (
-                                  <div className="absolute right-0 mt-1 w-48 bg-white rounded-md shadow-lg z-10 border border-gray-200">
+                                  <div className="absolute right-0 mt-1 w-48 bg-white rounded-lg shadow-xl z-10 border border-gray-200 backdrop-blur-sm">
                                     <div className="py-1">
                                       <button
-                                        className="flex items-center w-full px-4 py-2 text-sm text-gray-700 hover:bg-gray-100"
+                                        className="flex items-center w-full px-4 py-2 text-sm text-gray-700 hover:bg-blue-50 hover:text-blue-700 transition-colors duration-200"
                                         onClick={() => {
                                           handleServerPoint(vehicle);
                                           setDropdownOpen(prev => ({ ...prev, [vehicle.id.toString()]: false }));
                                         }}
                                       >
-                                        <SendIcon className="w-4 h-4 mr-2" />
+                                        <SendIcon className="w-4 h-4 mr-3 text-blue-500" />
                                         SERVER POINT
                                       </button>
                                       <button
-                                        className="flex items-center w-full px-4 py-2 text-sm text-gray-700 hover:bg-gray-100"
+                                        className="flex items-center w-full px-4 py-2 text-sm text-gray-700 hover:bg-orange-50 hover:text-orange-700 transition-colors duration-200"
                                         onClick={() => {
                                           handleReset(vehicle);
                                           setDropdownOpen(prev => ({ ...prev, [vehicle.id.toString()]: false }));
                                         }}
                                       >
-                                        <RefreshIcon className="w-4 h-4 mr-2" />
+                                        <RefreshIcon className="w-4 h-4 mr-3 text-orange-500" />
                                         RESET
                                       </button>
                                     </div>
@@ -839,11 +935,12 @@ const VehicleIndexPage: React.FC = () => {
                               </div>
                             </RoleBasedWidget>
                             <RoleBasedWidget allowedRoles={[ROLES.SUPER_ADMIN]}>
-                              <Button
+                              <ActionButton
                                 variant="danger"
                                 size="sm"
                                 onClick={() => handleDeleteVehicle(vehicle)}
-                                icon={<DeleteIcon className="w-4 h-4" />}
+                                icon={<DeleteIcon className="w-3 h-3" />}
+                                tooltip="Delete Vehicle"
                               />
                             </RoleBasedWidget>
                           </div>

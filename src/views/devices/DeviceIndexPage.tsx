@@ -8,6 +8,7 @@ import Container from '../../components/ui/layout/Container';
 import Card from '../../components/ui/cards/Card';
 import CardBody from '../../components/ui/cards/CardBody';
 import Button from '../../components/ui/buttons/Button';
+import ActionButton from '../../components/ui/buttons/ActionButton';
 import Input from '../../components/ui/forms/Input';
 import Select from '../../components/ui/forms/Select';
 import Table from '../../components/ui/tables/Table';
@@ -26,7 +27,6 @@ import EditIcon from '@mui/icons-material/Edit';
 import DeleteIcon from '@mui/icons-material/Delete';
 import AccountBalanceWalletIcon from '@mui/icons-material/AccountBalanceWallet';
 import SendIcon from '@mui/icons-material/Send';
-import ArrowDropDownIcon from '@mui/icons-material/ArrowDropDown';
 import RefreshIcon from '@mui/icons-material/Refresh';
 
 const DeviceIndexPage: React.FC = () => {
@@ -641,55 +641,56 @@ const DeviceIndexPage: React.FC = () => {
                         </TableCell>
                         <RoleBasedWidget allowedRoles={[ROLES.SUPER_ADMIN]}>
                           <TableCell>
-                            <div className="flex space-x-2">
+                            <div className="action-buttons">
                               <RoleBasedWidget allowedRoles={[ROLES.SUPER_ADMIN]}>
-                                <Button
+                                <ActionButton
                                   variant="outline"
                                   size="sm"
                                   onClick={() => handleEditDevice(device)}
-                                  icon={<EditIcon className="w-4 h-4" />}
+                                  icon={<EditIcon className="w-3 h-3" />}
+                                  tooltip="Edit Device"
                                 />
                               </RoleBasedWidget>
 
                               <RoleBasedWidget allowedRoles={[ROLES.SUPER_ADMIN]}>
-                                <Button
+                                <ActionButton
                                   variant="primary"
                                   size="sm"
                                   onClick={() => handleRechargeDevice(device)}
-                                  icon={<AccountBalanceWalletIcon className="w-4 h-4" />}
+                                  icon={<AccountBalanceWalletIcon className="w-3 h-3" />}
+                                  tooltip="Recharge Device"
                                 />
                               </RoleBasedWidget>
                               <RoleBasedWidget allowedRoles={[ROLES.SUPER_ADMIN]}>
                                 <div className="relative">
-                                  <Button
+                                  <ActionButton
                                     variant="secondary"
                                     size="sm"
                                     onClick={() => toggleDropdown(device.id.toString())}
-                                    icon={<SendIcon className="w-4 h-4" />}
-                                  >
-                                    <ArrowDropDownIcon className="w-4 h-4 ml-1" />
-                                  </Button>
+                                    icon={<SendIcon className="w-3 h-3" />}
+                                    tooltip="Device Commands"
+                                  />
                                   {dropdownOpen[device.id.toString()] && (
-                                    <div className="absolute right-0 mt-1 w-48 bg-white rounded-md shadow-lg z-10 border border-gray-200">
+                                    <div className="absolute right-0 mt-1 w-48 bg-white rounded-lg shadow-xl z-10 border border-gray-200 backdrop-blur-sm">
                                       <div className="py-1">
                                         <button
-                                          className="flex items-center w-full px-4 py-2 text-sm text-gray-700 hover:bg-gray-100"
+                                          className="flex items-center w-full px-4 py-2 text-sm text-gray-700 hover:bg-blue-50 hover:text-blue-700 transition-colors duration-200"
                                           onClick={() => {
                                             handleServerPoint(device);
                                             setDropdownOpen(prev => ({ ...prev, [device.id.toString()]: false }));
                                           }}
                                         >
-                                          <SendIcon className="w-4 h-4 mr-2" />
+                                          <SendIcon className="w-4 h-4 mr-3 text-blue-500" />
                                           SERVER POINT
                                         </button>
                                         <button
-                                          className="flex items-center w-full px-4 py-2 text-sm text-gray-700 hover:bg-gray-100"
+                                          className="flex items-center w-full px-4 py-2 text-sm text-gray-700 hover:bg-orange-50 hover:text-orange-700 transition-colors duration-200"
                                           onClick={() => {
                                             handleReset(device);
                                             setDropdownOpen(prev => ({ ...prev, [device.id.toString()]: false }));
                                           }}
                                         >
-                                          <RefreshIcon className="w-4 h-4 mr-2" />
+                                          <RefreshIcon className="w-4 h-4 mr-3 text-orange-500" />
                                           RESET
                                         </button>
                                       </div>
@@ -698,11 +699,12 @@ const DeviceIndexPage: React.FC = () => {
                                 </div>
                               </RoleBasedWidget>
                               <RoleBasedWidget allowedRoles={[ROLES.SUPER_ADMIN]}>
-                                <Button
+                                <ActionButton
                                   variant="danger"
                                   size="sm"
                                   onClick={() => handleDeleteDevice(device)}
-                                  icon={<DeleteIcon className="w-4 h-4" />}
+                                  icon={<DeleteIcon className="w-3 h-3" />}
+                                  tooltip="Delete Device"
                                 />
                               </RoleBasedWidget>
                             </div>
