@@ -36,6 +36,7 @@ export interface UserVehicle {
   edit: boolean;
   shareTracking: boolean;
   notification: boolean;
+  relay?: boolean;
 }
 
 export interface Device {

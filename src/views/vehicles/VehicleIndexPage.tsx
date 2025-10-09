@@ -878,25 +878,48 @@ const VehicleIndexPage: React.FC = () => {
                                 tooltip="Recharge Vehicle"
                               />
                             </RoleBasedWidget>
-                            <RoleBasedWidget allowedRoles={[ROLES.SUPER_ADMIN]}>
-                              {vehicle.latestStatus?.relay ? (
-                                <ActionButton
-                                  variant="warning"
-                                  size="sm"
-                                  onClick={() => handleRelayOff(vehicle)}
-                                  icon={<PowerOffIcon className="w-3 h-3" />}
-                                  tooltip="Turn Relay OFF"
-                                />
-                              ) : (
-                                <ActionButton
-                                  variant="success"
-                                  size="sm"
-                                  onClick={() => handleRelayOn(vehicle)}
-                                  icon={<PowerSettingsNewIcon className="w-3 h-3" />}
-                                  tooltip="Turn Relay ON"
-                                />
-                              )}
-                            </RoleBasedWidget>
+                            {/* Relay - show only for Super Admin OR when userVehicle.relay is true */}
+                            {(
+                              <RoleBasedWidget allowedRoles={[ROLES.SUPER_ADMIN]}>
+                                {vehicle.latestStatus?.relay ? (
+                                  <ActionButton
+                                    variant="warning"
+                                    size="sm"
+                                    onClick={() => handleRelayOff(vehicle)}
+                                    icon={<PowerOffIcon className="w-3 h-3" />}
+                                    tooltip="Turn Relay OFF"
+                                  />
+                                ) : (
+                                  <ActionButton
+                                    variant="success"
+                                    size="sm"
+                                    onClick={() => handleRelayOn(vehicle)}
+                                    icon={<PowerSettingsNewIcon className="w-3 h-3" />}
+                                    tooltip="Turn Relay ON"
+                                  />
+                                )}
+                              </RoleBasedWidget>
+                            ) || (false) /* force fallback evaluation safely */ || (
+                              (vehicle.userVehicle && vehicle.userVehicle.relay === true) ? (
+                                vehicle.latestStatus?.relay ? (
+                                  <ActionButton
+                                    variant="warning"
+                                    size="sm"
+                                    onClick={() => handleRelayOff(vehicle)}
+                                    icon={<PowerOffIcon className="w-3 h-3" />}
+                                    tooltip="Turn Relay OFF"
+                                  />
+                                ) : (
+                                  <ActionButton
+                                    variant="success"
+                                    size="sm"
+                                    onClick={() => handleRelayOn(vehicle)}
+                                    icon={<PowerSettingsNewIcon className="w-3 h-3" />}
+                                    tooltip="Turn Relay ON"
+                                  />
+                                )
+                              ) : null
+                            )}
                             <RoleBasedWidget allowedRoles={[ROLES.SUPER_ADMIN]}>
                               <div className="relative">
                                 <ActionButton
