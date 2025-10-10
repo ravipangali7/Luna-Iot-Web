@@ -1,23 +1,31 @@
 import React, { useState, useEffect, useRef, useCallback } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
-import GoogleMapReact from 'google-map-react';
-import { shareTrackService } from '../../api/services/shareTrackService';
+// import { vehicleService } from '../../api/services/vehicleService';
 import socketService from '../../services/socketService';
 import { showError, showInfo } from '../../utils/sweetAlert';
 import type { Vehicle } from '../../types/vehicle';
 import VehicleUtils, { VehicleImageState } from '../../utils/vehicleUtils';
 import type { VehicleStateType } from '../../utils/vehicleUtils';
 import GeoUtils from '../../utils/geoUtils';
+import { GOOGLE_MAPS_CONFIG } from '../../config/maps';
 import SpeedIcon from '@mui/icons-material/Speed';
+
+// Extend the Window interface to include google
+declare global {
+  interface Window {
+    google: any;
+  }
+}
 import LocationOnIcon from '@mui/icons-material/LocationOn';
 import DirectionsCarIcon from '@mui/icons-material/DirectionsCar';
 import WbSunnyIcon from '@mui/icons-material/WbSunny';
 import LandscapeIcon from '@mui/icons-material/Landscape';
 import HistoryIcon from '@mui/icons-material/History';
-import './SharedTrackPage.css';
+import './LiveTrackingShowPage.css';
 
 interface SharedTrackPageProps {
   token?: string;
+  onBack?: () => void;
 }
 
 interface LocationData {
@@ -34,13 +42,37 @@ interface LocationData {
 }
 
 interface ShareTrackData {
-  id: string;
+  id: number;
   imei: string;
   token: string;
   created_at: string;
   scheduled_for: string;
-  is_active: boolean;
   duration_minutes: number;
+  vehicle: {
+    imei: string;
+    vehicle_no: string;
+    name: string;
+    vehicle_type: string;
+    latest_location: {
+      latitude: number;
+      longitude: number;
+      speed: number;
+      course: number;
+      satellite: number;
+      realTimeGps: boolean;
+      createdAt: string;
+      updatedAt: string;
+    } | null;
+    latest_status: {
+      battery: number;
+      signal: number;
+      ignition: boolean;
+      charging: boolean;
+      relay: boolean;
+      createdAt: string;
+      updatedAt: string;
+    } | null;
+  };
 }
 
 // Fixed Center Marker Component (like Flutter)
@@ -113,17 +145,16 @@ const FixedCenterMarker: React.FC<{
   );
 };
 
-const SharedTrackPage: React.FC<SharedTrackPageProps> = ({ token: propToken }) => {
+const SharedTrackPage: React.FC<SharedTrackPageProps> = ({ token: propToken, onBack }) => {
   const { token: urlToken } = useParams<{ token: string }>();
   const navigate = useNavigate();
   
   // Use token from URL params if available, otherwise use prop
   const token = urlToken || propToken;
   
-  const [shareTrack, setShareTrack] = useState<ShareTrackData | null>(null);
+  const [shareTrackData, setShareTrackData] = useState<ShareTrackData | null>(null);
   const [vehicle, setVehicle] = useState<Vehicle | null>(null);
   const [loading, setLoading] = useState(true);
-  const [error, setError] = useState<string | null>(null);
   const [currentLocation, setCurrentLocation] = useState<LocationData | null>(null);
   const [vehicleState, setVehicleState] = useState<VehicleStateType>('no_data');
   const [mapRotation, setMapRotation] = useState(0);
@@ -138,45 +169,111 @@ const SharedTrackPage: React.FC<SharedTrackPageProps> = ({ token: propToken }) =
   const [altitude, setAltitude] = useState<string>('...');
   const [loadingAltitude, setLoadingAltitude] = useState(false);
   const [isSocketConnected, setIsSocketConnected] = useState(false);
+  const [mapLoaded, setMapLoaded] = useState(false);
+  const [pollingInterval, setPollingInterval] = useState<number | null>(null);
 
-  const mapControllerRef = useRef<any>(null);
-  const mapRef = useRef<any>(null);
+  const mapRef = useRef<HTMLDivElement>(null);
+  const mapInstanceRef = useRef<any>(null);
   const polylineRef = useRef<any>(null);
   const locationUpdateHandlerRef = useRef<((data: any) => void) | null>(null);
   const statusUpdateHandlerRef = useRef<((data: any) => void) | null>(null);
 
-  // Load share track data by token
+
+  // Load Google Maps script
+  const loadGoogleMapsScript = useCallback(() => {
+    return new Promise<void>((resolve, reject) => {
+      if (window.google && window.google.maps) {
+        resolve();
+        return;
+      }
+
+      const script = document.createElement('script');
+      script.src = `https://maps.googleapis.com/maps/api/js?key=${GOOGLE_MAPS_CONFIG.apiKey}&libraries=geometry,places&loading=async`;
+      script.async = true;
+      script.defer = true;
+      script.onload = () => resolve();
+      script.onerror = () => reject(new Error('Failed to load Google Maps script'));
+      document.head.appendChild(script);
+    });
+  }, []);
+
+  // Initialize Google Maps
+  const initializeMap = useCallback(() => {
+    if (!mapRef.current || mapInstanceRef.current) return;
+
+    const center = currentLocation ? 
+      new window.google.maps.LatLng(currentLocation.latitude, currentLocation.longitude) :
+      new window.google.maps.LatLng(GOOGLE_MAPS_CONFIG.defaultCenter.lat, GOOGLE_MAPS_CONFIG.defaultCenter.lng);
+
+    const map = new window.google.maps.Map(mapRef.current, {
+      zoom: 18,
+      center: center,
+      mapTypeId: window.google.maps.MapTypeId.ROADMAP,
+      mapTypeControl: true,
+      streetViewControl: true,
+      fullscreenControl: true,
+      zoomControl: true,
+      rotateControl: true,
+      scaleControl: true,
+      gestureHandling: 'greedy',
+      disableDefaultUI: false,
+    });
+
+    mapInstanceRef.current = map;
+    setMapLoaded(true);
+
+    console.log('Map initialized successfully');
+  }, [currentLocation]);
+
+  // Load share track data and vehicle information
   const loadShareTrackData = useCallback(async () => {
-    if (!token) {
-      setError('Invalid token');
-      setLoading(false);
+    if (!token || token === 'undefined') {
+      showError('Invalid Token', 'No share token provided.');
       return;
     }
     
     try {
       setLoading(true);
-      setError(null);
       
-      // Get share track data by token (now includes full vehicle data)
-      const shareTrackResponse = await shareTrackService.getShareTrackByToken(token);
+      // First, get share track data by token
+      const baseUrl = 'https://py.mylunago.com';
+      const apiUrl = `${baseUrl}/api/fleet/share-track/token/${token}/`;
       
-      if (!shareTrackResponse.success || !shareTrackResponse.data || !shareTrackResponse.vehicle) {
-        setError('Share track not found or expired');
+      const shareTrackResponse = await fetch(apiUrl);
+      const shareTrackResult = await shareTrackResponse.json();
+      
+      if (!shareTrackResult.success) {
+        showError('Share Track Not Found', shareTrackResult.message || 'This share link is invalid or has expired.');
         return;
       }
       
-      const shareTrackData = shareTrackResponse.data;
-      const vehicleData = shareTrackResponse.vehicle;
+      setShareTrackData(shareTrackResult.data.share_track);
       
-      setShareTrack(shareTrackData);
+      // Convert share track vehicle data to Vehicle type
+      const vehicleData: Vehicle = {
+        id: shareTrackResult.data.vehicle.imei, // Use IMEI as ID for shared tracking
+        imei: shareTrackResult.data.vehicle.imei,
+        name: shareTrackResult.data.vehicle.name,
+        vehicleNo: shareTrackResult.data.vehicle.vehicle_no,
+        vehicleType: shareTrackResult.data.vehicle.vehicle_type,
+        is_active: true, // Assume active for shared tracking
+        latestLocation: shareTrackResult.data.vehicle.latest_location,
+        latestStatus: shareTrackResult.data.vehicle.latest_status,
+        odometer: 0,
+        mileage: 0,
+        speedLimit: 0,
+        minimumFuel: 0,
+        createdAt: new Date().toISOString(),
+        updatedAt: new Date().toISOString()
+      };
+      
       setVehicle(vehicleData);
       
       // Initialize location
       if (vehicleData.latestLocation) {
-        // Convert string coordinates to numbers
         const locationData: LocationData = {
-          id: vehicleData.latestLocation.id,
-          imei: vehicleData.latestLocation.imei,
+          id: 0,
+          imei: vehicleData.latestLocation.imei || vehicleData.imei,
           latitude: parseFloat(vehicleData.latestLocation.latitude.toString()),
           longitude: parseFloat(vehicleData.latestLocation.longitude.toString()),
           speed: parseFloat(vehicleData.latestLocation.speed.toString()) || 0,
@@ -189,22 +286,15 @@ const SharedTrackPage: React.FC<SharedTrackPageProps> = ({ token: propToken }) =
         setCurrentLocation(locationData);
         setMapRotation(locationData.course);
         // Fetch address for initial location
-        try {
-          setCurrentAddress('Loading address...');
-          const address = await GeoUtils.getReverseGeoCode(locationData.latitude, locationData.longitude);
-          setCurrentAddress(address);
-        } catch (error) {
-          console.error('Error fetching address:', error);
-          setCurrentAddress('Address unavailable');
-        }
+        fetchAddress(locationData.latitude, locationData.longitude);
       } else {
-        console.warn('No latest location found for vehicle');
+        console.warn('No latest location found for shared vehicle');
         // Set a default location for testing
         setCurrentLocation({
           id: 0,
-          imei: shareTrackData.imei,
-          latitude: 27.7172,
-          longitude: 85.3240,
+          imei: vehicleData.imei,
+          latitude: GOOGLE_MAPS_CONFIG.defaultCenter.lat,
+          longitude: GOOGLE_MAPS_CONFIG.defaultCenter.lng,
           speed: 0,
           course: 0,
           satellite: 0,
@@ -220,15 +310,34 @@ const SharedTrackPage: React.FC<SharedTrackPageProps> = ({ token: propToken }) =
       
     } catch (error) {
       console.error('Error loading share track data:', error);
-      setError('Failed to load share track data');
+      showError('Error', 'Failed to load shared tracking data.');
     } finally {
       setLoading(false);
     }
   }, [token]);
 
+  // Fetch address for current location
+  const fetchAddress = useCallback(async (latitude: number, longitude: number) => {
+    try {
+      setCurrentAddress('Loading address...');
+      const address = await GeoUtils.getReverseGeoCode(latitude, longitude);
+      setCurrentAddress(address);
+    } catch (error) {
+      console.error('Error fetching address:', error);
+      setCurrentAddress('Address unavailable');
+    }
+  }, []);
 
   // Toggle map type (satellite/roadmap)
   const toggleMapType = useCallback(() => {
+    if (!mapInstanceRef.current || !window.google) return;
+    
+    const currentMapType = mapInstanceRef.current.getMapTypeId();
+    const newMapType = currentMapType === window.google.maps.MapTypeId.ROADMAP
+      ? window.google.maps.MapTypeId.SATELLITE
+      : window.google.maps.MapTypeId.ROADMAP;
+    
+    mapInstanceRef.current.setMapTypeId(newMapType);
     setMapType(prev => prev === 'roadmap' ? 'satellite' : 'roadmap');
   }, []);
 
@@ -271,9 +380,10 @@ const SharedTrackPage: React.FC<SharedTrackPageProps> = ({ token: propToken }) =
     navigate(`/playback?vehicle=${vehicle.imei}`);
   }, [vehicle, navigate]);
 
-  // Handle location updates from socket
-  const handleLocationUpdate = useCallback(async (data: any) => {
-    if (!vehicle || data.imei !== vehicle.imei) return;
+  // Internal location update handler (without dependencies to avoid circular reference)
+  const handleLocationUpdateInternal = useCallback((data: any) => {
+    // Only accept data for the specific vehicle IMEI
+    if (!vehicle || !data.imei || data.imei !== vehicle.imei) return;
     
     try {
       const newLocation: LocationData = {
@@ -293,14 +403,7 @@ const SharedTrackPage: React.FC<SharedTrackPageProps> = ({ token: propToken }) =
       setMapRotation(newLocation.course);
       
       // Fetch address for new location
-      try {
-        setCurrentAddress('Loading address...');
-        const address = await GeoUtils.getReverseGeoCode(newLocation.latitude, newLocation.longitude);
-        setCurrentAddress(address);
-      } catch (error) {
-        console.error('Error fetching address:', error);
-        setCurrentAddress('Address unavailable');
-      }
+      fetchAddress(newLocation.latitude, newLocation.longitude);
       
       // Add new point to route
       setRoutePoints(prevPoints => [
@@ -308,19 +411,18 @@ const SharedTrackPage: React.FC<SharedTrackPageProps> = ({ token: propToken }) =
         { lat: newLocation.latitude, lng: newLocation.longitude }
       ]);
       
+
       // Animate map to new location with rotation (like Flutter)
-      if (mapControllerRef.current && isTracking) {
+      if (mapInstanceRef.current && isTracking) {
         setTimeout(() => {
           try {
-            // Use animateCamera for smooth movement like Flutter
-            if (typeof mapControllerRef.current?.panTo === 'function') {
-              mapControllerRef.current.panTo({
-                lat: newLocation.latitude,
-                lng: newLocation.longitude
-              });
-            }
+            // Use panTo for smooth movement like Flutter
+            mapInstanceRef.current.panTo({
+              lat: newLocation.latitude,
+              lng: newLocation.longitude
+            });
           } catch (error) {
-            console.warn('Error panning map to new location:', error);
+            // Silent error handling
           }
         }, 1000);
       }
@@ -346,9 +448,60 @@ const SharedTrackPage: React.FC<SharedTrackPageProps> = ({ token: propToken }) =
       });
 
     } catch (error) {
-      console.error('Error handling location update:', error);
+      // Silent error handling
     }
-  }, [vehicle, currentLocation, isTracking]);
+  }, [vehicle, currentLocation, fetchAddress, isTracking]);
+
+  // Handle refresh button click
+  const handleRefreshClick = useCallback(async () => {
+    if (!vehicle) return;
+    
+    try {
+      const baseUrl = 'https://py.mylunago.com';
+      const apiUrl = `${baseUrl}/api/fleet/share-track/token/${token}/`;
+      
+      const response = await fetch(apiUrl);
+      const result = await response.json();
+      
+      if (result.success && result.data.vehicle.latest_location) {
+        const locationData = result.data.vehicle.latest_location;
+        
+        // Simulate socket data format
+        const socketData = {
+          imei: vehicle.imei,
+          latitude: locationData.latitude,
+          longitude: locationData.longitude,
+          speed: locationData.speed,
+          course: locationData.course,
+          satellite: locationData.satellite,
+          realTimeGps: locationData.realTimeGps,
+          createdAt: locationData.createdAt,
+          id: Date.now()
+        };
+
+        handleLocationUpdateInternal(socketData);
+      }
+    } catch (error) {
+      // Silent error handling
+    }
+  }, [vehicle, token, handleLocationUpdateInternal]);
+
+  // Handle location updates from socket
+  const handleLocationUpdate = useCallback((data: any) => {
+    // Only accept data for the specific vehicle IMEI
+    if (!vehicle || !data.imei || data.imei !== vehicle.imei) return;
+    
+    // Check for duplicate data to prevent unnecessary updates
+    if (currentLocation && 
+        data.latitude === currentLocation.latitude && 
+        data.longitude === currentLocation.longitude &&
+        data.speed === currentLocation.speed &&
+        data.course === currentLocation.course) {
+      return; // Skip duplicate data
+    }
+    
+    handleLocationUpdateInternal(data);
+  }, [vehicle, currentLocation, handleLocationUpdateInternal]);
 
   // Handle status updates from socket
   const handleStatusUpdate = useCallback((data: any) => {
@@ -380,9 +533,70 @@ const SharedTrackPage: React.FC<SharedTrackPageProps> = ({ token: propToken }) =
       setVehicleState(newVehicleState);
 
     } catch (error) {
-      console.error('Error handling status update:', error);
+      // Silent error handling
     }
   }, [vehicle]);
+
+  // Polling fallback for location updates
+  const startPolling = useCallback(() => {
+    if (!vehicle || pollingInterval) return;
+
+    const poll = async () => {
+      try {
+        const baseUrl = 'https://py.mylunago.com';
+        const apiUrl = `${baseUrl}/api/fleet/share-track/token/${token}/`;
+        
+        const response = await fetch(apiUrl);
+        const result = await response.json();
+        
+        if (result.success && result.data.vehicle.latest_location) {
+          const locationData = result.data.vehicle.latest_location;
+          
+          // Check if location has changed
+          if (currentLocation && 
+              locationData.latitude === currentLocation.latitude && 
+              locationData.longitude === currentLocation.longitude &&
+              locationData.speed === currentLocation.speed &&
+              locationData.course === currentLocation.course) {
+            return; // No change, skip update
+          }
+          
+          // Simulate socket data format
+          const socketData = {
+            imei: vehicle.imei,
+            latitude: locationData.latitude,
+            longitude: locationData.longitude,
+            speed: locationData.speed,
+            course: locationData.course,
+            satellite: locationData.satellite,
+            realTimeGps: locationData.realTimeGps,
+            createdAt: locationData.createdAt,
+            id: Date.now() // Use timestamp as ID
+          };
+
+          // Call handleLocationUpdate directly instead of using dependency
+          handleLocationUpdateInternal(socketData);
+        }
+      } catch (error) {
+        // Silent error handling
+      }
+    };
+
+    // Poll every 10 seconds
+    const interval = setInterval(poll, 10000);
+    setPollingInterval(interval);
+    
+    // Initial poll
+    poll();
+  }, [vehicle, token, currentLocation, handleLocationUpdateInternal]);
+
+  // Stop polling
+  const stopPolling = useCallback(() => {
+    if (pollingInterval) {
+      clearInterval(pollingInterval);
+      setPollingInterval(null);
+    }
+  }, [pollingInterval]);
 
   // Start real-time tracking
   const startRealTimeTracking = useCallback(() => {
@@ -391,21 +605,47 @@ const SharedTrackPage: React.FC<SharedTrackPageProps> = ({ token: propToken }) =
     // Ensure socket is connected first
     if (!socketService.getConnectionStatus()) {
       socketService.connect();
+      
+      // Wait a bit for connection to establish
+      setTimeout(() => {
+        if (socketService.getConnectionStatus()) {
+          setupSocketTracking();
+        } else {
+          // Start polling as fallback
+          startPolling();
+        }
+      }, 1000);
+    } else {
+      setupSocketTracking();
     }
 
-    setIsTracking(true);
+    function setupSocketTracking() {
+      if (!vehicle) return;
+      
+      setIsTracking(true);
 
-    // Create handlers
-    const locationHandler = (data: any) => handleLocationUpdate(data);
-    const statusHandler = (data: any) => handleStatusUpdate(data);
+      // Stop polling if it's running (socket takes priority)
+      stopPolling();
 
-    // Store handlers in refs for cleanup
-    locationUpdateHandlerRef.current = locationHandler;
-    statusUpdateHandlerRef.current = statusHandler;
+      // Set tracking IMEI to filter updates for this specific vehicle
+      socketService.setTrackingImei(vehicle.imei);
 
-    // Subscribe to socket updates
-    socketService.subscribeToVehicleLocation(locationHandler);
-    socketService.subscribeToVehicleStatus(statusHandler);
+      // Create handlers
+      const locationHandler = (data: any) => {
+        handleLocationUpdate(data);
+      };
+      const statusHandler = (data: any) => {
+        handleStatusUpdate(data);
+      };
+
+      // Store handlers in refs for cleanup
+      locationUpdateHandlerRef.current = locationHandler;
+      statusUpdateHandlerRef.current = statusHandler;
+
+      // Subscribe to socket updates
+      socketService.subscribeToVehicleLocation(locationHandler);
+      socketService.subscribeToVehicleStatus(statusHandler);
+    }
 
   }, [vehicle, isTracking, handleLocationUpdate, handleStatusUpdate]);
 
@@ -413,7 +653,15 @@ const SharedTrackPage: React.FC<SharedTrackPageProps> = ({ token: propToken }) =
   const stopRealTimeTracking = useCallback(() => {
     if (!isTracking) return;
 
+    console.log('Stopping real-time tracking');
+
     setIsTracking(false);
+
+    // Stop polling if active
+    stopPolling();
+
+    // Clear tracking IMEI
+    socketService.clearTrackingImei();
 
     // Unsubscribe from socket updates
     if (locationUpdateHandlerRef.current) {
@@ -425,33 +673,27 @@ const SharedTrackPage: React.FC<SharedTrackPageProps> = ({ token: propToken }) =
       statusUpdateHandlerRef.current = null;
     }
 
-  }, [isTracking]);
+    console.log('Real-time tracking stopped');
 
-  // Initialize map
-  const handleMapChange = useCallback(({ map }: any) => {
-    mapControllerRef.current = map;
-    mapRef.current = map;
-    
-    // Center map on vehicle location initially
-    if (currentLocation && map) {
-      setTimeout(() => {
-        try {
-          if (typeof map.panTo === 'function') {
-            map.panTo({
-              lat: currentLocation.latitude,
-              lng: currentLocation.longitude
-            });
-          }
-        } catch (error) {
-          console.warn('Error centering map on initial load:', error);
-        }
-      }, 1000);
-    }
-  }, [currentLocation]);
+  }, [isTracking, stopPolling]);
+
+  // Load and initialize map when component mounts
+  useEffect(() => {
+    const initMap = async () => {
+      try {
+        await loadGoogleMapsScript();
+        initializeMap();
+      } catch (error) {
+        console.error('Failed to load Google Maps:', error);
+      }
+    };
+
+    initMap();
+  }, [loadGoogleMapsScript, initializeMap]);
 
   // Update polyline when route points change
   const updatePolyline = useCallback(() => {
-    if (!mapRef.current || !window.google || routePoints.length < 2) return;
+    if (!mapInstanceRef.current || !window.google || routePoints.length < 2) return;
 
     try {
       // Remove existing polyline
@@ -460,10 +702,9 @@ const SharedTrackPage: React.FC<SharedTrackPageProps> = ({ token: propToken }) =
       }
 
       // Create new polyline
-      const path = routePoints.map(point => ({
-        lat: point.lat,
-        lng: point.lng
-      }));
+      const path = routePoints.map(point => 
+        new window.google.maps.LatLng(point.lat, point.lng)
+      );
 
       polylineRef.current = new window.google.maps.Polyline({
         path: path,
@@ -473,7 +714,7 @@ const SharedTrackPage: React.FC<SharedTrackPageProps> = ({ token: propToken }) =
         strokeWeight: 6
       });
 
-      polylineRef.current.setMap(mapRef.current);
+      polylineRef.current.setMap(mapInstanceRef.current);
     } catch (error) {
       console.warn('Error updating polyline:', error);
     }
@@ -486,17 +727,15 @@ const SharedTrackPage: React.FC<SharedTrackPageProps> = ({ token: propToken }) =
 
   // Animate map to vehicle location when it changes (for real-time updates)
   useEffect(() => {
-    if (currentLocation && mapControllerRef.current && isTracking) {
+    if (currentLocation && mapInstanceRef.current && isTracking) {
       // Add a small delay to ensure map is fully loaded
       const timer = setTimeout(() => {
         try {
           // Smoothly pan to new location (like Flutter animateCamera)
-          if (typeof mapControllerRef.current?.panTo === 'function') {
-            mapControllerRef.current.panTo({
-              lat: currentLocation.latitude,
-              lng: currentLocation.longitude
-            });
-          }
+          mapInstanceRef.current.panTo({
+            lat: currentLocation.latitude,
+            lng: currentLocation.longitude
+          });
         } catch (error) {
           console.warn('Error panning map to vehicle location:', error);
         }
@@ -506,22 +745,6 @@ const SharedTrackPage: React.FC<SharedTrackPageProps> = ({ token: propToken }) =
     }
   }, [currentLocation, isTracking]);
 
-  // Get map center - prioritize vehicle location
-  const getMapCenter = () => {
-    if (currentLocation && 
-        typeof currentLocation.latitude === 'number' && 
-        typeof currentLocation.longitude === 'number' && 
-        !isNaN(currentLocation.latitude) && 
-        !isNaN(currentLocation.longitude) &&
-        currentLocation.latitude !== 0 &&
-        currentLocation.longitude !== 0) {
-      return {
-        lat: currentLocation.latitude,
-        lng: currentLocation.longitude
-      };
-    }
-    return { lat: 28.3949, lng: 84.1240 }; // Nepal center as fallback
-  };
 
   useEffect(() => {
     loadShareTrackData();
@@ -543,7 +766,18 @@ const SharedTrackPage: React.FC<SharedTrackPageProps> = ({ token: propToken }) =
     if (vehicle && !isTracking) {
       startRealTimeTracking();
     }
-  }, [vehicle, isTracking, startRealTimeTracking]);
+  }, [vehicle, isTracking, startRealTimeTracking, startPolling]);
+
+  // Center map when vehicle and location data are available
+  useEffect(() => {
+    if (currentLocation && mapInstanceRef.current && window.google && mapLoaded) {
+      console.log('Centering map at:', currentLocation.latitude, currentLocation.longitude);
+      
+      // Update map center to vehicle location
+      const center = new window.google.maps.LatLng(currentLocation.latitude, currentLocation.longitude);
+      mapInstanceRef.current.setCenter(center);
+    }
+  }, [currentLocation, mapLoaded]);
 
   // Load altitude when location changes
   useEffect(() => {
@@ -556,18 +790,21 @@ const SharedTrackPage: React.FC<SharedTrackPageProps> = ({ token: propToken }) =
   useEffect(() => {
     return () => {
       stopRealTimeTracking();
+      stopPolling();
       // Cleanup polyline
       if (polylineRef.current) {
         polylineRef.current.setMap(null);
         polylineRef.current = null;
       }
+      // Cleanup map references
+      mapInstanceRef.current = null;
     };
-  }, [stopRealTimeTracking]);
+  }, [stopRealTimeTracking, stopPolling]);
 
   // Validate token
   if (!token) {
     return (
-      <div className="shared-track-error">
+      <div className="live-tracking-error">
         <h3>Invalid Share Link</h3>
         <p>No share token provided</p>
         <button onClick={() => navigate('/')} className="back-button">
@@ -579,77 +816,59 @@ const SharedTrackPage: React.FC<SharedTrackPageProps> = ({ token: propToken }) =
 
   if (loading) {
     return (
-      <div className="shared-track-loading">
+      <div className="live-tracking-loading">
         <div className="loading-spinner"></div>
-        <div className="loading-text">Loading shared vehicle tracking...</div>
+        <div className="loading-text">Loading shared tracking data...</div>
       </div>
     );
   }
 
-  if (error) {
+  if (!vehicle || !shareTrackData) {
     return (
-      <div className="shared-track-error">
-        <h3>Share Track Error</h3>
-        <p>{error}</p>
-        <button onClick={() => navigate('/')} className="back-button">
-          Go to Home
+      <div className="live-tracking-error">
+        <h3>Share Track Not Found</h3>
+        <p>This share link is invalid or has expired.</p>
+        <button 
+          onClick={onBack || (() => navigate('/'))} 
+          className="back-button"
+        >
+          Go Back
         </button>
       </div>
     );
   }
 
-  if (!vehicle || !shareTrack) {
-    return (
-      <div className="shared-track-error">
-        <h3>Vehicle not found</h3>
-        <p>Unable to load vehicle data</p>
-        <button onClick={() => navigate('/')} className="back-button">
-          Go to Home
-        </button>
-      </div>
-    );
-  }
 
   return (
-    <div className="shared-track-show">
+    <div className="live-tracking-show">
       {/* Minimal Top Panel */}
       <div className="minimal-top-panel">
         <div className="vehicle-info">
-          <span className="vehicle-info-item"><DirectionsCarIcon /> {vehicle.vehicleNo}</span>
+          <span className="vehicle-info-item"><DirectionsCarIcon   /> {vehicle.vehicleNo}</span>
           <span className="vehicle-info-item"><LocationOnIcon /> {currentAddress}</span>
           <span className="vehicle-info-item"><SpeedIcon /> {currentLocation?.speed?.toFixed(0) || 0} KM/H</span>
           <span className={`tracking-status ${isSocketConnected ? 'tracking-active' : 'tracking-inactive'}`}>
-            {isSocketConnected ? '🟢 LIVE' : '🔴 DISCONNECTED'}
+            {isSocketConnected ? '🟢 LIVE' : '🔄 POLLING'}
           </span>
-          <span className="share-info">
-            🔗 Shared Track (Expires: {new Date(shareTrack.scheduled_for).toLocaleString()})
+          <span className="vehicle-info-item" style={{ color: '#ff9800', fontSize: '12px' }}>
+            🔗 SHARED TRACKING
           </span>
         </div>
       </div>
 
       {/* Map */}
       <div className="map-container">
-        <GoogleMapReact
-          key={`map-${vehicle?.id}`}
-          bootstrapURLKeys={{ key: import.meta.env.VITE_GOOGLE_MAPS_API_KEY || '' }}
-          center={getMapCenter()}
-          defaultCenter={{ lat: 28.3949, lng: 84.1240 }}
-          defaultZoom={17}
-          zoom={17}
-          onGoogleApiLoaded={handleMapChange}
-          options={{
-            mapTypeControl: true,
-            streetViewControl: true,
-            fullscreenControl: true,
-            zoomControl: true,
-            rotateControl: true,
-            scaleControl: true,
-            gestureHandling: 'greedy',
-            disableDefaultUI: false,
-            mapTypeId: mapType,
-          }}
-        >
-        </GoogleMapReact>
+        {!mapLoaded && (
+          <div className="map-loading">
+            <div className="loading-spinner"></div>
+            <div className="loading-text">Loading Google Maps...</div>
+          </div>
+        )}
+        <div
+          ref={mapRef}
+          className="w-full h-full"
+          style={{ minHeight: '400px' }}
+        />
         
         {/* Fixed Center Marker */}
         {vehicle && (
@@ -704,6 +923,17 @@ const SharedTrackPage: React.FC<SharedTrackPageProps> = ({ token: propToken }) =
             <span className="altitude-text">
               {loadingAltitude ? '...' : `${altitude}m`}
             </span>
+          </button>
+
+          {/* Refresh Button */}
+          <button
+            className="floating-button refresh-button"
+            onClick={handleRefreshClick}
+            title="Refresh Location"
+          >
+            <svg width="20" height="20" viewBox="0 0 24 24" fill="currentColor">
+              <path d="M17.65 6.35C16.2 4.9 14.21 4 12 4c-4.42 0-7.99 3.58-7.99 8s3.57 8 7.99 8c3.73 0 6.84-2.55 7.73-6h-2.08c-.82 2.33-3.04 4-5.65 4-3.31 0-6-2.69-6-6s2.69-6 6-6c1.66 0 3.14.69 4.22 1.78L13 11h7V4l-2.35 2.35z"/>
+            </svg>
           </button>
         </div>
 

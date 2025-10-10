@@ -85,7 +85,7 @@ const AppRoutes: React.FC = () => {
         </PublicRoute>
       } />
 
-      {/* Public Shared Track Route - No authentication required */}
+      {/* Public shared tracking route - no authentication required */}
       <Route path="/share-track/:token" element={<SharedTrackPage />} />
 
       {/* Protected routes with layout */}
