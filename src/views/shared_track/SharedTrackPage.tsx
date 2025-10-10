@@ -239,13 +239,23 @@ const SharedTrackPage: React.FC<SharedTrackPageProps> = ({ token: propToken, onB
       const baseUrl = 'https://py.mylunago.com';
       const apiUrl = `${baseUrl}/api/fleet/share-track/token/${token}/`;
       
+      console.log('🔍 Debug: Making API request to:', apiUrl);
+      console.log('🔍 Debug: Token:', token);
+      
       const shareTrackResponse = await fetch(apiUrl);
+      console.log('🔍 Debug: Response status:', shareTrackResponse.status);
+      console.log('🔍 Debug: Response headers:', Object.fromEntries(shareTrackResponse.headers.entries()));
+      
       const shareTrackResult = await shareTrackResponse.json();
+      console.log('🔍 Debug: API Response:', shareTrackResult);
       
       if (!shareTrackResult.success) {
+        console.error('❌ Debug: API returned success: false', shareTrackResult);
         showError('Share Track Not Found', shareTrackResult.message || 'This share link is invalid or has expired.');
         return;
       }
+      
+      console.log('✅ Debug: API call successful, processing data...');
       
       setShareTrackData(shareTrackResult.data.share_track);
       
@@ -309,8 +319,19 @@ const SharedTrackPage: React.FC<SharedTrackPageProps> = ({ token: propToken, onB
       setVehicleState(initialState);
       
     } catch (error) {
-      console.error('Error loading share track data:', error);
-      showError('Error', 'Failed to load shared tracking data.');
+      console.error('❌ Debug: Error loading share track data:', error);
+      console.error('❌ Debug: Error details:', {
+        name: error.name,
+        message: error.message,
+        stack: error.stack
+      });
+      
+      // Check if it's a network error
+      if (error instanceof TypeError && error.message.includes('fetch')) {
+        showError('Network Error', 'Unable to connect to the server. Please check your internet connection and try again.');
+      } else {
+        showError('Error', 'Failed to load shared tracking data.');
+      }
     } finally {
       setLoading(false);
     }
