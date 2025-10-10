@@ -1,5 +1,5 @@
-import React, { useState, useEffect } from 'react';
-import { useNavigate } from 'react-router-dom';
+import React, { useState, useEffect, useCallback } from 'react';
+import { useNavigate, useSearchParams } from 'react-router-dom';
 import { vehicleAccessService } from '../../api/services/vehicleAccessService';
 import { confirmDelete, showSuccess, showError } from '../../utils/sweetAlert';
 import { useRefresh } from '../../contexts/RefreshContext';
@@ -19,73 +19,182 @@ import Badge from '../../components/ui/common/Badge';
 import Spinner from '../../components/ui/common/Spinner';
 import Alert from '../../components/ui/common/Alert';
 import RoleBasedWidget from '../../components/role-based/RoleBasedWidget';
+import Pagination from '../../components/ui/pagination/Pagination';
 import { ROLES } from '../../utils/roleUtils';
 import PersonRemoveIcon from '@mui/icons-material/PersonRemove';
+import RefreshIcon from '@mui/icons-material/Refresh';
+import SearchIcon from '@mui/icons-material/Search';
+import ClearIcon from '@mui/icons-material/Clear';
 
 const VehicleAccessIndexPage: React.FC = () => {
   const navigate = useNavigate();
+  const [searchParams, setSearchParams] = useSearchParams();
   const { refreshKey } = useRefresh();
   const [vehicles, setVehicles] = useState<Vehicle[]>([]);
-  const [filteredVehicles, setFilteredVehicles] = useState<Vehicle[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [searchQuery, setSearchQuery] = useState('');
+  const [searchInput, setSearchInput] = useState('');
+  const [isInitialized, setIsInitialized] = useState(false);
+  const [isSearching, setIsSearching] = useState(false);
+  const [isInSearchMode, setIsInSearchMode] = useState(false);
+  
+  // Pagination state
+  const [currentPage, setCurrentPage] = useState(1);
+  const [pagination, setPagination] = useState({
+    current_page: 1,
+    total_pages: 1,
+    total_items: 0,
+    page_size: 25,
+    has_next: false,
+    has_previous: false,
+    next_page: null as number | null,
+    previous_page: null as number | null
+  });
 
-  useEffect(() => {
-    loadVehiclesWithAccess();
-  }, [refreshKey]); // Reload when refresh is triggered
-
-  useEffect(() => {
-    applyFilters();
-  }, [vehicles, searchQuery]);
-
-  const loadVehiclesWithAccess = async () => {
+  const loadVehiclesWithAccess = useCallback(async () => {
     try {
       setLoading(true);
       setError(null);
-
-      const result = await vehicleAccessService.getAllVehiclesWithAccess();
+      
+      // Load paginated vehicles with access data
+      const result = await vehicleAccessService.getVehiclesWithAccessPaginated(currentPage);
 
       if (result.success && result.data) {
-        setVehicles(result.data);
+        setVehicles(result.data.vehicles);
+        setPagination(result.data.pagination);
       } else {
         setError(result.error || 'Failed to load vehicles with access');
       }
     } catch (err) {
-      setError('An unexpected error occurred');
+      setError('An unexpected error occurred: ' + err);
     } finally {
       setLoading(false);
     }
-  };
+  }, [currentPage]);
 
-  const applyFilters = () => {
-    let filtered = [...vehicles];
-
-    // Apply search filter
-    if (searchQuery) {
-      const query = searchQuery.toLowerCase();
-      filtered = filtered.filter(vehicle => 
-        vehicle.name?.toLowerCase().includes(query) ||
-        vehicle.vehicleNo?.toLowerCase().includes(query) ||
-        vehicle.imei?.includes(query) ||
-        vehicle.vehicleType?.toLowerCase().includes(query) ||
-        vehicle.userVehicle?.user?.name?.toLowerCase().includes(query) ||
-        vehicle.userVehicle?.user?.phone?.includes(query)
-      );
+  const handleSearchFromUrl = useCallback(async (query: string, page: number = 1) => {
+    try {
+      setIsSearching(true);
+      setLoading(true);
+      setError(null);
+      const response = await vehicleAccessService.searchVehiclesWithAccess(query.trim(), page);
+      
+      if (response.success && response.data) {
+        setVehicles(response.data.vehicles);
+        setPagination(response.data.pagination);
+        setCurrentPage(page);
+        setIsInSearchMode(true);
+      } else {
+        console.error('Search failed:', response.error);
+        setError(response.error || 'Search failed');
+      }
+    } catch (error) {
+      console.error('Search error:', error);
+      setError('Search failed: ' + (error as Error).message);
+    } finally {
+      setLoading(false);
+      setIsSearching(false);
     }
+  }, []);
 
-    setFilteredVehicles(filtered);
+  // Handle URL parameters for search query
+  useEffect(() => {
+    const urlSearchQuery = searchParams.get('q');
+    const urlPage = searchParams.get('page');
+    
+    if (urlSearchQuery) {
+      // URL has search query - perform search
+      setSearchInput(urlSearchQuery);
+      setSearchQuery(urlSearchQuery);
+      setCurrentPage(urlPage ? parseInt(urlPage) : 1);
+      handleSearchFromUrl(urlSearchQuery, urlPage ? parseInt(urlPage) : 1);
+    } else if (!isInitialized) {
+      // Initial load without search query
+      const page = urlPage ? parseInt(urlPage) : 1;
+      setCurrentPage(page);
+      setIsInSearchMode(false);
+      loadVehiclesWithAccess();
+    }
+    
+    setIsInitialized(true);
+  }, [searchParams, loadVehiclesWithAccess, handleSearchFromUrl, isInitialized]);
+
+  useEffect(() => {
+    // Only load vehicles if there's no search query in URL and we're not in search mode
+    const urlSearchQuery = searchParams.get('q');
+    if (!urlSearchQuery && !searchQuery && isInitialized && !isSearching && !isInSearchMode) {
+      loadVehiclesWithAccess();
+    }
+  }, [refreshKey, currentPage, loadVehiclesWithAccess, searchParams, searchQuery, isInitialized, isSearching, isInSearchMode]);
+
+  const handleSearchInputChange = (value: string) => {
+    setSearchInput(value);
   };
 
-  const handleSearch = (value: string) => {
-    setSearchQuery(value);
+  const handleSearch = () => {
+    if (searchInput.trim()) {
+      // Update URL with search query
+      const newSearchParams = new URLSearchParams(searchParams);
+      newSearchParams.set('q', searchInput.trim());
+      newSearchParams.set('page', '1');
+      setSearchParams(newSearchParams);
+    } else {
+      // Clear search
+      const newSearchParams = new URLSearchParams(searchParams);
+      newSearchParams.delete('q');
+      newSearchParams.set('page', '1');
+      setSearchParams(newSearchParams);
+      setSearchQuery('');
+      setIsInSearchMode(false);
+      setCurrentPage(1);
+    }
+  };
+
+  const handleClearSearch = () => {
+    setSearchInput('');
+    const newSearchParams = new URLSearchParams(searchParams);
+    newSearchParams.delete('q');
+    newSearchParams.set('page', '1');
+    setSearchParams(newSearchParams);
+    setSearchQuery('');
+    setIsInSearchMode(false);
+    setCurrentPage(1);
+  };
+
+  const handlePageChange = (page: number) => {
+    setCurrentPage(page);
+    const newSearchParams = new URLSearchParams(searchParams);
+    newSearchParams.set('page', page.toString());
+    setSearchParams(newSearchParams);
+  };
+
+  const handleSearchPageChange = (page: number) => {
+    const query = searchParams.get('q') || searchQuery;
+    if (query) {
+      const newSearchParams = new URLSearchParams(searchParams);
+      newSearchParams.set('page', page.toString());
+      setSearchParams(newSearchParams);
+      handleSearchFromUrl(query, page);
+    }
+  };
+
+  const handleRefresh = () => {
+    if (isInSearchMode) {
+      const query = searchParams.get('q') || searchQuery;
+      if (query) {
+        handleSearchFromUrl(query, currentPage);
+      }
+    } else {
+      loadVehiclesWithAccess();
+    }
   };
 
   const handleManageAccess = (imei: string) => {
     navigate(`/vehicle-access/manage/${imei}`);
   };
 
-  const handleDeleteAccess = async (imei: string, userVehicle: any) => {
+  const handleDeleteAccess = async (imei: string, userVehicle: { user?: { id?: number; phone?: string; name?: string }; userId?: number }) => {
     const confirmed = await confirmDelete(
       'Remove Vehicle Access',
       `Are you sure you want to remove ${userVehicle.user?.name || 'this user'}'s access to this vehicle?`
@@ -105,15 +214,15 @@ const VehicleAccessIndexPage: React.FC = () => {
         // Use userId if available, otherwise use userPhone
         const result = userId 
           ? await vehicleAccessService.deleteVehicleAccessById(imei, userId)
-          : await vehicleAccessService.deleteVehicleAccess(imei, userPhone);
+          : await vehicleAccessService.deleteVehicleAccess(imei, userPhone || '');
           
         if (result.success) {
           showSuccess('Access Removed', 'User access has been successfully removed from the vehicle.');
-          await loadVehiclesWithAccess(); // Reload the list
+          await handleRefresh(); // Reload the list
         } else {
           showError('Failed to Remove Access', result.error || 'Failed to remove vehicle access');
         }
-      } catch (err) {
+      } catch {
         showError('Error', 'An unexpected error occurred while removing access');
       }
     }
@@ -132,26 +241,36 @@ const VehicleAccessIndexPage: React.FC = () => {
 
   return (
     <Container>
-      <div className="space-y-6">
+      <div className="space-y-6 p-2">
         {/* Header */}
         <div className="flex justify-between items-center">
           <div>
             <h1 className="text-2xl font-bold text-gray-900">Vehicle Access Management</h1>
             <p className="text-gray-600">View and manage user access permissions for vehicles</p>
           </div>
-          <RoleBasedWidget allowedRoles={[ROLES.SUPER_ADMIN, ROLES.DEALER]}>
+          <div className="flex space-x-3">
             <Button
-              variant="primary"
-              onClick={() => navigate('/vehicle-access/create')}
-              icon={
-                <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v16m8-8H4" />
-                </svg>
-              }
+              variant="outline"
+              onClick={handleRefresh}
+              disabled={loading}
+              icon={<RefreshIcon className="w-4 h-4" />}
             >
-              Add Vehicle Access
+              Refresh
             </Button>
-          </RoleBasedWidget>
+            <RoleBasedWidget allowedRoles={[ROLES.SUPER_ADMIN, ROLES.DEALER]}>
+              <Button
+                variant="primary"
+                onClick={() => navigate('/vehicle-access/create')}
+                icon={
+                  <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v16m8-8H4" />
+                  </svg>
+                }
+              >
+                Add Vehicle Access
+              </Button>
+            </RoleBasedWidget>
+          </div>
         </div>
 
         {/* Error Alert */}
@@ -164,23 +283,50 @@ const VehicleAccessIndexPage: React.FC = () => {
         {/* Filters */}
         <Card>
           <CardBody>
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-              <Input
-                placeholder="Search by vehicle name, number, IMEI, type, or user..."
-                value={searchQuery}
-                onChange={handleSearch}
-              />
+            <div className="flex gap-2">
+              <div className="flex-1">
+                <Input
+                  placeholder="Search by vehicle name, number, IMEI, type, or user..."
+                  value={searchInput}
+                  onChange={handleSearchInputChange}
+                />
+              </div>
+              <Button
+                variant="primary"
+                onClick={handleSearch}
+                disabled={loading}
+                icon={<SearchIcon className="w-4 h-4" />}
+              >
+                Search
+              </Button>
+              {searchInput && (
+                <Button
+                  variant="outline"
+                  onClick={handleClearSearch}
+                  disabled={loading}
+                  icon={<ClearIcon className="w-4 h-4" />}
+                >
+                  Clear
+                </Button>
+              )}
             </div>
           </CardBody>
         </Card>
 
         {/* Vehicle Access Table */}
         <Card>
-            {filteredVehicles.length === 0 ? (
-              <div className="text-center py-8">
-                <p className="text-gray-500">No vehicles found</p>
-              </div>
-            ) : (
+          {loading ? (
+            <div className="flex justify-center items-center h-64">
+              <Spinner size="lg" />
+            </div>
+          ) : vehicles.length === 0 ? (
+            <div className="text-center py-8">
+              <p className="text-gray-500">
+                {isInSearchMode ? 'No vehicles found matching your search' : 'No vehicles found'}
+              </p>
+            </div>
+          ) : (
+            <>
               <Table striped hover>
                 <TableHead>
                   <TableRow>
@@ -192,9 +338,9 @@ const VehicleAccessIndexPage: React.FC = () => {
                   </TableRow>
                 </TableHead>
                 <TableBody>
-                  {filteredVehicles.map((vehicle, index) => (
+                  {vehicles.map((vehicle, index) => (
                     <TableRow key={vehicle.id}>
-                      <TableCell>{index + 1}</TableCell>
+                      <TableCell>{(pagination.current_page - 1) * pagination.page_size + index + 1}</TableCell>
                       <TableCell>
                         <div>
                           <div className="font-medium">{vehicle.name}</div>
@@ -288,7 +434,19 @@ const VehicleAccessIndexPage: React.FC = () => {
                   ))}
                 </TableBody>
               </Table>
-            )}
+              
+              {/* Pagination */}
+              <Pagination
+                currentPage={pagination.current_page}
+                totalPages={pagination.total_pages}
+                onPageChange={searchQuery ? handleSearchPageChange : handlePageChange}
+                hasNext={pagination.has_next}
+                hasPrevious={pagination.has_previous}
+                totalItems={pagination.total_items}
+                pageSize={pagination.page_size}
+              />
+            </>
+          )}
         </Card>
       </div>
     </Container>

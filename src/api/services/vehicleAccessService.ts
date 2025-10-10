@@ -21,6 +21,70 @@ class VehicleAccessService {
     }
   }
 
+  // Get paginated vehicles with access information
+  async getVehiclesWithAccessPaginated(page: number = 1): Promise<{ 
+    success: boolean; 
+    data?: { vehicles: Vehicle[]; pagination: {
+      current_page: number;
+      total_pages: number;
+      total_items: number;
+      page_size: number;
+      has_next: boolean;
+      has_previous: boolean;
+      next_page: number | null;
+      previous_page: number | null;
+    } }; 
+    error?: string 
+  }> {
+    try {
+      const response = await apiClient.get('/api/fleet/vehicle/access/paginated', {
+        params: { page },
+        timeout: 30000
+      });
+      
+      if (response.data.success) {
+        return { success: true, data: response.data.data };
+      } else {
+        return { success: false, error: response.data.message || 'Failed to fetch paginated vehicles with access' };
+      }
+    } catch (error) {
+      console.error('Get paginated vehicles with access error:', error);
+      return { success: false, error: 'Network error: ' + (error as Error).message };
+    }
+  }
+
+  // Search vehicles with access information
+  async searchVehiclesWithAccess(query: string, page: number = 1): Promise<{ 
+    success: boolean; 
+    data?: { vehicles: Vehicle[]; pagination: {
+      current_page: number;
+      total_pages: number;
+      total_items: number;
+      page_size: number;
+      has_next: boolean;
+      has_previous: boolean;
+      next_page: number | null;
+      previous_page: number | null;
+    } }; 
+    error?: string 
+  }> {
+    try {
+      const response = await apiClient.get('/api/fleet/vehicle/access/search', {
+        params: { q: query, page },
+        timeout: 30000
+      });
+      
+      if (response.data.success) {
+        return { success: true, data: response.data.data };
+      } else {
+        return { success: false, error: response.data.message || 'Failed to search vehicles with access' };
+      }
+    } catch (error) {
+      console.error('Search vehicles with access error:', error);
+      return { success: false, error: 'Network error: ' + (error as Error).message };
+    }
+  }
+
   // Get vehicle access assignments for a specific vehicle (like Flutter)
   async getVehicleAccessByVehicle(imei: string): Promise<{ success: boolean; data?: VehicleAccess[]; error?: string }> {
     try {
@@ -61,12 +125,20 @@ class VehicleAccessService {
     }
   }
 
-  // Update vehicle access permissions - like Flutter
+  // Update vehicle access permissions
   async updateVehicleAccess(imei: string, userPhone: string, permissions: Record<string, boolean>): Promise<{ success: boolean; data?: VehicleAccess; error?: string }> {
     try {
-      const response = await apiClient.put('/api/fleet/vehicle/access', {
+      // First get user ID from phone number
+      const userResponse = await apiClient.get(`/api/core/user/user/${userPhone}`);
+      if (!userResponse.data.success) {
+        return { success: false, error: 'User not found' };
+      }
+      
+      const userId = userResponse.data.data.id;
+      
+      const response = await apiClient.put('/api/fleet/vehicle/access/update', {
         imei,
-        userPhone,
+        userId,
         permissions
       }, {
         timeout: 30000
@@ -83,11 +155,19 @@ class VehicleAccessService {
     }
   }
 
-  // Remove vehicle access (unassign user from vehicle) - like Flutter
+  // Remove vehicle access (unassign user from vehicle)
   async deleteVehicleAccess(imei: string, userPhone: string): Promise<{ success: boolean; error?: string }> {
     try {
-      const response = await apiClient.delete('/api/fleet/vehicle/access', {
-        data: { imei, userPhone },
+      // First get user ID from phone number
+      const userResponse = await apiClient.get(`/api/core/user/user/${userPhone}`);
+      if (!userResponse.data.success) {
+        return { success: false, error: 'User not found' };
+      }
+      
+      const userId = userResponse.data.data.id;
+      
+      const response = await apiClient.delete('/api/fleet/vehicle/access/remove', {
+        data: { imei, userId },
         timeout: 30000
       });
       
@@ -122,7 +202,7 @@ class VehicleAccessService {
   }
 
   // Get available users for vehicle access assignment
-  async getAvailableUsers(): Promise<{ success: boolean; data?: any[]; error?: string }> {
+  async getAvailableUsers(): Promise<{ success: boolean; data?: { id: number; name: string; phone: string; email: string }[]; error?: string }> {
     try {
       const response = await apiClient.get('/api/core/user/users', {
         timeout: 30000
@@ -140,7 +220,7 @@ class VehicleAccessService {
   }
 
   // Get available vehicles for vehicle access assignment
-  async getAvailableVehicles(): Promise<{ success: boolean; data?: any[]; error?: string }> {
+  async getAvailableVehicles(): Promise<{ success: boolean; data?: { id: number; imei: string; name: string; vehicleNo: string; vehicleType: string }[]; error?: string }> {
     try {
       const response = await apiClient.get('/api/fleet/vehicle', {
         timeout: 30000
@@ -153,6 +233,43 @@ class VehicleAccessService {
       }
     } catch (error) {
       console.error('Get available vehicles error:', error);
+      return { success: false, error: 'Network error: ' + (error as Error).message };
+    }
+  }
+
+  // Get vehicle access assignments for a specific vehicle (light version - faster)
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  async getVehicleAccessAssignmentsLight(imei: string): Promise<{ success: boolean; data?: { vehicle: any; userVehicles: any[] }; error?: string }> {
+    try {
+      const response = await apiClient.get(`/api/fleet/vehicle/${imei}/access/light`, {
+        timeout: 30000
+      });
+      
+      if (response.data.success) {
+        return { success: true, data: response.data.data };
+      } else {
+        return { success: false, error: response.data.message || 'Failed to get vehicle access assignments' };
+      }
+    } catch (error) {
+      console.error('Get vehicle access assignments light error:', error);
+      return { success: false, error: 'Network error: ' + (error as Error).message };
+    }
+  }
+
+  // Get vehicle access assignments for a specific vehicle (full version)
+  async getVehicleAccessAssignments(imei: string): Promise<{ success: boolean; data?: VehicleAccess; error?: string }> {
+    try {
+      const response = await apiClient.get(`/api/fleet/vehicle/${imei}/access`, {
+        timeout: 30000
+      });
+      
+      if (response.data.success) {
+        return { success: true, data: response.data.data };
+      } else {
+        return { success: false, error: response.data.message || 'Failed to get vehicle access assignments' };
+      }
+    } catch (error) {
+      console.error('Get vehicle access assignments error:', error);
       return { success: false, error: 'Network error: ' + (error as Error).message };
     }
   }

@@ -40,6 +40,7 @@ const VehicleAccessCreatePage: React.FC = () => {
       troubleshoot: false,
       vehicleEdit: false,
       shareTracking: false,
+      relay: false,
     }
   });
 
@@ -107,6 +108,7 @@ const VehicleAccessCreatePage: React.FC = () => {
       troubleshoot: checked,
       vehicleEdit: checked,
       shareTracking: checked,
+      relay: checked,
     };
 
     setFormData(prev => ({

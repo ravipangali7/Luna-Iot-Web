@@ -53,7 +53,7 @@ const Layout: React.FC = () => {
           onAllVehicles={handleAllVehicles}
           onFullscreen={handleFullscreen}
         />
-        <main className="flex-1 overflow-hidden bg-gray-50">
+        <main className="flex-1 overflow-y-auto bg-gray-50">
           <Outlet />
         </main>
       </div>
