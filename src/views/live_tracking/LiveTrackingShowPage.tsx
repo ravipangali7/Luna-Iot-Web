@@ -133,6 +133,10 @@ const LiveTrackingShowPage: React.FC<LiveTrackingShowPageProps> = ({ imei: propI
   const polylineRef = useRef<any>(null);
   const locationUpdateHandlerRef = useRef<((data: any) => void) | null>(null);
   const statusUpdateHandlerRef = useRef<((data: any) => void) | null>(null);
+  
+  // Throttling for map pan updates
+  const lastMapPanRef = useRef<number>(0);
+  const MAP_PAN_THROTTLE_MS = 200; // Throttle to max once per 200ms
 
 
   // Load vehicle data
@@ -294,9 +298,11 @@ const LiveTrackingShowPage: React.FC<LiveTrackingShowPageProps> = ({ imei: propI
         { lat: newLocation.latitude, lng: newLocation.longitude }
       ]);
       
-      // Animate map to new location with rotation (like Flutter)
+      // Animate map to new location with throttling for smooth performance
       if (mapControllerRef.current && isTracking) {
-        setTimeout(() => {
+        const now = Date.now();
+        if (now - lastMapPanRef.current >= MAP_PAN_THROTTLE_MS) {
+          lastMapPanRef.current = now;
           try {
             // Use animateCamera for smooth movement like Flutter
             if (typeof mapControllerRef.current?.panTo === 'function') {
@@ -308,7 +314,7 @@ const LiveTrackingShowPage: React.FC<LiveTrackingShowPageProps> = ({ imei: propI
           } catch (error) {
             console.warn('Error panning map to new location:', error);
           }
-        }, 1000);
+        }
       }
 
       // Update vehicle with new location
@@ -472,27 +478,8 @@ const LiveTrackingShowPage: React.FC<LiveTrackingShowPageProps> = ({ imei: propI
 
 
 
-  // Animate map to vehicle location when it changes (for real-time updates)
-  useEffect(() => {
-    if (currentLocation && mapControllerRef.current && isTracking) {
-      // Add a small delay to ensure map is fully loaded
-      const timer = setTimeout(() => {
-        try {
-          // Smoothly pan to new location (like Flutter animateCamera)
-          if (typeof mapControllerRef.current?.panTo === 'function') {
-            mapControllerRef.current.panTo({
-              lat: currentLocation.latitude,
-              lng: currentLocation.longitude
-            });
-          }
-        } catch (error) {
-          console.warn('Error panning map to vehicle location:', error);
-        }
-      }, 1000);
-
-      return () => clearTimeout(timer);
-    }
-  }, [currentLocation, isTracking]);
+  // Note: Map animation is now handled directly in handleLocationUpdate callback
+  // This removes the duplicate useEffect that was causing redundant animations
 
   // Get map center - prioritize vehicle location
   const getMapCenter = () => {
@@ -514,17 +501,33 @@ const LiveTrackingShowPage: React.FC<LiveTrackingShowPageProps> = ({ imei: propI
 
   useEffect(() => {
     loadVehicleData();
-  }, [loadVehicleData]);
+    
+    // Join socket room for this vehicle
+    if (imei) {
+      socketService.joinVehicleRoom(imei);
+    }
 
-  // Set up socket connection status monitoring
+    // Leave room on unmount
+    return () => {
+      if (imei) {
+        socketService.leaveVehicleRoom(imei);
+      }
+    };
+  }, [loadVehicleData, imei]);
+
+  // Set up socket connection status monitoring (run once only)
   useEffect(() => {
     // Set up connection status listener
-    socketService.onConnectionChange((connected) => {
+    const connectionHandler = (connected: boolean) => {
       setIsSocketConnected(connected);
-    });
+    };
+    
+    socketService.onConnectionChange(connectionHandler);
 
     // Initial connection status
     setIsSocketConnected(socketService.getConnectionStatus());
+    
+    // Cleanup is handled by socketService itself
   }, []);
 
   // Start real-time tracking when vehicle is loaded

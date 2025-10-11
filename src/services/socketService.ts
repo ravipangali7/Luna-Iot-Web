@@ -328,6 +328,22 @@ class SocketService {
   unsubscribeFromVehicleStatus(callback: (data: unknown) => void): void {
     this.vehicleStatusCallbacks.delete(callback);
   }
+
+  // Join vehicle room for targeted updates
+  public joinVehicleRoom(imei: string): void {
+    if (this.socket?.connected) {
+      this.socket.emit('join_vehicle', imei);
+      console.log(`✅ Joined room: vehicle:${imei}`);
+    }
+  }
+
+  // Leave vehicle room
+  public leaveVehicleRoom(imei: string): void {
+    if (this.socket?.connected) {
+      this.socket.emit('leave_vehicle', imei);
+      console.log(`❌ Left room: vehicle:${imei}`);
+    }
+  }
 }
 
 // Create a singleton instance

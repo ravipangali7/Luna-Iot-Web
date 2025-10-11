@@ -1,4 +1,4 @@
-import { useEffect, useCallback, useState } from 'react';
+import { useEffect, useCallback, useState, useRef } from 'react';
 import type { Vehicle } from '../types/vehicle';
 import socketService from '../services/socketService';
 
@@ -8,6 +8,10 @@ interface UseSocketUpdatesProps {
 
 export const useSocketUpdates = ({ setVehicles }: UseSocketUpdatesProps) => {
   const [isConnected, setIsConnected] = useState(false);
+  
+  // Use refs to store stable callback references
+  const handleStatusUpdateRef = useRef<(data: unknown) => void>();
+  const handleLocationUpdateRef = useRef<(data: unknown) => void>();
 
   const handleStatusUpdate = useCallback((data: unknown) => {
     // Type guard to ensure data has the expected structure
@@ -62,6 +66,9 @@ export const useSocketUpdates = ({ setVehicles }: UseSocketUpdatesProps) => {
       return updatedVehicles;
     });
   }, [setVehicles]);
+
+  // Store callbacks in refs for stable references
+  handleStatusUpdateRef.current = handleStatusUpdate;
 
   const handleLocationUpdate = useCallback((data: unknown) => {
     // Type guard to ensure data has the expected structure
@@ -119,6 +126,9 @@ export const useSocketUpdates = ({ setVehicles }: UseSocketUpdatesProps) => {
     });
   }, [setVehicles]);
 
+  // Store callbacks in refs for stable references
+  handleLocationUpdateRef.current = handleLocationUpdate;
+
   useEffect(() => {
     // Connect to socket
     socketService.connect();
@@ -128,16 +138,19 @@ export const useSocketUpdates = ({ setVehicles }: UseSocketUpdatesProps) => {
       setIsConnected(connected);
     });
 
-    // Subscribe to status and location updates
-    socketService.subscribeToVehicleStatus(handleStatusUpdate);
-    socketService.subscribeToVehicleLocation(handleLocationUpdate);
+    // Subscribe to status and location updates using stable refs
+    const statusHandler = (data: unknown) => handleStatusUpdateRef.current?.(data);
+    const locationHandler = (data: unknown) => handleLocationUpdateRef.current?.(data);
+    
+    socketService.subscribeToVehicleStatus(statusHandler);
+    socketService.subscribeToVehicleLocation(locationHandler);
 
     // Cleanup on unmount
     return () => {
-      socketService.unsubscribeFromVehicleStatus(handleStatusUpdate);
-      socketService.unsubscribeFromVehicleLocation(handleLocationUpdate);
+      socketService.unsubscribeFromVehicleStatus(statusHandler);
+      socketService.unsubscribeFromVehicleLocation(locationHandler);
     };
-  }, [handleStatusUpdate, handleLocationUpdate]);
+  }, []); // Empty dependency array - run once only
 
   return {
     isConnected,

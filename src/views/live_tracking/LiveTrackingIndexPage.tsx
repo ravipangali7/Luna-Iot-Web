@@ -299,6 +299,21 @@ const LiveTrackingIndexPage: React.FC = () => {
     loadVehicles();
   }, [loadVehicles]);
 
+  // Join rooms for all visible vehicles
+  useEffect(() => {
+    // Join rooms for all vehicles in current view
+    vehicles.forEach(vehicle => {
+      socketService.joinVehicleRoom(vehicle.imei);
+    });
+
+    // Leave rooms on unmount or when vehicles change
+    return () => {
+      vehicles.forEach(vehicle => {
+        socketService.leaveVehicleRoom(vehicle.imei);
+      });
+    };
+  }, [vehicles]);
+
   // Load vehicles when currentPage changes (only in normal mode)
   useEffect(() => {
     if (!isSearchMode) {
