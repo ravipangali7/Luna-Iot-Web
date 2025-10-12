@@ -12,10 +12,21 @@ import Container from '../../components/ui/layout/Container';
 import Card from '../../components/ui/cards/Card';
 import CardBody from '../../components/ui/cards/CardBody';
 import Button from '../../components/ui/buttons/Button';
-import ActionButton from '../../components/ui/buttons/ActionButton';
+import { 
+  EditActionButton, 
+  DeleteActionButton, 
+  ActivateActionButton, 
+  DeactivateActionButton, 
+  RechargeActionButton, 
+  CommandsActionButton, 
+  RelayOnActionButton, 
+  RelayOffActionButton, 
+  ActionButtonGroup 
+} from '../../components/ui/buttons';
 import Input from '../../components/ui/forms/Input';
 import Select from '../../components/ui/forms/Select';
 import Table from '../../components/ui/tables/Table';
+import SendIcon from '@mui/icons-material/Send';
 import TableHead from '../../components/ui/tables/TableHead';
 import TableHeader from '../../components/ui/tables/TableHeader';
 import TableBody from '../../components/ui/tables/TableBody';
@@ -27,15 +38,7 @@ import Alert from '../../components/ui/common/Alert';
 import Pagination from '../../components/ui/pagination/Pagination';
 import RoleBasedWidget from '../../components/role-based/RoleBasedWidget';
 import { ROLES } from '../../utils/roleUtils';
-import EditIcon from '@mui/icons-material/Edit';
-import DeleteIcon from '@mui/icons-material/Delete';
-import AccountBalanceWalletIcon from '@mui/icons-material/AccountBalanceWallet';
-import SendIcon from '@mui/icons-material/Send';
 import RefreshIcon from '@mui/icons-material/Refresh';
-import PlayArrowIcon from '@mui/icons-material/PlayArrow';
-import PauseIcon from '@mui/icons-material/Pause';
-import PowerSettingsNewIcon from '@mui/icons-material/PowerSettingsNew';
-import PowerOffIcon from '@mui/icons-material/PowerOff';
 import { AuthContext } from '../../contexts/AuthContext';
 
 const VehicleIndexPage: React.FC = () => {
@@ -849,73 +852,31 @@ const VehicleIndexPage: React.FC = () => {
                           </TableCell>
                         </RoleBasedWidget>
                         <TableCell>
-                          <div className="action-buttons">
-                            <ActionButton
-                              variant="outline"
-                              size="sm"
-                              onClick={() => handleEditVehicle(vehicle)}
-                              icon={<EditIcon className="w-3 h-3" />}
-                              tooltip="Edit Vehicle"
-                            />
+                          <ActionButtonGroup>
+                            <EditActionButton onClick={() => handleEditVehicle(vehicle)} />
                             {/* <RoleBasedWidget allowedRoles={[ROLES.SUPER_ADMIN, ROLES.DEALER]}> */}
                               {vehicle.is_active ? (
-                                <ActionButton
-                                  variant="warning"
-                                  size="sm"
-                                  onClick={() => handleDeactivateVehicle(vehicle)}
-                                  icon={<PauseIcon className="w-3 h-3" />}
-                                  tooltip="Deactivate Vehicle"
-                                />
+                                <DeactivateActionButton onClick={() => handleDeactivateVehicle(vehicle)} />
                               ) : (
-                                <ActionButton
-                                  variant="success"
-                                  size="sm"
-                                  onClick={() => handleActivateVehicle(vehicle)}
-                                  icon={<PlayArrowIcon className="w-3 h-3" />}
-                                  tooltip="Activate Vehicle"
-                                />
+                                <ActivateActionButton onClick={() => handleActivateVehicle(vehicle)} />
                               )}
                             {/* </RoleBasedWidget> */}
                             <RoleBasedWidget allowedRoles={[ROLES.SUPER_ADMIN]}>
-                              <ActionButton
-                                variant="primary"
-                                size="sm"
-                                onClick={() => handleRechargeVehicle(vehicle)}
-                                icon={<AccountBalanceWalletIcon className="w-3 h-3" />}
-                                tooltip="Recharge Vehicle"
-                              />
+                              <RechargeActionButton onClick={() => handleRechargeVehicle(vehicle)} />
                             </RoleBasedWidget>
                             {/* Relay: show action if user can control for this vehicle; else show Not Available */}
                             {canControlRelayForVehicle(vehicle) ? (
                               vehicle.latestStatus?.relay ? (
-                                <ActionButton
-                                  variant="warning"
-                                  size="sm"
-                                  onClick={() => handleRelayOff(vehicle)}
-                                  icon={<PowerOffIcon className="w-3 h-3" />}
-                                  tooltip="Turn Relay OFF"
-                                />
+                                <RelayOffActionButton onClick={() => handleRelayOff(vehicle)} />
                               ) : (
-                                <ActionButton
-                                  variant="success"
-                                  size="sm"
-                                  onClick={() => handleRelayOn(vehicle)}
-                                  icon={<PowerSettingsNewIcon className="w-3 h-3" />}
-                                  tooltip="Turn Relay ON"
-                                />
+                                <RelayOnActionButton onClick={() => handleRelayOn(vehicle)} />
                               )
                             ) : (
                               <Badge variant="secondary">Not Available</Badge>
                             )}
                             <RoleBasedWidget allowedRoles={[ROLES.SUPER_ADMIN]}>
                               <div className="relative">
-                                <ActionButton
-                                  variant="secondary"
-                                  size="sm"
-                                  onClick={() => toggleDropdown(vehicle.id.toString())}
-                                  icon={<SendIcon className="w-3 h-3" />}
-                                  tooltip="Vehicle Commands"
-                                />
+                                <CommandsActionButton onClick={() => toggleDropdown(vehicle.id.toString())} />
                                 {dropdownOpen[vehicle.id.toString()] && (
                                   <div className="absolute right-0 mt-1 w-48 bg-white rounded-lg shadow-xl z-10 border border-gray-200 backdrop-blur-sm">
                                     <div className="py-1">
@@ -945,15 +906,9 @@ const VehicleIndexPage: React.FC = () => {
                               </div>
                             </RoleBasedWidget>
                             <RoleBasedWidget allowedRoles={[ROLES.SUPER_ADMIN]}>
-                              <ActionButton
-                                variant="danger"
-                                size="sm"
-                                onClick={() => handleDeleteVehicle(vehicle)}
-                                icon={<DeleteIcon className="w-3 h-3" />}
-                                tooltip="Delete Vehicle"
-                              />
+                              <DeleteActionButton onClick={() => handleDeleteVehicle(vehicle)} />
                             </RoleBasedWidget>
-                          </div>
+                          </ActionButtonGroup>
                         </TableCell>
                       </TableRow>
                       );

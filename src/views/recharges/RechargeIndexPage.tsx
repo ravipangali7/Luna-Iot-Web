@@ -10,7 +10,7 @@ import Card from '../../components/ui/cards/Card';
 import CardHeader from '../../components/ui/cards/CardHeader';
 import CardBody from '../../components/ui/cards/CardBody';
 import Button from '../../components/ui/buttons/Button';
-import ActionButton from '../../components/ui/buttons/ActionButton';
+import { DeleteActionButton, ActionButtonGroup } from '../../components/ui/buttons';
 import Input from '../../components/ui/forms/Input';
 import Select from '../../components/ui/forms/Select';
 import Table from '../../components/ui/tables/Table';
@@ -23,7 +23,6 @@ import Spinner from '../../components/ui/common/Spinner';
 import Alert from '../../components/ui/common/Alert';
 import RoleBasedWidget from '../../components/role-based/RoleBasedWidget';
 import { ROLES } from '../../utils/roleUtils';
-import DeleteIcon from '@mui/icons-material/Delete';
 
 const RechargeIndexPage: React.FC = () => {
   const navigate = useNavigate();
@@ -314,17 +313,11 @@ const RechargeIndexPage: React.FC = () => {
                         {formatDate(recharge.createdAt)}
                       </TableCell>
                       <TableCell>
-                        <div className="action-buttons">
+                        <ActionButtonGroup>
                           <RoleBasedWidget allowedRoles={[ROLES.SUPER_ADMIN]}>
-                            <ActionButton
-                              variant="danger"
-                              size="sm"
-                              onClick={() => handleDeleteRecharge(recharge)}
-                              icon={<DeleteIcon className="w-3 h-3" />}
-                              tooltip="Delete Recharge"
-                            />
+                            <DeleteActionButton onClick={() => handleDeleteRecharge(recharge)} />
                           </RoleBasedWidget>
-                        </div>
+                        </ActionButtonGroup>
                       </TableCell>
                     </TableRow>
                   ))}

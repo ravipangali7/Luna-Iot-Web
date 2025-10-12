@@ -8,10 +8,17 @@ import Container from '../../components/ui/layout/Container';
 import Card from '../../components/ui/cards/Card';
 import CardBody from '../../components/ui/cards/CardBody';
 import Button from '../../components/ui/buttons/Button';
-import ActionButton from '../../components/ui/buttons/ActionButton';
+import { 
+  EditActionButton, 
+  DeleteActionButton, 
+  RechargeActionButton, 
+  CommandsActionButton, 
+  ActionButtonGroup 
+} from '../../components/ui/buttons';
 import Input from '../../components/ui/forms/Input';
 import Select from '../../components/ui/forms/Select';
 import Table from '../../components/ui/tables/Table';
+import SendIcon from '@mui/icons-material/Send';
 import TableHead from '../../components/ui/tables/TableHead';
 import TableHeader from '../../components/ui/tables/TableHeader';
 import TableBody from '../../components/ui/tables/TableBody';
@@ -23,10 +30,6 @@ import Alert from '../../components/ui/common/Alert';
 import Pagination from '../../components/ui/pagination/Pagination';
 import RoleBasedWidget from '../../components/role-based/RoleBasedWidget';
 import { ROLES } from '../../utils/roleUtils';
-import EditIcon from '@mui/icons-material/Edit';
-import DeleteIcon from '@mui/icons-material/Delete';
-import AccountBalanceWalletIcon from '@mui/icons-material/AccountBalanceWallet';
-import SendIcon from '@mui/icons-material/Send';
 import RefreshIcon from '@mui/icons-material/Refresh';
 
 const DeviceIndexPage: React.FC = () => {
@@ -641,35 +644,17 @@ const DeviceIndexPage: React.FC = () => {
                         </TableCell>
                         <RoleBasedWidget allowedRoles={[ROLES.SUPER_ADMIN]}>
                           <TableCell>
-                            <div className="action-buttons">
+                            <ActionButtonGroup>
                               <RoleBasedWidget allowedRoles={[ROLES.SUPER_ADMIN]}>
-                                <ActionButton
-                                  variant="outline"
-                                  size="sm"
-                                  onClick={() => handleEditDevice(device)}
-                                  icon={<EditIcon className="w-3 h-3" />}
-                                  tooltip="Edit Device"
-                                />
+                                <EditActionButton onClick={() => handleEditDevice(device)} />
                               </RoleBasedWidget>
 
                               <RoleBasedWidget allowedRoles={[ROLES.SUPER_ADMIN]}>
-                                <ActionButton
-                                  variant="primary"
-                                  size="sm"
-                                  onClick={() => handleRechargeDevice(device)}
-                                  icon={<AccountBalanceWalletIcon className="w-3 h-3" />}
-                                  tooltip="Recharge Device"
-                                />
+                                <RechargeActionButton onClick={() => handleRechargeDevice(device)} />
                               </RoleBasedWidget>
                               <RoleBasedWidget allowedRoles={[ROLES.SUPER_ADMIN]}>
                                 <div className="relative">
-                                  <ActionButton
-                                    variant="secondary"
-                                    size="sm"
-                                    onClick={() => toggleDropdown(device.id.toString())}
-                                    icon={<SendIcon className="w-3 h-3" />}
-                                    tooltip="Device Commands"
-                                  />
+                                  <CommandsActionButton onClick={() => toggleDropdown(device.id.toString())} />
                                   {dropdownOpen[device.id.toString()] && (
                                     <div className="absolute right-0 mt-1 w-48 bg-white rounded-lg shadow-xl z-10 border border-gray-200 backdrop-blur-sm">
                                       <div className="py-1">
@@ -699,15 +684,9 @@ const DeviceIndexPage: React.FC = () => {
                                 </div>
                               </RoleBasedWidget>
                               <RoleBasedWidget allowedRoles={[ROLES.SUPER_ADMIN]}>
-                                <ActionButton
-                                  variant="danger"
-                                  size="sm"
-                                  onClick={() => handleDeleteDevice(device)}
-                                  icon={<DeleteIcon className="w-3 h-3" />}
-                                  tooltip="Delete Device"
-                                />
+                                <DeleteActionButton onClick={() => handleDeleteDevice(device)} />
                               </RoleBasedWidget>
-                            </div>
+                            </ActionButtonGroup>
                         </TableCell>
                         </RoleBasedWidget>
                       </TableRow>

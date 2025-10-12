@@ -11,6 +11,7 @@ interface ActionButtonProps extends BaseProps {
   onClick?: () => void;
   icon?: React.ReactNode;
   tooltip?: string;
+  title?: string;
   compact?: boolean;
 }
 
@@ -25,6 +26,7 @@ const ActionButton: React.FC<ActionButtonProps> = ({
   className = '',
   icon,
   tooltip,
+  title,
   compact = false,
   ...props
 }) => {
@@ -51,7 +53,7 @@ const ActionButton: React.FC<ActionButtonProps> = ({
       className={combinedClasses}
       disabled={disabled || loading}
       onClick={onClick}
-      title={tooltip}
+      title={title || tooltip}
       {...props}
     >
       {loading && <span className="btn__spinner" />}

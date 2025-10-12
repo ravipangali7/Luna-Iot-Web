@@ -48,6 +48,9 @@ interface AuthContextType {
   isLoading: boolean;
   login: (phone: string, password: string) => Promise<boolean>;
   logout: () => void;
+  // Wallet methods
+  updateWalletBalance: (balance: number) => void;
+  refreshWalletBalance: () => Promise<void>;
   // Role-based helper methods
   hasRole: (allowedRoles: string[]) => boolean;
   isSuperAdmin: () => boolean;
@@ -168,11 +171,48 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     authService.logout();
   };
 
+  const updateWalletBalance = (balance: number) => {
+    setUser(prevUser => {
+      if (!prevUser) return null;
+      return {
+        ...prevUser,
+        wallet: prevUser.wallet ? {
+          ...prevUser.wallet,
+          balance,
+          updated_at: new Date().toISOString()
+        } : {
+          id: 0, // Placeholder ID
+          balance,
+          created_at: new Date().toISOString(),
+          updated_at: new Date().toISOString()
+        }
+      };
+    });
+  };
+
+  const refreshWalletBalance = async () => {
+    if (!user?.id) return;
+    
+    try {
+      const { walletService } = await import('../api/services/walletService');
+      const result = await walletService.getWalletByUser(user.id);
+      
+      if (result.success && result.data) {
+        updateWalletBalance(result.data.balance);
+      }
+    } catch (error) {
+      console.error('Error refreshing wallet balance:', error);
+    }
+  };
+
   const value: AuthContextType = {
     user,
     isLoading,
     login,
     logout,
+    // Wallet methods
+    updateWalletBalance,
+    refreshWalletBalance,
     // Role-based helper methods
     hasRole: (allowedRoles: string[]) => user ? hasRole(user, allowedRoles) : false,
     isSuperAdmin: () => user ? isSuperAdmin(user) : false,

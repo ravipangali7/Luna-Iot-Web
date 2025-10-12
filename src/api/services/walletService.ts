@@ -1,0 +1,148 @@
+import { apiClient } from '../apiClient';
+import type { Wallet, WalletListItem, WalletTopUpPayload } from '../../types/wallet';
+
+class WalletService {
+  async getAllWallets(): Promise<{ success: boolean; data?: WalletListItem[]; error?: string }> {
+    try {
+      const response = await apiClient.get('/api/finance/wallet/wallets', {
+        timeout: 30000
+      });
+      
+      if (response.data.success) {
+        return { success: true, data: response.data.data };
+      } else {
+        return { success: false, error: response.data.message || 'Failed to fetch wallets' };
+      }
+    } catch (error) {
+      console.error('Get wallets error:', error);
+      return { success: false, error: 'Network error: ' + (error as Error).message };
+    }
+  }
+
+  async getWalletByUser(userId: number): Promise<{ success: boolean; data?: Wallet; error?: string }> {
+    try {
+      const response = await apiClient.get(`/api/finance/wallet/wallet/user/${userId}`, {
+        timeout: 30000
+      });
+      
+      if (response.data.success) {
+        return { success: true, data: response.data.data };
+      } else {
+        return { success: false, error: response.data.message || 'Failed to fetch wallet' };
+      }
+    } catch (error) {
+      console.error('Get wallet by user error:', error);
+      return { success: false, error: 'Network error: ' + (error as Error).message };
+    }
+  }
+
+  async getWalletById(walletId: number): Promise<{ success: boolean; data?: Wallet; error?: string }> {
+    try {
+      const response = await apiClient.get(`/api/finance/wallet/wallet/${walletId}`, {
+        timeout: 30000
+      });
+      
+      if (response.data.success) {
+        return { success: true, data: response.data.data };
+      } else {
+        return { success: false, error: response.data.message || 'Failed to fetch wallet' };
+      }
+    } catch (error) {
+      console.error('Get wallet by ID error:', error);
+      return { success: false, error: 'Network error: ' + (error as Error).message };
+    }
+  }
+
+  async createWallet(userId: number, balance: number = 0): Promise<{ success: boolean; data?: Wallet; error?: string }> {
+    try {
+      const response = await apiClient.post('/api/finance/wallet/wallet/create', {
+        user_id: userId,
+        balance: balance
+      }, {
+        timeout: 30000
+      });
+      
+      if (response.data.success) {
+        return { success: true, data: response.data.data };
+      } else {
+        return { success: false, error: response.data.message || 'Failed to create wallet' };
+      }
+    } catch (error) {
+      console.error('Create wallet error:', error);
+      return { success: false, error: 'Network error: ' + (error as Error).message };
+    }
+  }
+
+  async updateWalletBalance(walletId: number, operation: 'add' | 'subtract' | 'set', amount: number): Promise<{ success: boolean; data?: Wallet; error?: string }> {
+    try {
+      const response = await apiClient.put(`/api/finance/wallet/wallet/${walletId}/operation`, {
+        operation,
+        amount
+      }, {
+        timeout: 30000
+      });
+      
+      if (response.data.success) {
+        return { success: true, data: response.data.data };
+      } else {
+        return { success: false, error: response.data.message || 'Failed to update wallet balance' };
+      }
+    } catch (error) {
+      console.error('Update wallet balance error:', error);
+      return { success: false, error: 'Network error: ' + (error as Error).message };
+    }
+  }
+
+  async deleteWallet(walletId: number): Promise<{ success: boolean; error?: string }> {
+    try {
+      const response = await apiClient.delete(`/api/finance/wallet/wallet/${walletId}/delete`, {
+        timeout: 30000
+      });
+      
+      if (response.data.success) {
+        return { success: true };
+      } else {
+        return { success: false, error: response.data.message || 'Failed to delete wallet' };
+      }
+    } catch (error) {
+      console.error('Delete wallet error:', error);
+      return { success: false, error: 'Network error: ' + (error as Error).message };
+    }
+  }
+
+  async topUpWallet(walletId: number, payload: WalletTopUpPayload): Promise<{ success: boolean; data?: Wallet; error?: string }> {
+    try {
+      const response = await apiClient.post(`/api/finance/wallet/wallet/${walletId}/topup`, payload, {
+        timeout: 30000
+      });
+      
+      if (response.data.success) {
+        return { success: true, data: response.data.data };
+      } else {
+        return { success: false, error: response.data.message || 'Failed to top up wallet' };
+      }
+    } catch (error) {
+      console.error('Top up wallet error:', error);
+      return { success: false, error: 'Network error: ' + (error as Error).message };
+    }
+  }
+
+  async getWalletSummary(): Promise<{ success: boolean; data?: any; error?: string }> {
+    try {
+      const response = await apiClient.get('/api/finance/wallet/summary', {
+        timeout: 30000
+      });
+      
+      if (response.data.success) {
+        return { success: true, data: response.data.data };
+      } else {
+        return { success: false, error: response.data.message || 'Failed to fetch wallet summary' };
+      }
+    } catch (error) {
+      console.error('Get wallet summary error:', error);
+      return { success: false, error: 'Network error: ' + (error as Error).message };
+    }
+  }
+}
+
+export const walletService = new WalletService();

@@ -138,19 +138,21 @@ const SubscriptionPlanCreatePage: React.FC = () => {
     <Container>
       <div className="space-y-6">
         {/* Header */}
-        <div className="flex items-center space-x-4">
-          <Button
-            variant="outline"
-            onClick={handleCancel}
-            icon={<ArrowBackIcon className="w-4 h-4" />}
-          >
-            Back
-          </Button>
-          <div>
-            <h1 className="text-2xl font-bold text-gray-900">Create Subscription Plan</h1>
-            <p className="mt-1 text-sm text-gray-500">
-              Create a new subscription plan with permissions
-            </p>
+        <div className="flex justify-between items-center">
+          <div className="flex items-center gap-4">
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={handleCancel}
+            >
+              <ArrowBackIcon className="w-4 h-4" />
+            </Button>
+            <div>
+              <h1 className="text-2xl font-bold text-gray-900">Create Subscription Plan</h1>
+              <p className="text-gray-600">
+                Create a new subscription plan with permissions
+              </p>
+            </div>
           </div>
         </div>
 

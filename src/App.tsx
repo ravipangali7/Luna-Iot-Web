@@ -15,6 +15,9 @@ import { InstituteIndexPage, InstituteCreatePage, InstituteEditPage, InstituteSh
 import { InstituteServiceIndexPage, InstituteServiceCreatePage, InstituteServiceEditPage } from './views/institute/services';
 import { InstituteModuleCreatePage, InstituteModuleEditPage } from './views/institute/modules';
 import { SubscriptionPlanIndexPage, SubscriptionPlanCreatePage, SubscriptionPlanEditPage } from './views/subscriptionPlans';
+import { UserIndexPage, UserShowPage, UserCreatePage, UserEditPage } from './views/users';
+import { WalletIndexPage, MyWalletPage } from './views/wallet';
+import { TransactionIndexPage, WalletTransactionsPage, UserTransactionsPage } from './views/transactions';
 import RoleBasedRoute from './components/role-based/RoleBasedRoute';
 import { ROLES } from './utils/roleUtils';
 
@@ -278,6 +281,59 @@ const AppRoutes: React.FC = () => {
           <RoleBasedRoute allowedRoles={[ROLES.SUPER_ADMIN]}>
             <SubscriptionPlanEditPage />
           </RoleBasedRoute>
+        } />
+
+        {/* User Management Routes - Super Admin only */}
+        <Route path="users" element={
+          <RoleBasedRoute allowedRoles={[ROLES.SUPER_ADMIN]}>
+            <UserIndexPage />
+          </RoleBasedRoute>
+        } />
+        <Route path="users/create" element={
+          <RoleBasedRoute allowedRoles={[ROLES.SUPER_ADMIN]}>
+            <UserCreatePage />
+          </RoleBasedRoute>
+        } />
+        <Route path="users/:id" element={
+          <RoleBasedRoute allowedRoles={[ROLES.SUPER_ADMIN]}>
+            <UserShowPage />
+          </RoleBasedRoute>
+        } />
+        <Route path="users/:id/edit" element={
+          <RoleBasedRoute allowedRoles={[ROLES.SUPER_ADMIN]}>
+            <UserEditPage />
+          </RoleBasedRoute>
+        } />
+
+        {/* Wallet Management Routes - Super Admin only */}
+        <Route path="wallet" element={
+          <RoleBasedRoute allowedRoles={[ROLES.SUPER_ADMIN]}>
+            <WalletIndexPage />
+          </RoleBasedRoute>
+        } />
+
+        {/* My Wallet Route - All authenticated users */}
+        <Route path="my-wallet" element={
+          <MyWalletPage />
+        } />
+
+        {/* Transaction Routes - Super Admin only */}
+        <Route path="transactions" element={
+          <RoleBasedRoute allowedRoles={[ROLES.SUPER_ADMIN]}>
+            <TransactionIndexPage />
+          </RoleBasedRoute>
+        } />
+
+        {/* Wallet Transactions Route - Super Admin only */}
+        <Route path="wallet/:walletId/transactions" element={
+          <RoleBasedRoute allowedRoles={[ROLES.SUPER_ADMIN]}>
+            <WalletTransactionsPage />
+          </RoleBasedRoute>
+        } />
+
+        {/* User Transactions Route - All authenticated users */}
+        <Route path="my-transactions" element={
+          <UserTransactionsPage />
         } />
       </Route>
     </Routes>

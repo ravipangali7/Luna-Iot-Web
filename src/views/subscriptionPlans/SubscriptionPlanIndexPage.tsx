@@ -7,6 +7,7 @@ import Container from '../../components/ui/layout/Container';
 import Card from '../../components/ui/cards/Card';
 import CardBody from '../../components/ui/cards/CardBody';
 import Button from '../../components/ui/buttons/Button';
+import { EditActionButton, DeleteActionButton, ActionButtonGroup } from '../../components/ui/buttons';
 import Input from '../../components/ui/forms/Input';
 import Table from '../../components/ui/tables/Table';
 import TableHead from '../../components/ui/tables/TableHead';
@@ -20,8 +21,6 @@ import Alert from '../../components/ui/common/Alert';
 import Pagination from '../../components/ui/pagination/Pagination';
 import RoleBasedWidget from '../../components/role-based/RoleBasedWidget';
 import { ROLES } from '../../utils/roleUtils';
-import EditIcon from '@mui/icons-material/Edit';
-import DeleteIcon from '@mui/icons-material/Delete';
 import AddIcon from '@mui/icons-material/Add';
 import SearchIcon from '@mui/icons-material/Search';
 import RefreshIcon from '@mui/icons-material/Refresh';
@@ -133,10 +132,10 @@ const SubscriptionPlanIndexPage: React.FC = () => {
     <Container>
       <div className="space-y-6">
         {/* Header */}
-        <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between">
+        <div className="flex justify-between items-center">
           <div>
             <h1 className="text-2xl font-bold text-gray-900">Subscription Plans</h1>
-            <p className="mt-1 text-sm text-gray-500">
+            <p className="text-gray-600">
               Manage subscription plans and their permissions
             </p>
           </div>
@@ -238,28 +237,14 @@ const SubscriptionPlanIndexPage: React.FC = () => {
                           </span>
                         </TableCell>
                         <TableCell>
-                          <div className="flex items-center space-x-2">
+                          <ActionButtonGroup>
                             <RoleBasedWidget allowedRoles={[ROLES.SUPER_ADMIN]}>
-                              <Button
-                                variant="outline"
-                                size="sm"
-                                onClick={() => navigate(`/subscription-plans/${plan.id}/edit`)}
-                                icon={<EditIcon className="w-4 h-4" />}
-                              >
-                                Edit
-                              </Button>
+                              <EditActionButton onClick={() => navigate(`/subscription-plans/${plan.id}/edit`)} />
                             </RoleBasedWidget>
                             <RoleBasedWidget allowedRoles={[ROLES.ADMIN]}>
-                              <Button
-                                variant="danger"
-                                size="sm"
-                                onClick={() => handleDelete(plan.id, plan.title)}
-                                icon={<DeleteIcon className="w-4 h-4" />}
-                              >
-                                Delete
-                              </Button>
+                              <DeleteActionButton onClick={() => handleDelete(plan.id, plan.title)} />
                             </RoleBasedWidget>
-                          </div>
+                          </ActionButtonGroup>
                         </TableCell>
                       </TableRow>
                     ))}

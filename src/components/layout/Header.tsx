@@ -1,6 +1,8 @@
 import React from 'react';
+import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../../hooks/useAuth';
 import { useRefresh } from '../../contexts/RefreshContext';
+import { useWalletBalance } from '../../hooks/useWalletBalance';
 import Button from '../ui/buttons/Button';
 import IconButton from '../ui/buttons/IconButton';
 import RoleBasedWidget from '../role-based/RoleBasedWidget';
@@ -23,8 +25,19 @@ const Header: React.FC<HeaderProps> = ({
   onAllVehicles, 
   onFullscreen, 
 }) => {
+  const navigate = useNavigate();
   const { user } = useAuth();
   const { isRefreshing } = useRefresh();
+  const { formatBalance, loading: walletLoading } = useWalletBalance();
+
+  const handleWalletClick = () => {
+    // Super Admins go to wallet management, others go to their own wallet
+    if (user?.role === ROLES.SUPER_ADMIN) {
+      navigate('/wallet');
+    } else {
+      navigate('/my-wallet');
+    }
+  };
 
   return (
     <header className="bg-white shadow-sm border-b border-gray-200 px-6 py-3">
@@ -94,6 +107,20 @@ const Header: React.FC<HeaderProps> = ({
 
         {/* Right side - User controls */}
         <div className="flex items-center space-x-4">
+          {/* Wallet Balance */}
+          <button
+            onClick={handleWalletClick}
+            className="flex items-center space-x-2 px-3 py-1 bg-green-50 rounded-lg border border-green-200 hover:bg-green-100 transition-colors cursor-pointer group"
+            title="View Wallet"
+          >
+            <svg className="w-4 h-4 text-green-600 group-hover:text-green-700" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 10h18M7 15h1m4 0h1m-7 4h12a3 3 0 003-3V8a3 3 0 00-3-3H6a3 3 0 00-3 3v8a3 3 0 003 3z" />
+            </svg>
+            <span className="text-sm font-semibold text-green-700 group-hover:text-green-800">
+              {walletLoading ? '...' : formatBalance()}
+            </span>
+          </button>
+
           {/* Fullscreen Button */}
           <IconButton
             variant="outline"

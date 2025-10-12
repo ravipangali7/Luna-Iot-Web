@@ -58,8 +58,8 @@ const Sidebar: React.FC<SidebarProps> = ({ isOpen, onToggle }) => {
           id: 'live-tracking',
           label: 'Live Tracking',
           path: '/live-tracking',
-      allowedRoles: ['Super Admin', 'Dealer', 'Customer'],
-      icon: (
+          allowedRoles: ['Super Admin', 'Dealer', 'Customer'],
+          icon: (
             <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 20l-5.447-2.724A2 2 0 013 15.382V6.618a2 2 0 011.553-1.894L9 2m0 18v-16m0 16l6-2.727m0 0V4m0 13.273L21 17.382A2 2 0 0021 15.382V6.618a2 2 0 00-1.553-1.894L15 4" />
             </svg>
@@ -69,8 +69,8 @@ const Sidebar: React.FC<SidebarProps> = ({ isOpen, onToggle }) => {
           id: 'reports',
           label: 'Reports',
           path: '/reports',
-      allowedRoles: ['Super Admin', 'Dealer', 'Customer'],
-      icon: (
+          allowedRoles: ['Super Admin', 'Dealer', 'Customer'],
+          icon: (
             <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 17v-2m3 2v-4m3 4v-6m2 10H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
             </svg>
@@ -80,8 +80,8 @@ const Sidebar: React.FC<SidebarProps> = ({ isOpen, onToggle }) => {
           id: 'playback',
           label: 'Playback',
           path: '/playback',
-      allowedRoles: ['Super Admin', 'Dealer', 'Customer'],
-      icon: (
+          allowedRoles: ['Super Admin', 'Dealer', 'Customer'],
+          icon: (
             <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M14.828 14.828a4 4 0 01-5.656 0M9 10h1m4 0h1m-6 4h1m4 0h1m6-6V6a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2h12a2 2 0 002-2v-2M7 7h10M7 11h4m6 0h2M7 15h4m6 0h2" />
             </svg>
@@ -203,7 +203,7 @@ const Sidebar: React.FC<SidebarProps> = ({ isOpen, onToggle }) => {
         {
           id: 'user-management',
           label: 'User Management',
-          path: '/users/management',
+          path: '/users',
           icon: (
             <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z" />
@@ -218,6 +218,52 @@ const Sidebar: React.FC<SidebarProps> = ({ isOpen, onToggle }) => {
           icon: (
             <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12l2 2 4-4m5.618-4.016A11.955 11.955 0 0112 2.944a11.955 11.955 0 01-8.618 3.04A12.02 12.02 0 003 9c0 5.591 3.824 10.29 9 11.622 5.176-1.332 9-6.03 9-11.622 0-1.042-.133-2.052-.382-3.016z" />
+            </svg>
+          )
+        }
+      ]
+    },
+    {
+      id: 'finance',
+      label: 'Finance',
+      path: '/finance',
+      allowedRoles: ['Super Admin', 'Dealer', 'Customer'],
+      icon: (
+        <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8c1.11 0 2.08.402 2.599 1M12 8V7m0 1v8m0 0v1m0-1c-1.11 0-2.08-.402-2.599-1M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+        </svg>
+      ),
+      children: [
+        {
+          id: 'my-wallet',
+          label: 'My Wallet',
+          path: '/my-wallet',
+          allowedRoles: ['Super Admin', 'Dealer', 'Customer'],
+          icon: (
+            <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 10h18M7 15h1m4 0h1m-7 4h12a3 3 0 003-3V8a3 3 0 00-3-3H6a3 3 0 00-3 3v8a3 3 0 003 3z" />
+            </svg>
+          )
+        },
+        {
+          id: 'wallet-management',
+          label: 'Wallet Management',
+          path: '/wallet',
+          allowedRoles: ['Super Admin'],
+          icon: (
+            <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
+            </svg>
+          )
+        },
+        {
+          id: 'transactions',
+          label: 'Transactions',
+          path: '/transactions',
+          allowedRoles: ['Super Admin'],
+          icon: (
+            <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5H7a2 2 0 00-2 2v10a2 2 0 002 2h8a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2m-3 7h3m-3 4h3m-6-4h.01M9 16h.01" />
             </svg>
           )
         }
@@ -273,13 +319,13 @@ const Sidebar: React.FC<SidebarProps> = ({ isOpen, onToggle }) => {
   // Filter navigation items based on user permissions
   const filteredNavigationItems = useMemo(() => {
     if (!user) return [];
-    
+
     const filterItems = (items: NavItem[]): NavItem[] => {
       return items.filter(item => {
         // Check role-based access (backward compatibility)
         if (item.allowedRoles && item.allowedRoles.length > 0) {
           if (!user.roles || user.roles.length === 0) return false;
-          
+
           const userRoleNames = user.roles.map(role => role.name);
           const hasRoleAccess = item.allowedRoles.some(role => {
             switch (role.toLowerCase()) {
@@ -293,39 +339,39 @@ const Sidebar: React.FC<SidebarProps> = ({ isOpen, onToggle }) => {
                 return userRoleNames.includes(role);
             }
           });
-          
+
           if (!hasRoleAccess) return false;
         }
-        
+
         // Check permission-based access
         if (item.requiredPermissions && item.requiredPermissions.length > 0) {
-          const hasPermissionAccess = item.requireAllPermissions 
+          const hasPermissionAccess = item.requireAllPermissions
             ? canAll(item.requiredPermissions)
             : canAny(item.requiredPermissions);
-          
+
           if (!hasPermissionAccess) return false;
         }
-        
+
         // If no specific requirements, show the item
         if (!item.allowedRoles && !item.requiredPermissions) {
           return true;
         }
-        
+
         // If item has children, filter them too
         if (item.children) {
           const filteredChildren = filterItems(item.children);
           return filteredChildren.length > 0; // Only show parent if it has accessible children
         }
-        
+
         return true;
       }).map(item => ({
         ...item,
         children: item.children ? filterItems(item.children) : undefined
       }));
     };
-    
+
     return filterItems(navigationItems);
-  }, [user, canAny, canAll]);
+  }, [user, canAny, canAll, navigationItems]);
 
   const handleLogout = async () => {
     logout();
@@ -364,8 +410,8 @@ const Sidebar: React.FC<SidebarProps> = ({ isOpen, onToggle }) => {
           className={`
             w-full flex items-center justify-between px-4 py-3 text-sm font-medium rounded-lg transition-colors duration-200
             
-            ${isItemActive 
-              ? 'text-green-700 border' 
+            ${isItemActive
+              ? 'text-green-700 border'
               : 'text-gray-700 hover:bg-gray-100 hover:text-gray-900'
             }
           `}
@@ -375,7 +421,7 @@ const Sidebar: React.FC<SidebarProps> = ({ isOpen, onToggle }) => {
           }}
         >
           <div className="flex items-center space-x-3">
-            <span 
+            <span
               className={`${isItemActive ? 'text-green-600' : 'text-gray-500'}`}
               style={{ color: isItemActive ? 'var(--color-primary)' : undefined }}
             >
@@ -383,7 +429,7 @@ const Sidebar: React.FC<SidebarProps> = ({ isOpen, onToggle }) => {
             </span>
             <span className='text-xs'>{item.label}</span>
           </div>
-          
+
           <div className="flex items-center space-x-2">
             {item.badge && (
               <Badge variant="primary" size="sm">
@@ -391,10 +437,10 @@ const Sidebar: React.FC<SidebarProps> = ({ isOpen, onToggle }) => {
               </Badge>
             )}
             {hasChildren && (
-              <svg 
+              <svg
                 className={`w-4 h-4 transition-transform duration-200 ${isExpanded ? 'rotate-180' : ''}`}
-                fill="none" 
-                stroke="currentColor" 
+                fill="none"
+                stroke="currentColor"
                 viewBox="0 0 24 24"
               >
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
@@ -416,7 +462,7 @@ const Sidebar: React.FC<SidebarProps> = ({ isOpen, onToggle }) => {
     <>
       {/* Mobile overlay */}
       {isOpen && (
-        <div 
+        <div
           className="fixed inset-0 bg-black bg-opacity-50 z-40 lg:hidden"
           onClick={onToggle}
         />
@@ -434,7 +480,7 @@ const Sidebar: React.FC<SidebarProps> = ({ isOpen, onToggle }) => {
           <div className="flex flex-col items-start space-x-3">
             <img src={logo} alt="Luna IOT" className="h-8 w-auto" />
           </div>
-          
+
           {/* Close button for mobile */}
           <button
             onClick={onToggle}
@@ -454,11 +500,11 @@ const Sidebar: React.FC<SidebarProps> = ({ isOpen, onToggle }) => {
         {/* User Profile & Logout - Fixed at bottom */}
         <div className="border-t border-gray-200 p-4 flex-shrink-0">
           <div className="flex items-center space-x-3 mb-4">
-            <div 
+            <div
               className="h-10 w-10 rounded-full flex items-center justify-center"
               style={{ backgroundColor: 'rgba(12, 160, 31, 0.15)' }}
             >
-              <span 
+              <span
                 className="text-sm font-semibold"
                 style={{ color: 'var(--color-primary)' }}
               >
@@ -472,7 +518,7 @@ const Sidebar: React.FC<SidebarProps> = ({ isOpen, onToggle }) => {
               </p>
             </div>
           </div>
-          
+
           <Button
             onClick={handleLogout}
             variant="danger"

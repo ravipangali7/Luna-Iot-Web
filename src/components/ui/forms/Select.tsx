@@ -13,6 +13,8 @@ interface SelectProps extends BaseProps {
   onChange?: (value: string) => void;
   onBlur?: () => void;
   onFocus?: () => void;
+  id?: string;
+  name?: string;
 }
 
 const Select = forwardRef<HTMLSelectElement, SelectProps>(({
@@ -26,6 +28,8 @@ const Select = forwardRef<HTMLSelectElement, SelectProps>(({
   onChange,
   onBlur,
   onFocus,
+  id,
+  name,
   className = '',
   ...props
 }, ref) => {
@@ -58,6 +62,8 @@ const Select = forwardRef<HTMLSelectElement, SelectProps>(({
         onChange={handleChange}
         onBlur={onBlur}
         onFocus={onFocus}
+        id={id}
+        name={name}
         {...props}
       >
         {options.map((option) => (

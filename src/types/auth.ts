@@ -27,6 +27,12 @@ export interface Role {
     token?: string;
     fcmToken?: string; // camelCase to match Django
     email?: string;
+    wallet?: {
+      id: number;
+      balance: number;
+      created_at: string;
+      updated_at: string;
+    };
     createdAt: string;
     updatedAt: string;
   }

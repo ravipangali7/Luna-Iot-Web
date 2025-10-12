@@ -4,7 +4,7 @@ import { instituteService, type Institute, type InstituteModule } from '../../ap
 import { showSuccess, showError, confirmDelete } from '../../utils/sweetAlert';
 import RoleBasedWidget from '../../components/role-based/RoleBasedWidget';
 import Button from '../../components/ui/buttons/Button';
-import ActionButton from '../../components/ui/buttons/ActionButton';
+import { EditActionButton, DeleteActionButton, ActionButtonGroup } from '../../components/ui/buttons';
 import Card from '../../components/ui/cards/Card';
 import CardHeader from '../../components/ui/cards/CardHeader';
 import CardBody from '../../components/ui/cards/CardBody';
@@ -316,26 +316,12 @@ const InstituteShowPage: React.FC = () => {
                       {new Date(module.created_at).toLocaleDateString()}
                     </TableCell>
                     <TableCell>
-                      <div className="flex space-x-2">
+                      <ActionButtonGroup>
                         <RoleBasedWidget allowedRoles={['Super Admin']}>
-                          <ActionButton
-                            onClick={() => handleEditModule(module.id)}
-                            variant="outline"
-                            size="sm"
-                            tooltip="Edit Module"
-                          >
-                            Edit
-                          </ActionButton>
-                          <ActionButton
-                            onClick={() => handleDeleteModule(module.id, `${institute.name} - ${module.group_name}`)}
-                            variant="danger"
-                            size="sm"
-                            tooltip="Delete Module"
-                          >
-                            Delete
-                          </ActionButton>
+                          <EditActionButton onClick={() => handleEditModule(module.id)} />
+                          <DeleteActionButton onClick={() => handleDeleteModule(module.id, `${institute.name} - ${module.group_name}`)} />
                         </RoleBasedWidget>
-                      </div>
+                      </ActionButtonGroup>
                     </TableCell>
                   </TableRow>
                 ))}

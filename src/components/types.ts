@@ -42,6 +42,8 @@ export interface InputProps extends BaseProps {
   min?: string;
   max?: string;
   step?: string;
+  id?: string;
+  name?: string;
 }
 
 export interface TableProps extends BaseProps {
@@ -101,6 +103,8 @@ export interface SelectProps extends BaseProps {
   onChange?: (value: string) => void;
   onBlur?: () => void;
   onFocus?: () => void;
+  id?: string;
+  name?: string;
 }
 
 export interface CheckboxProps extends BaseProps {
