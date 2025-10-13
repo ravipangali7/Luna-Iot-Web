@@ -114,8 +114,9 @@ const InstituteServiceIndexPage: React.FC = () => {
 
       {/* Services Table */}
       <div className="bg-white rounded-lg shadow">
-        <Table>
-          <TableHead>
+        <div className="overflow-x-auto">
+          <Table striped hover>
+            <TableHead>
             <TableRow>
               <TableHeader>Name</TableHeader>
               <TableHeader>Icon</TableHeader>
@@ -175,6 +176,7 @@ const InstituteServiceIndexPage: React.FC = () => {
             )}
           </TableBody>
         </Table>
+        </div>
       </div>
     </Container>
   );

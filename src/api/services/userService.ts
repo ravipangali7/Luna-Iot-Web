@@ -1,5 +1,6 @@
 import { apiClient } from '../apiClient';
 import type { User } from '../../types/auth';
+import type { PaginatedResponse, PaginationParams } from '../../types/pagination';
 
 class UserService {
   async getAllUsers(): Promise<{ success: boolean; data?: User[]; error?: string }> {
@@ -15,6 +16,31 @@ class UserService {
       }
     } catch (error) {
       console.error('Get users error:', error);
+      return { success: false, error: 'Network error: ' + (error as Error).message };
+    }
+  }
+
+  async getUsersPaginated(params: PaginationParams = {}): Promise<PaginatedResponse<User>> {
+    try {
+      const { page = 1, page_size = 20, search = '' } = params;
+      
+      const response = await apiClient.get('/api/core/user/users/paginated', {
+        params: { page, page_size, search },
+        timeout: 30000
+      });
+      
+      if (response.data.success) {
+        return {
+          success: true,
+          data: {
+            items: response.data.data.users,
+            pagination: response.data.data.pagination,
+            search_query: response.data.data.search_query
+          }
+        };
+      }
+      return { success: false, error: response.data.message };
+    } catch (error) {
       return { success: false, error: 'Network error: ' + (error as Error).message };
     }
   }

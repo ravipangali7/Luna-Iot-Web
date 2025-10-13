@@ -263,7 +263,7 @@ const UserTransactionsPage: React.FC = () => {
               </div>
             ) : (
               <div className="overflow-x-auto">
-                <Table>
+                <Table striped hover>
                   <TableHead>
                     <TableRow>
                       <TableHeader>ID</TableHeader>

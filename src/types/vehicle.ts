@@ -47,6 +47,7 @@ export interface Device {
   protocol: string;
   iccid: string;
   model: string;
+  image?: string;
   createdAt: string;
   updatedAt: string;
   vehicles?: Array<{

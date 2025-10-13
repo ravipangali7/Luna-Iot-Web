@@ -139,15 +139,24 @@ const SubscriptionPlanIndexPage: React.FC = () => {
               Manage subscription plans and their permissions
             </p>
           </div>
-          <RoleBasedWidget allowedRoles={[ROLES.SUPER_ADMIN]}>
+          <div className="flex gap-2">
             <Button
-              variant="primary"
-              onClick={() => navigate('/subscription-plans/create')}
-              icon={<AddIcon className="w-4 h-4" />}
+              variant="outline"
+              onClick={handleRefresh}
+              icon={<RefreshIcon className="w-4 h-4" />}
             >
-              Add Subscription Plan
+              Refresh
             </Button>
-          </RoleBasedWidget>
+            <RoleBasedWidget allowedRoles={[ROLES.SUPER_ADMIN]}>
+              <Button
+                variant="primary"
+                onClick={() => navigate('/subscription-plans/create')}
+                icon={<AddIcon className="w-4 h-4" />}
+              >
+                Add Subscription Plan
+              </Button>
+            </RoleBasedWidget>
+          </div>
         </div>
 
         {/* Search and Filters */}
@@ -169,13 +178,6 @@ const SubscriptionPlanIndexPage: React.FC = () => {
                   Search
                 </Button>
               </form>
-              <Button
-                variant="outline"
-                onClick={handleRefresh}
-                icon={<RefreshIcon className="w-4 h-4" />}
-              >
-                Refresh
-              </Button>
             </div>
           </CardBody>
         </Card>

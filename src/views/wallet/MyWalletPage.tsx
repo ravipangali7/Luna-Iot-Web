@@ -239,7 +239,7 @@ const MyWalletPage: React.FC = () => {
               </div>
             ) : (
               <div className="overflow-x-auto">
-                <Table>
+                <Table striped hover>
                   <TableHead>
                     <TableRow>
                       <TableHeader>Date</TableHeader>

@@ -31,10 +31,9 @@ export const ViewActionButton: React.FC<CommonActionButtonProps> = ({
     disabled={disabled}
     loading={loading}
     title="View Details"
+    icon={<VisibilityIcon className="w-4 h-4" />}
     className={className}
-  >
-    <VisibilityIcon className="w-4 h-4" />
-  </ActionButton>
+  />
 );
 
 // Edit Action Button - Warning variant, edit icon
@@ -51,10 +50,9 @@ export const EditActionButton: React.FC<CommonActionButtonProps> = ({
     disabled={disabled}
     loading={loading}
     title="Edit"
+    icon={<EditIcon className="w-4 h-4" />}
     className={className}
-  >
-    <EditIcon className="w-4 h-4" />
-  </ActionButton>
+  />
 );
 
 // Delete Action Button - Danger variant, delete icon
@@ -71,10 +69,9 @@ export const DeleteActionButton: React.FC<CommonActionButtonProps> = ({
     disabled={disabled}
     loading={loading}
     title="Delete"
+    icon={<DeleteIcon className="w-4 h-4" />}
     className={className}
-  >
-    <DeleteIcon className="w-4 h-4" />
-  </ActionButton>
+  />
 );
 
 // Activate Action Button - Success variant, play icon
@@ -91,10 +88,9 @@ export const ActivateActionButton: React.FC<CommonActionButtonProps> = ({
     disabled={disabled}
     loading={loading}
     title="Activate"
+    icon={<PlayArrowIcon className="w-4 h-4" />}
     className={className}
-  >
-    <PlayArrowIcon className="w-4 h-4" />
-  </ActionButton>
+  />
 );
 
 // Deactivate Action Button - Warning variant, pause icon
@@ -111,10 +107,9 @@ export const DeactivateActionButton: React.FC<CommonActionButtonProps> = ({
     disabled={disabled}
     loading={loading}
     title="Deactivate"
+    icon={<PauseIcon className="w-4 h-4" />}
     className={className}
-  >
-    <PauseIcon className="w-4 h-4" />
-  </ActionButton>
+  />
 );
 
 // Recharge Action Button - Primary variant, wallet icon
@@ -131,10 +126,9 @@ export const RechargeActionButton: React.FC<CommonActionButtonProps> = ({
     disabled={disabled}
     loading={loading}
     title="Recharge"
+    icon={<AccountBalanceWalletIcon className="w-4 h-4" />}
     className={className}
-  >
-    <AccountBalanceWalletIcon className="w-4 h-4" />
-  </ActionButton>
+  />
 );
 
 // Commands Action Button - Secondary variant, send icon
@@ -151,10 +145,9 @@ export const CommandsActionButton: React.FC<CommonActionButtonProps> = ({
     disabled={disabled}
     loading={loading}
     title="Commands"
+    icon={<SendIcon className="w-4 h-4" />}
     className={className}
-  >
-    <SendIcon className="w-4 h-4" />
-  </ActionButton>
+  />
 );
 
 // Relay On Action Button - Success variant, power on icon
@@ -171,10 +164,9 @@ export const RelayOnActionButton: React.FC<CommonActionButtonProps> = ({
     disabled={disabled}
     loading={loading}
     title="Turn Relay ON"
+    icon={<PowerSettingsNewIcon className="w-4 h-4" />}
     className={className}
-  >
-    <PowerSettingsNewIcon className="w-4 h-4" />
-  </ActionButton>
+  />
 );
 
 // Relay Off Action Button - Warning variant, power off icon
@@ -191,10 +183,9 @@ export const RelayOffActionButton: React.FC<CommonActionButtonProps> = ({
     disabled={disabled}
     loading={loading}
     title="Turn Relay OFF"
+    icon={<PowerOffIcon className="w-4 h-4" />}
     className={className}
-  >
-    <PowerOffIcon className="w-4 h-4" />
-  </ActionButton>
+  />
 );
 
 // Top Up Action Button - Success variant, wallet icon
@@ -211,10 +202,9 @@ export const TopUpActionButton: React.FC<CommonActionButtonProps> = ({
     disabled={disabled}
     loading={loading}
     title="Top Up Wallet"
+    icon={<AccountBalanceWalletIcon className="w-4 h-4" />}
     className={className}
-  >
-    <AccountBalanceWalletIcon className="w-4 h-4" />
-  </ActionButton>
+  />
 );
 
 // Action Button Group - Container for multiple action buttons

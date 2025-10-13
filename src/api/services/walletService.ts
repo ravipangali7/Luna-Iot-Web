@@ -1,5 +1,6 @@
 import { apiClient } from '../apiClient';
 import type { Wallet, WalletListItem, WalletTopUpPayload } from '../../types/wallet';
+import type { PaginatedResponse, PaginationParams } from '../../types/pagination';
 
 class WalletService {
   async getAllWallets(): Promise<{ success: boolean; data?: WalletListItem[]; error?: string }> {
@@ -9,12 +10,46 @@ class WalletService {
       });
       
       if (response.data.success) {
-        return { success: true, data: response.data.data };
+        // Transform balance from string to number
+        const wallets = response.data.data.wallets.map((wallet: any) => ({
+          ...wallet,
+          balance: parseFloat(wallet.balance) || 0
+        }));
+        return { success: true, data: wallets };
       } else {
         return { success: false, error: response.data.message || 'Failed to fetch wallets' };
       }
     } catch (error) {
       console.error('Get wallets error:', error);
+      return { success: false, error: 'Network error: ' + (error as Error).message };
+    }
+  }
+
+  async getWalletsPaginated(params: PaginationParams = {}): Promise<PaginatedResponse<WalletListItem>> {
+    try {
+      const { page = 1, page_size = 20, search = '' } = params;
+      
+      const response = await apiClient.get('/api/finance/wallet/wallets', {
+        params: { page, page_size, search },
+        timeout: 30000
+      });
+      
+      if (response.data.success) {
+        const wallets = response.data.data.wallets.map((wallet: any) => ({
+          ...wallet,
+          balance: parseFloat(wallet.balance) || 0
+        }));
+        return {
+          success: true,
+          data: {
+            items: wallets,
+            pagination: response.data.data.pagination,
+            search_query: response.data.data.search_query
+          }
+        };
+      }
+      return { success: false, error: response.data.message };
+    } catch (error) {
       return { success: false, error: 'Network error: ' + (error as Error).message };
     }
   }

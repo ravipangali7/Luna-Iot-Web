@@ -6,6 +6,7 @@ import type {
   TransactionSummary,
   TransactionCreatePayload 
 } from '../../types/transaction';
+import type { PaginatedResponse, PaginationParams } from '../../types/pagination';
 
 class TransactionService {
   async getAllTransactions(filters?: TransactionFilter): Promise<{ success: boolean; data?: { transactions: TransactionListItem[]; pagination: any }; error?: string }> {
@@ -28,6 +29,31 @@ class TransactionService {
       }
     } catch (error) {
       console.error('Get all transactions error:', error);
+      return { success: false, error: 'Network error: ' + (error as Error).message };
+    }
+  }
+
+  async getTransactionsPaginated(params: PaginationParams = {}): Promise<PaginatedResponse<TransactionListItem>> {
+    try {
+      const { page = 1, page_size = 20, search = '' } = params;
+      
+      const response = await apiClient.get('/api/finance/transaction/transactions', {
+        params: { page, page_size, search },
+        timeout: 30000
+      });
+      
+      if (response.data.success) {
+        return {
+          success: true,
+          data: {
+            items: response.data.data.transactions,
+            pagination: response.data.data.pagination,
+            search_query: response.data.data.search_query
+          }
+        };
+      }
+      return { success: false, error: response.data.message };
+    } catch (error) {
       return { success: false, error: 'Network error: ' + (error as Error).message };
     }
   }

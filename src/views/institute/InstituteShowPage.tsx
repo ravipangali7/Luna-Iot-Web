@@ -291,8 +291,9 @@ const InstituteShowPage: React.FC = () => {
           ) : modules.length === 0 ? (
             <p className="text-gray-500 text-center py-4">No modules found</p>
           ) : (
-            <Table>
-              <TableHead>
+            <div className="overflow-x-auto">
+              <Table striped hover>
+                <TableHead>
                 <TableRow>
                   <TableHeader>Group</TableHeader>
                   <TableHeader>Users</TableHeader>
@@ -327,6 +328,7 @@ const InstituteShowPage: React.FC = () => {
                 ))}
               </TableBody>
             </Table>
+            </div>
           )}
         </CardBody>
       </Card>

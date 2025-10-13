@@ -8,6 +8,7 @@ import Container from '../../components/ui/layout/Container';
 import Card from '../../components/ui/cards/Card';
 import CardBody from '../../components/ui/cards/CardBody';
 import Button from '../../components/ui/buttons/Button';
+import { ActionButton } from '../../components/ui/buttons';
 import Input from '../../components/ui/forms/Input';
 import Table from '../../components/ui/tables/Table';
 import TableHead from '../../components/ui/tables/TableHead';
@@ -24,6 +25,7 @@ import { ROLES } from '../../utils/roleUtils';
 import PersonRemoveIcon from '@mui/icons-material/PersonRemove';
 import RefreshIcon from '@mui/icons-material/Refresh';
 import SearchIcon from '@mui/icons-material/Search';
+import AddIcon from '@mui/icons-material/Add';
 import ClearIcon from '@mui/icons-material/Clear';
 
 const VehicleAccessIndexPage: React.FC = () => {
@@ -261,11 +263,7 @@ const VehicleAccessIndexPage: React.FC = () => {
               <Button
                 variant="primary"
                 onClick={() => navigate('/vehicle-access/create')}
-                icon={
-                  <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v16m8-8H4" />
-                  </svg>
-                }
+                icon={<AddIcon className="w-4 h-4" />}
               >
                 Add Vehicle Access
               </Button>
@@ -418,10 +416,11 @@ const VehicleAccessIndexPage: React.FC = () => {
                             <div className="space-y-1">
                               {vehicle.userVehicles.map((userVehicle, userIndex) => (
                                 <RoleBasedWidget key={userIndex} allowedRoles={[ROLES.SUPER_ADMIN, ROLES.DEALER]}>
-                            <Button
+                            <ActionButton
                               variant="danger"
                               size="sm"
                               onClick={() => handleDeleteAccess(vehicle.imei, userVehicle)}
+                              title="Remove Access"
                               icon={<PersonRemoveIcon className="w-4 h-4" />}
                             />
                                 </RoleBasedWidget>

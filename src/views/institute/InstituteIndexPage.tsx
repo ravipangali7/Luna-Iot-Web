@@ -1,9 +1,11 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { instituteService, type Institute } from '../../api/services/instituteService';
+import type { PaginationInfo } from '../../types/pagination';
 import { showSuccess, showError, confirmDelete } from '../../utils/sweetAlert';
 import RoleBasedWidget from '../../components/role-based/RoleBasedWidget';
 import Button from '../../components/ui/buttons/Button';
+import { ViewActionButton, EditActionButton, DeleteActionButton, ActionButtonGroup } from '../../components/ui/buttons';
 import Table from '../../components/ui/tables/Table';
 import TableHead from '../../components/ui/tables/TableHead';
 import TableHeader from '../../components/ui/tables/TableHeader';
@@ -13,25 +15,44 @@ import TableCell from '../../components/ui/tables/TableCell';
 import Badge from '../../components/ui/common/Badge';
 import Spinner from '../../components/ui/common/Spinner';
 import Container from '../../components/ui/layout/Container';
+import Card from '../../components/ui/cards/Card';
+import CardBody from '../../components/ui/cards/CardBody';
+import AddIcon from '@mui/icons-material/Add';
+import Pagination from '../../components/ui/pagination/Pagination';
 
 const InstituteIndexPage: React.FC = () => {
   const navigate = useNavigate();
   const [institutes, setInstitutes] = useState<Institute[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const [searchQuery, setSearchQuery] = useState('');
+  const [searchInput, setSearchInput] = useState('');
+  
+  // Pagination state
+  const [currentPage, setCurrentPage] = useState(1);
+  const [pagination, setPagination] = useState<PaginationInfo>({
+    current_page: 1,
+    total_pages: 1,
+    total_items: 0,
+    page_size: 20,
+    has_next: false,
+    has_previous: false
+  });
 
-  useEffect(() => {
-    fetchInstitutes();
-  }, []);
-
-  const fetchInstitutes = async () => {
+  const fetchInstitutes = useCallback(async () => {
     try {
       setLoading(true);
       setError(null);
-      const result = await instituteService.getAllInstitutes();
+      
+      const result = await instituteService.getInstitutesPaginated({
+        page: currentPage,
+        page_size: 20,
+        search: searchQuery
+      });
       
       if (result.success && result.data) {
-        setInstitutes(result.data);
+        setInstitutes(result.data.items);
+        setPagination(result.data.pagination);
       } else {
         setError(result.error || 'Failed to fetch institutes');
         showError('Error', result.error || 'Failed to fetch institutes');
@@ -43,7 +64,27 @@ const InstituteIndexPage: React.FC = () => {
     } finally {
       setLoading(false);
     }
+  }, [currentPage, searchQuery]);
+
+  const handlePageChange = (page: number) => {
+    setCurrentPage(page);
   };
+
+  const handleSearch = (e: React.FormEvent) => {
+    e.preventDefault();
+    setSearchQuery(searchInput);
+    setCurrentPage(1); // Reset to first page when searching
+  };
+
+  const handleClearSearch = () => {
+    setSearchInput('');
+    setSearchQuery('');
+    setCurrentPage(1); // Reset to first page when clearing search
+  };
+
+  useEffect(() => {
+    fetchInstitutes();
+  }, [fetchInstitutes]);
 
   const handleDelete = async (id: number, name: string) => {
     const confirmed = await confirmDelete(
@@ -99,27 +140,56 @@ const InstituteIndexPage: React.FC = () => {
   }
 
   return (
-    <Container className="space-y-6">
-      {/* Header */}
-      <div className="flex justify-between items-center">
+    <Container>
+      <div className="space-y-6">
+        {/* Header */}
+        <div className="flex justify-between items-center">
         <div>
           <h1 className="text-2xl font-bold text-gray-900">Institutes</h1>
           <p className="text-gray-600">Manage institutes and their details</p>
         </div>
         <RoleBasedWidget allowedRoles={['Super Admin']}>
-          <Button onClick={handleCreate} variant="primary">
-            <svg className="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v16m8-8H4" />
-            </svg>
+          <Button onClick={handleCreate} variant="primary" icon={<AddIcon className="w-4 h-4" />}>
             Add Institute
           </Button>
         </RoleBasedWidget>
       </div>
 
+      {/* Search Form */}
+      <Card>
+        <CardBody>
+          <form onSubmit={handleSearch} className="flex gap-4 items-end">
+            <div className="flex-1">
+              <label htmlFor="search" className="block text-sm font-medium text-gray-700 mb-1">
+                Search Institutes
+              </label>
+              <input
+                id="search"
+                type="text"
+                value={searchInput}
+                onChange={(e) => setSearchInput(e.target.value)}
+                placeholder="Search by name, phone, address, or description..."
+                className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+              />
+            </div>
+            <Button type="submit" variant="secondary">
+              Search
+            </Button>
+            {searchQuery && (
+              <Button type="button" onClick={handleClearSearch} variant="outline">
+                Clear
+              </Button>
+            )}
+          </form>
+        </CardBody>
+      </Card>
+
       {/* Institutes Table */}
-      <div className="bg-white rounded-lg shadow">
-        <Table>
-          <TableHead>
+        <Card>
+          <CardBody>
+            <div className="overflow-x-auto">
+              <Table striped hover>
+                <TableHead>
             <TableRow>
               <TableHeader>Name</TableHeader>
               <TableHeader>Phone</TableHeader>
@@ -166,37 +236,43 @@ const InstituteIndexPage: React.FC = () => {
                     {new Date(institute.created_at).toLocaleDateString()}
                   </TableCell>
                   <TableCell>
-                    <div className="flex space-x-2">
-                      <Button
-                        onClick={() => handleShow(institute.id)}
-                        variant="secondary"
-                        size="sm"
-                      >
-                        View
-                      </Button>
+                    <ActionButtonGroup>
+                      <ViewActionButton onClick={() => handleShow(institute.id)} />
                       <RoleBasedWidget allowedRoles={['Super Admin']}>
-                        <Button
-                          onClick={() => handleEdit(institute.id)}
-                          variant="secondary"
-                          size="sm"
-                        >
-                          Edit
-                        </Button>
-                        <Button
-                          onClick={() => handleDelete(institute.id, institute.name)}
-                          variant="danger"
-                          size="sm"
-                        >
-                          Delete
-                        </Button>
+                        <EditActionButton onClick={() => handleEdit(institute.id)} />
+                        <DeleteActionButton onClick={() => handleDelete(institute.id, institute.name)} />
                       </RoleBasedWidget>
-                    </div>
+                    </ActionButtonGroup>
                   </TableCell>
                 </TableRow>
               ))
             )}
           </TableBody>
         </Table>
+            </div>
+          </CardBody>
+        </Card>
+
+        {/* Summary */}
+        {institutes.length > 0 && (
+          <div className="text-sm text-gray-500 text-center">
+            Showing {institutes.length} of {pagination.total_items} institutes
+            {searchQuery && ` matching "${searchQuery}"`}
+          </div>
+        )}
+
+        {/* Pagination */}
+        {pagination.total_pages > 1 && (
+          <Pagination
+            currentPage={pagination.current_page}
+            totalPages={pagination.total_pages}
+            onPageChange={handlePageChange}
+            hasNext={pagination.has_next}
+            hasPrevious={pagination.has_previous}
+            totalItems={pagination.total_items}
+            pageSize={pagination.page_size}
+          />
+        )}
       </div>
     </Container>
   );

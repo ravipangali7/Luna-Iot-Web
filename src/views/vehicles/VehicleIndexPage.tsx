@@ -780,13 +780,24 @@ const VehicleIndexPage: React.FC = () => {
                           </div>
                         </TableCell>
                         <TableCell>
-                          <div className="space-y-1">
-                            <div className="font-mono text-sm">{vehicle.imei}</div>
-                            <Badge variant="secondary" size="sm">{vehicle.device?.phone || 'N/A'}</Badge>
-                            <div className="mt-2">
+                          <div className="flex items-center gap-3">
+                            <div className="w-10 h-10 rounded-lg bg-gray-100 border border-gray-200 flex items-center justify-center overflow-hidden">
+                              {vehicle.device?.image ? (
+                                <img
+                                  src={vehicle.device.image}
+                                  alt="Device"
+                                  className="w-full h-full object-cover"
+                                />
+                              ) : (
+                                <span className="text-xs font-mono text-gray-400">IMG</span>
+                              )}
+                            </div>
+                            <div className="flex flex-col min-w-0">
+                              <span className="font-mono text-sm font-medium truncate">{vehicle.imei}</span>
+                              <span className="text-xs text-gray-500 truncate">{vehicle.device?.phone || 'N/A'}</span>
                               <button
-                              className="bg-gray-700 text-white pt-1 pb-2 pl-1 pr-5 shadow-md"
-                              onClick={() => handleDeviceMonitoring(vehicle)}
+                                className="mt-1 bg-gray-700 text-white px-2 py-1 text-xs rounded shadow-md hover:bg-gray-800 transition-colors"
+                                onClick={() => handleDeviceMonitoring(vehicle)}
                               >
                                 {'>_'}
                               </button>

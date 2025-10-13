@@ -150,8 +150,9 @@ const ReportIndexPage: React.FC = () => {
   }, [searchParams, vehicles, startDate, endDate, generateReport]);
 
   const formatDuration = (minutes: number): string => {
-    const hours = Math.floor(minutes / 60);
-    const mins = minutes % 60;
+    const totalMinutes = Math.round(minutes);
+    const hours = Math.floor(totalMinutes / 60);
+    const mins = totalMinutes % 60;
 
     if (hours > 0) {
       return `${hours}h ${mins}m`;
@@ -284,7 +285,7 @@ const ReportIndexPage: React.FC = () => {
               <CardBody>
                 <div className="text-center">
                   <div className="text-2xl font-bold text-blue-600">
-                    {formatNumber(reportData?.stats?.totalKm || 0, 1)} km
+                    {formatNumber(reportData?.stats?.totalKm || 0, 2)} km
                   </div>
                   <div className="text-sm text-gray-600">Total Distance</div>
                 </div>
@@ -304,7 +305,7 @@ const ReportIndexPage: React.FC = () => {
               <CardBody>
                 <div className="text-center">
                   <div className="text-2xl font-bold text-orange-600">
-                    {formatNumber(reportData?.stats?.averageSpeed || 0, 1)} km/h
+                    {formatNumber(reportData?.stats?.averageSpeed || 0, 2)} km/h
                   </div>
                   <div className="text-sm text-gray-600">Avg Speed</div>
                 </div>
@@ -314,7 +315,7 @@ const ReportIndexPage: React.FC = () => {
               <CardBody>
                 <div className="text-center">
                   <div className="text-2xl font-bold text-red-600">
-                    {formatNumber(reportData?.stats?.maxSpeed || 0, 0)} km/h
+                    {formatNumber(reportData?.stats?.maxSpeed || 0, 2)} km/h
                   </div>
                   <div className="text-sm text-gray-600">Max Speed</div>
                 </div>
@@ -397,7 +398,7 @@ const ReportIndexPage: React.FC = () => {
                             color: '#F9FAFB'
                           }}
                           formatter={(value: unknown, name: string) => [
-                            `${formatNumber(Number(value), 1)} km/h`, 
+                            `${formatNumber(Number(value), 2)} km/h`, 
                             name === 'averageSpeed' ? 'Average Speed' : 'Max Speed'
                           ]}
                         />
@@ -451,7 +452,7 @@ const ReportIndexPage: React.FC = () => {
                             borderRadius: '8px',
                             color: '#F9FAFB'
                           }}
-                          formatter={(value: unknown) => [`${formatNumber(Number(value), 1)} km`, 'Distance']}
+                          formatter={(value: unknown) => [`${formatNumber(Number(value), 2)} km`, 'Distance']}
                         />
                         <Line 
                           type="monotone" 
@@ -503,13 +504,13 @@ const ReportIndexPage: React.FC = () => {
                             {new Date(day.date).toLocaleDateString()}
                           </td>
                           <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
-                            {formatNumber(day.totalKm, 1)}
+                            {formatNumber(day.totalKm, 2)}
                           </td>
                           <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
-                            {formatNumber(day.averageSpeed, 1)}
+                            {formatNumber(day.averageSpeed, 2)}
                           </td>
                           <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
-                            {formatNumber(day.maxSpeed, 0)}
+                            {formatNumber(day.maxSpeed, 2)}
                           </td>
                           <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
                             {formatNumber(day.locationCount, 0)}

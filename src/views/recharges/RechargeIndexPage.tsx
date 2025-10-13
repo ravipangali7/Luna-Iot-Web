@@ -23,6 +23,8 @@ import Spinner from '../../components/ui/common/Spinner';
 import Alert from '../../components/ui/common/Alert';
 import RoleBasedWidget from '../../components/role-based/RoleBasedWidget';
 import { ROLES } from '../../utils/roleUtils';
+import RefreshIcon from '@mui/icons-material/Refresh';
+import AddIcon from '@mui/icons-material/Add';
 
 const RechargeIndexPage: React.FC = () => {
   const navigate = useNavigate();
@@ -205,11 +207,16 @@ const RechargeIndexPage: React.FC = () => {
             <h1 className="text-2xl font-bold text-gray-900">Recharges</h1>
             <p className="text-gray-600">Manage device recharges</p>
           </div>
-          <RoleBasedWidget allowedRoles={[ROLES.SUPER_ADMIN, ROLES.DEALER]}>
-            <Button onClick={handleCreateRecharge}>
-              Add Recharge
+          <div className="flex gap-2">
+            <Button onClick={loadRecharges} variant="outline" icon={<RefreshIcon className="w-4 h-4" />}>
+              Refresh
             </Button>
-          </RoleBasedWidget>
+            <RoleBasedWidget allowedRoles={[ROLES.SUPER_ADMIN, ROLES.DEALER]}>
+              <Button onClick={handleCreateRecharge} icon={<AddIcon className="w-4 h-4" />}>
+                Add Recharge
+              </Button>
+            </RoleBasedWidget>
+          </div>
         </div>
 
         {/* Error Alert */}

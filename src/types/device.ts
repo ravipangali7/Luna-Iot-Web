@@ -49,6 +49,7 @@ export interface Device {
   iccid: string | null;
   model: string;
   status: string;
+  image?: string;
   subscription_plan?: {
     id: number;
     title: string;

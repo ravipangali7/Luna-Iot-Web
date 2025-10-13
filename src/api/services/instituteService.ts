@@ -1,4 +1,5 @@
 import { apiClient } from '../apiClient';
+import type { PaginatedResponse, PaginationParams } from '../../types/pagination';
 
 // Types for Institute Service
 export interface InstituteService {
@@ -179,6 +180,31 @@ class InstituteServiceAPI {
       }
     } catch (error) {
       console.error('Get institutes error:', error);
+      return { success: false, error: 'Network error: ' + (error as Error).message };
+    }
+  }
+
+  async getInstitutesPaginated(params: PaginationParams = {}): Promise<PaginatedResponse<Institute>> {
+    try {
+      const { page = 1, page_size = 20, search = '' } = params;
+      
+      const response = await apiClient.get('/api/core/institute/paginated/', {
+        params: { page, page_size, search },
+        timeout: 30000
+      });
+      
+      if (response.data.success) {
+        return {
+          success: true,
+          data: {
+            items: response.data.data.institutes,
+            pagination: response.data.data.pagination,
+            search_query: response.data.data.search_query
+          }
+        };
+      }
+      return { success: false, error: response.data.message };
+    } catch (error) {
       return { success: false, error: 'Network error: ' + (error as Error).message };
     }
   }
