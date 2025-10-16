@@ -133,10 +133,6 @@ const LiveTrackingShowPage: React.FC<LiveTrackingShowPageProps> = ({ imei: propI
   const polylineRef = useRef<any>(null);
   const locationUpdateHandlerRef = useRef<((data: any) => void) | null>(null);
   const statusUpdateHandlerRef = useRef<((data: any) => void) | null>(null);
-  
-  // Throttling for map pan updates
-  const lastMapPanRef = useRef<number>(0);
-  const MAP_PAN_THROTTLE_MS = 200; // Throttle to max once per 200ms
 
   // Animation state variables
   const animationFrameRef = useRef<number | null>(null);
