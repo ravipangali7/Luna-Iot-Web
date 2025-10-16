@@ -764,6 +764,9 @@ const LiveTrackingShowPage: React.FC<LiveTrackingShowPageProps> = ({ imei: propI
       setIsTracking(false);
       hasStartedTrackingRef.current = false;
       
+      // Stop polling
+      stopPolling();
+      
       // Clear tracking IMEI filter
       socketService.clearTrackingImei();
       
@@ -782,7 +785,7 @@ const LiveTrackingShowPage: React.FC<LiveTrackingShowPageProps> = ({ imei: propI
         statusUpdateHandlerRef.current = null;
       }
     };
-  }, [vehicle?.imei]); // Only depend on vehicle IMEI, not entire vehicle object
+  }, [vehicle?.imei, stopPolling]); // Only depend on vehicle IMEI, not entire vehicle object
 
   // Cleanup on unmount
   useEffect(() => {
