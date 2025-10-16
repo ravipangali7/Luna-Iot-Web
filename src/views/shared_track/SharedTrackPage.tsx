@@ -172,6 +172,10 @@ const SharedTrackPage: React.FC<SharedTrackPageProps> = ({ token: propToken, onB
   const [mapLoaded, setMapLoaded] = useState(false);
   const [pollingInterval, setPollingInterval] = useState<number | null>(null);
 
+  // Animation state variables
+  const animationFrameRef = useRef<number | null>(null);
+  const currentAnimatedPositionRef = useRef<LocationData | null>(null);
+
   const mapRef = useRef<HTMLDivElement>(null);
   const mapInstanceRef = useRef<any>(null);
   const polylineRef = useRef<any>(null);
@@ -206,7 +210,7 @@ const SharedTrackPage: React.FC<SharedTrackPageProps> = ({ token: propToken, onB
       new window.google.maps.LatLng(GOOGLE_MAPS_CONFIG.defaultCenter.lat, GOOGLE_MAPS_CONFIG.defaultCenter.lng);
 
     const map = new window.google.maps.Map(mapRef.current, {
-      zoom: 18,
+      zoom: 17,
       center: center,
       mapTypeId: window.google.maps.MapTypeId.ROADMAP,
       mapTypeControl: true,
@@ -285,12 +289,13 @@ const SharedTrackPage: React.FC<SharedTrackPageProps> = ({ token: propToken, onB
         };
         setCurrentLocation(locationData);
         setMapRotation(locationData.course);
+        currentAnimatedPositionRef.current = locationData; // Initialize ref
         // Fetch address for initial location
         fetchAddress(locationData.latitude, locationData.longitude);
       } else {
         console.warn('No latest location found for shared vehicle');
         // Set a default location for testing
-        setCurrentLocation({
+        const defaultLocation = {
           id: 0,
           imei: vehicleData.imei,
           latitude: GOOGLE_MAPS_CONFIG.defaultCenter.lat,
@@ -301,7 +306,9 @@ const SharedTrackPage: React.FC<SharedTrackPageProps> = ({ token: propToken, onB
           realTimeGps: false,
           createdAt: new Date().toISOString(),
           updatedAt: new Date().toISOString()
-        });
+        };
+        setCurrentLocation(defaultLocation);
+        currentAnimatedPositionRef.current = defaultLocation; // Initialize ref
       }
       
       // Set initial vehicle state
@@ -327,6 +334,69 @@ const SharedTrackPage: React.FC<SharedTrackPageProps> = ({ token: propToken, onB
       setCurrentAddress('Address unavailable');
     }
   }, []);
+
+  // Interpolation function for smooth position calculation
+  const interpolateLocation = useCallback((
+    start: LocationData,
+    end: LocationData,
+    progress: number // 0 to 1
+  ): LocationData => {
+    return {
+      ...end,
+      latitude: start.latitude + (end.latitude - start.latitude) * progress,
+      longitude: start.longitude + (end.longitude - start.longitude) * progress,
+      course: end.course, // Use target course for rotation
+    };
+  }, []);
+
+  // Animation function using requestAnimationFrame
+  const animateVehicleMovement = useCallback((
+    startLocation: LocationData,
+    endLocation: LocationData,
+    duration: number = 5000 // 5 seconds
+  ) => {
+    const startTime = Date.now();
+    
+    const animate = () => {
+      const elapsed = Date.now() - startTime;
+      const progress = Math.min(elapsed / duration, 1); // 0 to 1
+      
+      // Easing function for smooth acceleration/deceleration
+      const eased = progress < 0.5
+        ? 2 * progress * progress
+        : 1 - Math.pow(-2 * progress + 2, 2) / 2;
+      
+      const interpolated = interpolateLocation(startLocation, endLocation, eased);
+      setCurrentLocation(interpolated);
+      currentAnimatedPositionRef.current = interpolated; // Track animated position
+      
+      // Rotate marker smoothly
+      setMapRotation(interpolated.course);
+      
+      // Pan map smoothly
+      if (mapInstanceRef.current && isTracking) {
+        mapInstanceRef.current.panTo({
+          lat: interpolated.latitude,
+          lng: interpolated.longitude
+        });
+      }
+      
+      if (progress < 1) {
+        animationFrameRef.current = requestAnimationFrame(animate);
+      } else {
+        // Animation complete - set final position
+        setCurrentLocation(endLocation);
+        currentAnimatedPositionRef.current = null; // Clear ref
+      }
+    };
+    
+    // Cancel any existing animation
+    if (animationFrameRef.current) {
+      cancelAnimationFrame(animationFrameRef.current);
+    }
+    
+    animationFrameRef.current = requestAnimationFrame(animate);
+  }, [isTracking, interpolateLocation]);
 
   // Toggle map type (satellite/roadmap)
   const toggleMapType = useCallback(() => {
@@ -387,7 +457,7 @@ const SharedTrackPage: React.FC<SharedTrackPageProps> = ({ token: propToken, onB
     
     try {
       const newLocation: LocationData = {
-        id: data.id || currentLocation?.id || 0,
+        id: data.id || currentAnimatedPositionRef.current?.id || 0,
         imei: data.imei,
         latitude: parseFloat(data.latitude?.toString() || '0'),
         longitude: parseFloat(data.longitude?.toString() || '0'),
@@ -399,8 +469,27 @@ const SharedTrackPage: React.FC<SharedTrackPageProps> = ({ token: propToken, onB
         updatedAt: new Date().toISOString()
       };
 
-      setCurrentLocation(newLocation);
-      setMapRotation(newLocation.course);
+      // Get the actual current position from ref only
+      const actualCurrentPosition = currentAnimatedPositionRef.current;
+      
+      // Only start animation if we have a current position and it changed
+      if (actualCurrentPosition && (
+        actualCurrentPosition.latitude !== newLocation.latitude || 
+        actualCurrentPosition.longitude !== newLocation.longitude
+      )) {
+        // Cancel any existing animation before starting new one
+        if (animationFrameRef.current) {
+          cancelAnimationFrame(animationFrameRef.current);
+        }
+        
+        // Start animation from actual current position
+        animateVehicleMovement(actualCurrentPosition, newLocation, 5000);
+      } else {
+        // First location or same position - set immediately
+        setCurrentLocation(newLocation);
+        setMapRotation(newLocation.course);
+        currentAnimatedPositionRef.current = newLocation; // Update ref
+      }
       
       // Fetch address for new location
       fetchAddress(newLocation.latitude, newLocation.longitude);
@@ -410,22 +499,6 @@ const SharedTrackPage: React.FC<SharedTrackPageProps> = ({ token: propToken, onB
         ...prevPoints,
         { lat: newLocation.latitude, lng: newLocation.longitude }
       ]);
-      
-
-      // Animate map to new location with rotation (like Flutter)
-      if (mapInstanceRef.current && isTracking) {
-        setTimeout(() => {
-          try {
-            // Use panTo for smooth movement like Flutter
-            mapInstanceRef.current.panTo({
-              lat: newLocation.latitude,
-              lng: newLocation.longitude
-            });
-          } catch (error) {
-            // Silent error handling
-          }
-        }, 1000);
-      }
 
       // Update vehicle with new location
       setVehicle(prevVehicle => {
@@ -450,7 +523,7 @@ const SharedTrackPage: React.FC<SharedTrackPageProps> = ({ token: propToken, onB
     } catch (error) {
       // Silent error handling
     }
-  }, [vehicle, currentLocation, fetchAddress, isTracking]);
+  }, [vehicle, fetchAddress, animateVehicleMovement]);
 
   // Handle refresh button click
   const handleRefreshClick = useCallback(async () => {
@@ -791,6 +864,11 @@ const SharedTrackPage: React.FC<SharedTrackPageProps> = ({ token: propToken, onB
     return () => {
       stopRealTimeTracking();
       stopPolling();
+      // Cleanup animation
+      if (animationFrameRef.current) {
+        cancelAnimationFrame(animationFrameRef.current);
+      }
+      currentAnimatedPositionRef.current = null;
       // Cleanup polyline
       if (polylineRef.current) {
         polylineRef.current.setMap(null);
@@ -800,6 +878,21 @@ const SharedTrackPage: React.FC<SharedTrackPageProps> = ({ token: propToken, onB
       mapInstanceRef.current = null;
     };
   }, [stopRealTimeTracking, stopPolling]);
+
+  // Join vehicle room for real-time updates
+  useEffect(() => {
+    if (vehicle?.imei && isSocketConnected) {
+      socketService.joinVehicleRoom(vehicle.imei);
+      console.log(`Joined vehicle room: ${vehicle.imei}`);
+    }
+    
+    return () => {
+      if (vehicle?.imei) {
+        socketService.leaveVehicleRoom(vehicle.imei);
+        console.log(`Left vehicle room: ${vehicle.imei}`);
+      }
+    };
+  }, [vehicle?.imei, isSocketConnected]);
 
   // Validate token
   if (!token) {

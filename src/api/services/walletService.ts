@@ -5,7 +5,7 @@ import type { PaginatedResponse, PaginationParams } from '../../types/pagination
 class WalletService {
   async getAllWallets(): Promise<{ success: boolean; data?: WalletListItem[]; error?: string }> {
     try {
-      const response = await apiClient.get('/api/finance/wallet/wallets', {
+      const response = await apiClient.get('/api/finance/wallet/wallets/', {
         timeout: 30000
       });
       
@@ -29,7 +29,7 @@ class WalletService {
     try {
       const { page = 1, page_size = 20, search = '' } = params;
       
-      const response = await apiClient.get('/api/finance/wallet/wallets', {
+      const response = await apiClient.get('/api/finance/wallet/wallets/', {
         params: { page, page_size, search },
         timeout: 30000
       });
@@ -56,7 +56,7 @@ class WalletService {
 
   async getWalletByUser(userId: number): Promise<{ success: boolean; data?: Wallet; error?: string }> {
     try {
-      const response = await apiClient.get(`/api/finance/wallet/wallet/user/${userId}`, {
+      const response = await apiClient.get(`/api/finance/wallet/user/${userId}/`, {
         timeout: 30000
       });
       
@@ -73,7 +73,7 @@ class WalletService {
 
   async getWalletById(walletId: number): Promise<{ success: boolean; data?: Wallet; error?: string }> {
     try {
-      const response = await apiClient.get(`/api/finance/wallet/wallet/${walletId}`, {
+      const response = await apiClient.get(`/api/finance/wallet/${walletId}/`, {
         timeout: 30000
       });
       
@@ -90,7 +90,7 @@ class WalletService {
 
   async createWallet(userId: number, balance: number = 0): Promise<{ success: boolean; data?: Wallet; error?: string }> {
     try {
-      const response = await apiClient.post('/api/finance/wallet/wallet/create', {
+      const response = await apiClient.post('/api/finance/wallet/create/', {
         user_id: userId,
         balance: balance
       }, {
@@ -110,7 +110,7 @@ class WalletService {
 
   async updateWalletBalance(walletId: number, operation: 'add' | 'subtract' | 'set', amount: number): Promise<{ success: boolean; data?: Wallet; error?: string }> {
     try {
-      const response = await apiClient.put(`/api/finance/wallet/wallet/${walletId}/operation`, {
+      const response = await apiClient.put(`/api/finance/wallet/${walletId}/operation/`, {
         operation,
         amount
       }, {
@@ -130,7 +130,7 @@ class WalletService {
 
   async deleteWallet(walletId: number): Promise<{ success: boolean; error?: string }> {
     try {
-      const response = await apiClient.delete(`/api/finance/wallet/wallet/${walletId}/delete`, {
+      const response = await apiClient.delete(`/api/finance/wallet/${walletId}/delete/`, {
         timeout: 30000
       });
       
@@ -147,7 +147,7 @@ class WalletService {
 
   async topUpWallet(walletId: number, payload: WalletTopUpPayload): Promise<{ success: boolean; data?: Wallet; error?: string }> {
     try {
-      const response = await apiClient.post(`/api/finance/wallet/wallet/${walletId}/topup`, payload, {
+      const response = await apiClient.post(`/api/finance/wallet/${walletId}/topup/`, payload, {
         timeout: 30000
       });
       
@@ -164,7 +164,7 @@ class WalletService {
 
   async getWalletSummary(): Promise<{ success: boolean; data?: any; error?: string }> {
     try {
-      const response = await apiClient.get('/api/finance/wallet/summary', {
+      const response = await apiClient.get('/api/finance/wallet/summary/', {
         timeout: 30000
       });
       
