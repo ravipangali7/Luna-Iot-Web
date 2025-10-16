@@ -1,6 +1,5 @@
 import React, { useState, useEffect, useRef, useCallback } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
-import GoogleMapReact from 'google-map-react';
 import { vehicleService } from '../../api/services/vehicleService';
 import socketService from '../../services/socketService';
 import { showError, showInfo } from '../../utils/sweetAlert';
@@ -8,6 +7,14 @@ import type { Vehicle } from '../../types/vehicle';
 import VehicleUtils, { VehicleImageState } from '../../utils/vehicleUtils';
 import type { VehicleStateType } from '../../utils/vehicleUtils';
 import GeoUtils from '../../utils/geoUtils';
+import { GOOGLE_MAPS_CONFIG } from '../../config/maps';
+
+// Extend the Window interface to include google
+declare global {
+  interface Window {
+    google: any;
+  }
+}
 import SpeedIcon from '@mui/icons-material/Speed';
 import LocationOnIcon from '@mui/icons-material/LocationOn';
 import DirectionsCarIcon from '@mui/icons-material/DirectionsCar';
@@ -127,9 +134,11 @@ const LiveTrackingShowPage: React.FC<LiveTrackingShowPageProps> = ({ imei: propI
   const [altitude, setAltitude] = useState<string>('...');
   const [loadingAltitude, setLoadingAltitude] = useState(false);
   const [isSocketConnected, setIsSocketConnected] = useState(false);
+  const [mapLoaded, setMapLoaded] = useState(false);
+  const [pollingInterval, setPollingInterval] = useState<number | null>(null);
 
-  const mapControllerRef = useRef<any>(null);
-  const mapRef = useRef<any>(null);
+  const mapRef = useRef<HTMLDivElement>(null);
+  const mapInstanceRef = useRef<any>(null);
   const polylineRef = useRef<any>(null);
   const locationUpdateHandlerRef = useRef<((data: any) => void) | null>(null);
   const statusUpdateHandlerRef = useRef<((data: any) => void) | null>(null);
@@ -137,7 +146,57 @@ const LiveTrackingShowPage: React.FC<LiveTrackingShowPageProps> = ({ imei: propI
   // Animation state variables
   const animationFrameRef = useRef<number | null>(null);
   const currentAnimatedPositionRef = useRef<LocationData | null>(null);
+  const hasStartedTrackingRef = useRef<boolean>(false);
+  const isFetchingAddressRef = useRef<boolean>(false);
 
+  // Load Google Maps script
+  const loadGoogleMapsScript = useCallback(() => {
+    return new Promise<void>((resolve, reject) => {
+      if (window.google && window.google.maps) {
+        resolve();
+        return;
+      }
+
+      const script = document.createElement('script');
+      script.src = `https://maps.googleapis.com/maps/api/js?key=${GOOGLE_MAPS_CONFIG.apiKey}&libraries=geometry,places&loading=async`;
+      script.async = true;
+      script.defer = true;
+      script.onload = () => resolve();
+      script.onerror = () => reject(new Error('Failed to load Google Maps script'));
+      document.head.appendChild(script);
+    });
+  }, []);
+
+  // Initialize Google Maps
+  const initializeMap = useCallback(() => {
+    if (!mapRef.current) {
+      return;
+    }
+    
+    if (mapInstanceRef.current) {
+      return;
+    }
+
+    // Always use default center for initialization - will be updated when location loads
+    const center = new window.google.maps.LatLng(GOOGLE_MAPS_CONFIG.defaultCenter.lat, GOOGLE_MAPS_CONFIG.defaultCenter.lng);
+
+    const map = new window.google.maps.Map(mapRef.current, {
+      zoom: 17,
+      center: center,
+      mapTypeId: window.google.maps.MapTypeId.ROADMAP,
+      mapTypeControl: true,
+      streetViewControl: true,
+      fullscreenControl: true,
+      zoomControl: true,
+      rotateControl: true,
+      scaleControl: true,
+      gestureHandling: 'greedy',
+      disableDefaultUI: false,
+    });
+
+    mapInstanceRef.current = map;
+    setMapLoaded(true);
+  }, []); // Remove currentLocation dependency
 
   // Load vehicle data
   const loadVehicleData = useCallback(async () => {
@@ -217,13 +276,21 @@ const LiveTrackingShowPage: React.FC<LiveTrackingShowPageProps> = ({ imei: propI
 
   // Fetch address for current location
   const fetchAddress = useCallback(async (latitude: number, longitude: number) => {
+    // Prevent multiple simultaneous address fetches
+    if (isFetchingAddressRef.current) {
+      return;
+    }
+    
     try {
+      isFetchingAddressRef.current = true;
       setCurrentAddress('Loading address...');
       const address = await GeoUtils.getReverseGeoCode(latitude, longitude);
       setCurrentAddress(address);
     } catch (error) {
       console.error('Error fetching address:', error);
       setCurrentAddress('Address unavailable');
+    } finally {
+      isFetchingAddressRef.current = false;
     }
   }, []);
 
@@ -266,8 +333,8 @@ const LiveTrackingShowPage: React.FC<LiveTrackingShowPageProps> = ({ imei: propI
       setMapRotation(interpolated.course);
       
       // Pan map smoothly
-      if (mapControllerRef.current && isTracking) {
-        mapControllerRef.current.panTo({
+      if (mapInstanceRef.current && isTracking) {
+        mapInstanceRef.current.panTo({
           lat: interpolated.latitude,
           lng: interpolated.longitude
         });
@@ -278,7 +345,7 @@ const LiveTrackingShowPage: React.FC<LiveTrackingShowPageProps> = ({ imei: propI
       } else {
         // Animation complete - set final position
         setCurrentLocation(endLocation);
-        currentAnimatedPositionRef.current = endLocation;
+        currentAnimatedPositionRef.current = null; // Clear ref like SharedTrackPage
       }
     };
     
@@ -292,6 +359,14 @@ const LiveTrackingShowPage: React.FC<LiveTrackingShowPageProps> = ({ imei: propI
 
   // Toggle map type (satellite/roadmap)
   const toggleMapType = useCallback(() => {
+    if (!mapInstanceRef.current || !window.google) return;
+    
+    const currentMapType = mapInstanceRef.current.getMapTypeId();
+    const newMapType = currentMapType === window.google.maps.MapTypeId.ROADMAP
+      ? window.google.maps.MapTypeId.SATELLITE
+      : window.google.maps.MapTypeId.ROADMAP;
+    
+    mapInstanceRef.current.setMapTypeId(newMapType);
     setMapType(prev => prev === 'roadmap' ? 'satellite' : 'roadmap');
   }, []);
 
@@ -334,9 +409,10 @@ const LiveTrackingShowPage: React.FC<LiveTrackingShowPageProps> = ({ imei: propI
     navigate(`/playback?vehicle=${vehicle.imei}`);
   }, [vehicle, navigate]);
 
-  // Handle location updates from socket
-  const handleLocationUpdate = useCallback((data: any) => {
-    if (!vehicle || data.imei !== vehicle.imei) return;
+  // Internal location update handler (without dependencies to avoid circular reference)
+  const handleLocationUpdateInternal = useCallback((data: any) => {
+    // Only accept data for the specific vehicle IMEI
+    if (!vehicle || !data.imei || data.imei !== vehicle.imei) return;
     
     try {
       const newLocation: LocationData = {
@@ -383,34 +459,37 @@ const LiveTrackingShowPage: React.FC<LiveTrackingShowPageProps> = ({ imei: propI
         { lat: newLocation.latitude, lng: newLocation.longitude }
       ]);
 
-      // Update vehicle with new location
-      setVehicle(prevVehicle => {
-        if (!prevVehicle) return prevVehicle;
-        return {
-          ...prevVehicle,
-          latestLocation: {
-            id: newLocation.id,
-            imei: newLocation.imei,
-            latitude: newLocation.latitude,
-            longitude: newLocation.longitude,
-            speed: newLocation.speed,
-            course: newLocation.course,
-            satellite: newLocation.satellite,
-            realTimeGps: newLocation.realTimeGps,
-            createdAt: newLocation.createdAt,
-            updatedAt: newLocation.updatedAt
-          }
-        };
-      });
-
-    } catch (error) {
-      console.error('Error handling location update:', error);
+    } catch {
+      // Silent error handling like SharedTrackPage
     }
   }, [vehicle, fetchAddress, animateVehicleMovement]);
 
+  // Handle location updates from socket
+  const handleLocationUpdate = useCallback((data: any) => {
+    
+    // Only accept data for the specific vehicle IMEI
+    if (!vehicle || !data.imei || data.imei !== vehicle.imei) {
+      return;
+    }
+    
+    // Check for duplicate data to prevent unnecessary updates
+    if (currentLocation && 
+        data.latitude === currentLocation.latitude && 
+        data.longitude === currentLocation.longitude &&
+        data.speed === currentLocation.speed &&
+        data.course === currentLocation.course) {
+      return; // Skip duplicate data
+    }
+    
+    handleLocationUpdateInternal(data);
+  }, [vehicle, currentLocation, handleLocationUpdateInternal]);
+
   // Handle status updates from socket
   const handleStatusUpdate = useCallback((data: any) => {
-    if (!vehicle || data.imei !== vehicle.imei) return;
+    
+    if (!vehicle || data.imei !== vehicle.imei) {
+      return;
+    }
     
     try {
       const newStatus = {
@@ -424,6 +503,7 @@ const LiveTrackingShowPage: React.FC<LiveTrackingShowPageProps> = ({ imei: propI
         createdAt: data.createdAt || new Date().toISOString(),
         updatedAt: new Date().toISOString()
       };
+
 
       // Update vehicle with new status
       const updatedVehicle = {
@@ -442,74 +522,77 @@ const LiveTrackingShowPage: React.FC<LiveTrackingShowPageProps> = ({ imei: propI
     }
   }, [vehicle]);
 
-  // Start real-time tracking
-  const startRealTimeTracking = useCallback(() => {
-    if (!vehicle || isTracking) return;
+  // Polling fallback for location updates
+  const startPolling = useCallback(() => {
+    if (!vehicle || pollingInterval) return;
 
-    // Ensure socket is connected first
-    if (!socketService.getConnectionStatus()) {
-      socketService.connect();
-    }
-
-    setIsTracking(true);
-
-    // Create handlers
-    const locationHandler = (data: any) => handleLocationUpdate(data);
-    const statusHandler = (data: any) => handleStatusUpdate(data);
-
-    // Store handlers in refs for cleanup
-    locationUpdateHandlerRef.current = locationHandler;
-    statusUpdateHandlerRef.current = statusHandler;
-
-    // Subscribe to socket updates
-    socketService.subscribeToVehicleLocation(locationHandler);
-    socketService.subscribeToVehicleStatus(statusHandler);
-
-  }, [vehicle, isTracking, handleLocationUpdate, handleStatusUpdate]);
-
-  // Stop real-time tracking
-  const stopRealTimeTracking = useCallback(() => {
-    if (!isTracking) return;
-
-    setIsTracking(false);
-
-    // Unsubscribe from socket updates
-    if (locationUpdateHandlerRef.current) {
-      socketService.unsubscribeFromVehicleLocation(locationUpdateHandlerRef.current);
-      locationUpdateHandlerRef.current = null;
-    }
-    if (statusUpdateHandlerRef.current) {
-      socketService.unsubscribeFromVehicleStatus(statusUpdateHandlerRef.current);
-      statusUpdateHandlerRef.current = null;
-    }
-
-  }, [isTracking]);
-
-  // Initialize map
-  const handleMapChange = useCallback(({ map }: any) => {
-    mapControllerRef.current = map;
-    mapRef.current = map;
-    
-    // Center map on vehicle location initially
-    if (currentLocation && map) {
-      setTimeout(() => {
-        try {
-          if (typeof map.panTo === 'function') {
-            map.panTo({
-              lat: currentLocation.latitude,
-              lng: currentLocation.longitude
-            });
+    const poll = async () => {
+      try {
+        const response = await vehicleService.getVehicleByImei(vehicle.imei);
+        
+        if (response.success && response.data?.latestLocation) {
+          const locationData = response.data.latestLocation;
+          
+          // Check if location has changed
+          if (currentLocation && 
+              locationData.latitude === currentLocation.latitude && 
+              locationData.longitude === currentLocation.longitude &&
+              locationData.speed === currentLocation.speed &&
+              locationData.course === currentLocation.course) {
+            return; // No change, skip update
           }
-        } catch (error) {
-          console.warn('Error centering map on initial load:', error);
+          
+          // Simulate socket data format
+          const socketData = {
+            imei: vehicle.imei,
+            latitude: locationData.latitude,
+            longitude: locationData.longitude,
+            speed: locationData.speed,
+            course: locationData.course,
+            satellite: locationData.satellite,
+            realTimeGps: locationData.realTimeGps,
+            createdAt: locationData.createdAt,
+            id: Date.now() // Use timestamp as ID
+          };
+
+          // Call handleLocationUpdateInternal directly instead of using dependency
+          handleLocationUpdateInternal(socketData);
         }
-      }, 1000);
+      } catch {
+        // Silent error handling
+      }
+    };
+
+    // Poll every 10 seconds
+    const interval = setInterval(poll, 10000);
+    setPollingInterval(interval);
+    
+    // Initial poll
+    poll();
+  }, [vehicle, currentLocation, handleLocationUpdateInternal, pollingInterval]);
+
+  // Stop polling
+  const stopPolling = useCallback(() => {
+    if (pollingInterval) {
+      clearInterval(pollingInterval);
+      setPollingInterval(null);
     }
-  }, [currentLocation]);
+  }, [pollingInterval]);
+
+
+  // Center map on vehicle location
+  const centerMapOnLocation = useCallback((location: LocationData) => {
+    if (mapInstanceRef.current) {
+      mapInstanceRef.current.panTo({
+        lat: location.latitude,
+        lng: location.longitude
+      });
+    }
+  }, []);
 
   // Update polyline when route points change
   const updatePolyline = useCallback(() => {
-    if (!mapRef.current || !window.google || routePoints.length < 2) return;
+    if (!mapInstanceRef.current || !window.google || routePoints.length < 2) return;
 
     try {
       // Remove existing polyline
@@ -531,7 +614,7 @@ const LiveTrackingShowPage: React.FC<LiveTrackingShowPageProps> = ({ imei: propI
         strokeWeight: 6
       });
 
-      polylineRef.current.setMap(mapRef.current);
+      polylineRef.current.setMap(mapInstanceRef.current);
     } catch (error) {
       console.warn('Error updating polyline:', error);
     }
@@ -547,39 +630,51 @@ const LiveTrackingShowPage: React.FC<LiveTrackingShowPageProps> = ({ imei: propI
   // Note: Map animation is now handled directly in handleLocationUpdate callback
   // This removes the duplicate useEffect that was causing redundant animations
 
-  // Get map center - prioritize vehicle location
-  const getMapCenter = () => {
-    if (currentLocation && 
-        typeof currentLocation.latitude === 'number' && 
-        typeof currentLocation.longitude === 'number' && 
-        !isNaN(currentLocation.latitude) && 
-        !isNaN(currentLocation.longitude) &&
-        currentLocation.latitude !== 0 &&
-        currentLocation.longitude !== 0) {
-      return {
-        lat: currentLocation.latitude,
-        lng: currentLocation.longitude
-      };
-    }
-    return { lat: 28.3949, lng: 84.1240 }; // Nepal center as fallback
-  };
 
 
   useEffect(() => {
     loadVehicleData();
-    
-    // Join socket room for this vehicle
-    if (imei) {
-      socketService.joinVehicleRoom(imei);
-    }
+  }, [loadVehicleData]);
 
-    // Leave room on unmount
-    return () => {
-      if (imei) {
-        socketService.leaveVehicleRoom(imei);
+  // Load Google Maps script and initialize map
+  useEffect(() => {
+    const loadMap = async () => {
+      try {
+        await loadGoogleMapsScript();
+        
+        // Try to initialize map, with retry if ref not ready
+        const tryInitializeMap = (attempt = 1) => {
+          if (mapRef.current) {
+            initializeMap();
+          } else if (attempt < 5) {
+            setTimeout(() => tryInitializeMap(attempt + 1), 100);
+          } else {
+          }
+        };
+        
+        tryInitializeMap();
+      } catch (error) {
+        console.error('❌ Failed to load Google Maps:', error);
       }
     };
-  }, [loadVehicleData, imei]);
+
+    loadMap();
+  }, [loadGoogleMapsScript, initializeMap]);
+
+  // Fallback: Initialize map when component is fully rendered
+  useEffect(() => {
+    if (mapRef.current && !mapInstanceRef.current && window.google && window.google.maps) {
+      initializeMap();
+    }
+  }, [initializeMap]);
+
+  // Connect socket early on component mount
+  useEffect(() => {
+    if (!socketService.getConnectionStatus()) {
+      socketService.connect();
+    } else {
+    }
+  }, []);
 
   // Set up socket connection status monitoring (run once only)
   useEffect(() => {
@@ -591,17 +686,62 @@ const LiveTrackingShowPage: React.FC<LiveTrackingShowPageProps> = ({ imei: propI
     socketService.onConnectionChange(connectionHandler);
 
     // Initial connection status
-    setIsSocketConnected(socketService.getConnectionStatus());
+    const initialStatus = socketService.getConnectionStatus();
+    setIsSocketConnected(initialStatus);
     
     // Cleanup is handled by socketService itself
   }, []);
 
-  // Start real-time tracking when vehicle is loaded
+  // Start real-time tracking when vehicle is loaded (socket connection handled internally)
   useEffect(() => {
-    if (vehicle && !isTracking) {
-      startRealTimeTracking();
+    if (vehicle && !isTracking && !hasStartedTrackingRef.current) {
+      hasStartedTrackingRef.current = true;
+      
+      // Call startRealTimeTracking directly to avoid dependency issues
+      if (!socketService.getConnectionStatus()) {
+        socketService.connect();
+        
+        setTimeout(() => {
+          if (socketService.getConnectionStatus()) {
+            setupSocketTracking();
+          } else {
+            startPolling();
+          }
+        }, 2000);
+      } else {
+        setupSocketTracking();
+      }
+
+      function setupSocketTracking() {
+        if (!vehicle) return;
+        
+        
+        // Set tracking IMEI to filter updates for this specific vehicle
+        socketService.setTrackingImei(vehicle.imei);
+        
+        // Join vehicle room for targeted updates
+        socketService.joinVehicleRoom(vehicle.imei);
+        
+        setIsTracking(true);
+
+        // Create handlers
+        const locationHandler = (data: any) => {
+          handleLocationUpdate(data);
+        };
+        const statusHandler = (data: any) => {
+          handleStatusUpdate(data);
+        };
+
+        // Store handlers in refs for cleanup
+        locationUpdateHandlerRef.current = locationHandler;
+        statusUpdateHandlerRef.current = statusHandler;
+
+        // Subscribe to socket updates
+        socketService.subscribeToVehicleLocation(locationHandler);
+        socketService.subscribeToVehicleStatus(statusHandler);
+      }
     }
-  }, [vehicle, isTracking, startRealTimeTracking]);
+  }, [vehicle, isTracking, handleLocationUpdate, handleStatusUpdate, startPolling]);
 
   // Load altitude when location changes
   useEffect(() => {
@@ -610,21 +750,65 @@ const LiveTrackingShowPage: React.FC<LiveTrackingShowPageProps> = ({ imei: propI
     }
   }, [currentLocation, handleAltitudeClick, loadingAltitude]);
 
+  // Center map when location changes
+  useEffect(() => {
+    if (currentLocation && mapLoaded) {
+      centerMapOnLocation(currentLocation);
+    }
+  }, [currentLocation, mapLoaded, centerMapOnLocation]);
+
+  // Stop tracking when component unmounts
+  useEffect(() => {
+    return () => {
+      // Always cleanup tracking on unmount
+      setIsTracking(false);
+      hasStartedTrackingRef.current = false;
+      
+      // Clear tracking IMEI filter
+      socketService.clearTrackingImei();
+      
+      // Leave vehicle room
+      if (vehicle?.imei) {
+        socketService.leaveVehicleRoom(vehicle.imei);
+      }
+      
+      // Unsubscribe from socket updates
+      if (locationUpdateHandlerRef.current) {
+        socketService.unsubscribeFromVehicleLocation(locationUpdateHandlerRef.current);
+        locationUpdateHandlerRef.current = null;
+      }
+      if (statusUpdateHandlerRef.current) {
+        socketService.unsubscribeFromVehicleStatus(statusUpdateHandlerRef.current);
+        statusUpdateHandlerRef.current = null;
+      }
+    };
+  }, [vehicle?.imei]); // Only depend on vehicle IMEI, not entire vehicle object
+
   // Cleanup on unmount
   useEffect(() => {
     return () => {
-      stopRealTimeTracking();
       // Cancel any ongoing animation
       if (animationFrameRef.current) {
         cancelAnimationFrame(animationFrameRef.current);
       }
+      
       // Cleanup polyline
       if (polylineRef.current) {
         polylineRef.current.setMap(null);
         polylineRef.current = null;
       }
+      
+      // Cleanup map instance
+      if (mapInstanceRef.current) {
+        mapInstanceRef.current = null;
+      }
+      
+      // Stop polling
+      if (pollingInterval) {
+        clearInterval(pollingInterval);
+      }
     };
-  }, [stopRealTimeTracking]);
+  }, [pollingInterval]); // Include pollingInterval dependency
 
   // Validate IMEI
   if (!imei) {
@@ -665,7 +849,7 @@ const LiveTrackingShowPage: React.FC<LiveTrackingShowPageProps> = ({ imei: propI
 
 
   return (
-    <div className="live-tracking-show">
+    <div className="live-tracking-show" key={`live-tracking-${imei}`}>
       {/* Minimal Top Panel */}
       <div className="minimal-top-panel">
         <div className="vehicle-info">
@@ -680,27 +864,10 @@ const LiveTrackingShowPage: React.FC<LiveTrackingShowPageProps> = ({ imei: propI
 
       {/* Map */}
       <div className="map-container">
-        <GoogleMapReact
-          key={`map-${vehicle?.id}`}
-          bootstrapURLKeys={{ key: import.meta.env.VITE_GOOGLE_MAPS_API_KEY || '' }}
-          center={getMapCenter()}
-          defaultCenter={{ lat: 28.3949, lng: 84.1240 }}
-          defaultZoom={17}
-          zoom={17}
-          onGoogleApiLoaded={handleMapChange}
-          options={{
-            mapTypeControl: true,
-            streetViewControl: true,
-            fullscreenControl: true,
-            zoomControl: true,
-            rotateControl: true,
-            scaleControl: true,
-            gestureHandling: 'greedy',
-            disableDefaultUI: false,
-            mapTypeId: mapType,
-          }}
-        >
-        </GoogleMapReact>
+        <div 
+          ref={mapRef}
+          style={{ width: '100%', height: '100%' }}
+        />
         
         {/* Fixed Center Marker */}
         {vehicle && (

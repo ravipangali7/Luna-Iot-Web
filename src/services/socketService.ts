@@ -100,12 +100,14 @@ class SocketService {
       this.listeners.onConnectionChange?.(false);
     });
 
-    this.socket.on('connect_error', () => {
+    this.socket.on('connect_error', (error) => {
+      console.error('❌ Socket connection error:', error);
       this.isConnected = false;
       this.listeners.onConnectionChange?.(false);
     });
 
-    this.socket.on('reconnect_error', () => {
+    this.socket.on('reconnect_error', (error) => {
+      console.error('❌ Socket reconnection error:', error);
       this.isConnected = false;
       this.listeners.onConnectionChange?.(false);
     });
@@ -333,7 +335,6 @@ class SocketService {
   public joinVehicleRoom(imei: string): void {
     if (this.socket?.connected) {
       this.socket.emit('join_vehicle', imei);
-      console.log(`✅ Joined room: vehicle:${imei}`);
     }
   }
 
@@ -341,7 +342,6 @@ class SocketService {
   public leaveVehicleRoom(imei: string): void {
     if (this.socket?.connected) {
       this.socket.emit('leave_vehicle', imei);
-      console.log(`❌ Left room: vehicle:${imei}`);
     }
   }
 }
