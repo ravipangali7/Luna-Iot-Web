@@ -78,7 +78,7 @@ const SwitchEditPage: React.FC = () => {
           device: switchResponse.device,
           latitude: switchResponse.latitude,
           longitude: switchResponse.longitude,
-          trigger: switchResponse.trigger,
+          trigger: typeof switchResponse.trigger === 'string' ? parseInt(switchResponse.trigger) : switchResponse.trigger,
           primary_phone: switchResponse.primary_phone,
           secondary_phone: switchResponse.secondary_phone,
           image: null

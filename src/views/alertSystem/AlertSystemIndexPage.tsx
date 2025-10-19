@@ -1,7 +1,7 @@
 import React, { useState, useEffect, useCallback } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useAlertSystemAccess } from '../../hooks/useAlertSystemAccess';
-import { instituteService } from '../../api/services/instituteService';
+import { instituteService, type Institute } from '../../api/services/instituteService';
 import Container from '../../components/ui/layout/Container';
 import Card from '../../components/ui/cards/Card';
 import Table from '../../components/ui/tables/Table';
@@ -16,13 +16,6 @@ import Spinner from '../../components/ui/common/Spinner';
 import Alert from '../../components/ui/common/Alert';
 import { confirmDelete, showSuccess, showError } from '../../utils/sweetAlert';
 
-interface Institute {
-  id: number;
-  name: string;
-  phone: string;
-  address: string;
-  created_at: string;
-}
 
 const AlertSystemIndexPage: React.FC = () => {
   const navigate = useNavigate();
@@ -89,7 +82,11 @@ const AlertSystemIndexPage: React.FC = () => {
         const endIndex = startIndex + itemsPerPage;
         const paginatedInstitutes = institutes.slice(startIndex, endIndex);
         
-        setInstitutes(paginatedInstitutes);
+        setInstitutes(paginatedInstitutes.map(inst => ({
+          ...inst,
+          phone: inst.phone || '',
+          address: inst.address || ''
+        })));
         setTotalCount(institutes.length);
         setTotalPages(Math.ceil(institutes.length / itemsPerPage));
       } else {

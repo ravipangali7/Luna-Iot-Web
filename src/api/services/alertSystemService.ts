@@ -13,9 +13,9 @@ export interface AlertType {
 export interface AlertGeofence {
   id: number;
   title: string;
-  alert_types: { id: number; name: string; icon: string | null }[];
+  alert_types: number[];
   alert_types_names: string[];
-  boundary: any; // GeoJSON object
+  boundary: string; // GeoJSON string
   institute: number;
   institute_name: string;
   created_at: string;
@@ -40,7 +40,7 @@ export interface AlertBuzzer {
   device: number;
   device_imei: string;
   device_phone: string;
-  device_name: string;
+  device_name?: string; // Added for compatibility
   delay: number;
   alert_geofences: { id: number; title: string }[];
   alert_geofences_names: string[];
@@ -75,10 +75,10 @@ export interface AlertSwitch {
   device: number;
   device_imei: string;
   device_phone: string;
-  device_name: string;
+  device_name?: string; // Added for compatibility
   latitude: number;
   longitude: number;
-  trigger: number;
+  trigger: number | string; // Allow both number and string
   primary_phone: string;
   secondary_phone: string;
   image: string | null;
@@ -119,15 +119,15 @@ export interface AlertTypeUpdate {
 
 export interface AlertGeofenceCreate {
   title: string;
-  alert_type_ids: number[];
-  boundary: any; // GeoJSON object
+  alert_types: number[];
+  boundary: string;
   institute: number;
 }
 
 export interface AlertGeofenceUpdate {
   title?: string;
-  alert_type_ids?: number[];
-  boundary?: any; // GeoJSON object
+  alert_types?: number[];
+  boundary?: string;
 }
 
 export interface AlertRadarCreate {
@@ -455,7 +455,7 @@ export const alertSwitchService = {
 
 export const alertHistoryService = {
   getAll: async (): Promise<AlertHistory[]> => {
-    const response = await apiClient.get<AlertSystemApiResponse<{histories: AlertHistory[], pagination: any}>>('/api/alert-system/alert-history/');
+    const response = await apiClient.get<AlertSystemApiResponse<{histories: AlertHistory[], pagination: unknown}>>('/api/alert-system/alert-history/');
     return response.data.data.histories; // Extract 'histories' array from nested structure
   },
 

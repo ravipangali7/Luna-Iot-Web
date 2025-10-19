@@ -27,7 +27,6 @@ export interface ButtonProps extends BaseProps {
   loading?: boolean;
   onClick?: () => void;
   icon?: React.ReactNode;
-  title?: string;
 }
 
 export interface InputProps extends BaseProps {
@@ -39,7 +38,7 @@ export interface InputProps extends BaseProps {
   disabled?: boolean;
   required?: boolean;
   error?: string;
-  onChange?: (e: React.ChangeEvent<HTMLInputElement>) => void;
+  onChange?: (value: string) => void;
   onBlur?: () => void;
   onFocus?: () => void;
   min?: string;

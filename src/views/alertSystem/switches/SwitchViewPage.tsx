@@ -44,7 +44,12 @@ const SwitchViewPage: React.FC = () => {
       setError(null);
 
       const switchResponse = await alertSwitchService.getById(Number(id));
-      setSwitchItem(switchResponse);
+      setSwitchItem({
+        ...switchResponse,
+        device_name: switchResponse.device_imei, // Ensure device_name is always a string
+        trigger: String(switchResponse.trigger), // Ensure trigger is always a string
+        image: switchResponse.image || '' // Ensure image is always a string
+      });
     } catch (err: unknown) {
       console.error('Error fetching switch data:', err);
       const errorMessage = (err as { response?: { data?: { message?: string } } })?.response?.data?.message || 'Failed to load switch data. Please try again.';
@@ -131,7 +136,7 @@ const SwitchViewPage: React.FC = () => {
   if (error) {
     return (
       <Container>
-        <Alert variant="error" title="Error" message={error} />
+        <Alert variant="danger" title="Error" message={error} />
       </Container>
     );
   }
@@ -139,7 +144,7 @@ const SwitchViewPage: React.FC = () => {
   if (!switchItem) {
     return (
       <Container>
-        <Alert variant="error" title="Error" message="Switch not found" />
+        <Alert variant="danger" title="Error" message="Switch not found" />
       </Container>
     );
   }

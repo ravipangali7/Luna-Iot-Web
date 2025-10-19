@@ -92,7 +92,10 @@ const GeofenceEditPage: React.FC = () => {
       ]);
 
       if (geofenceResponse) {
-        setGeofence(geofenceResponse);
+        setGeofence({
+          ...geofenceResponse,
+          alert_types: geofenceResponse.alert_types.map(id => ({ id, name: '', icon: null })) // Convert number[] to AlertType[]
+        });
         setFormData({
           title: geofenceResponse.title,
           boundary: typeof geofenceResponse.boundary === 'string' ? JSON.parse(geofenceResponse.boundary) : geofenceResponse.boundary,
@@ -182,8 +185,8 @@ const GeofenceEditPage: React.FC = () => {
 
       const payload = {
         title: formData.title.trim(),
-        boundary: formData.boundary || undefined,
-        alert_type_ids: formData.alert_type_ids
+        boundary: formData.boundary ? JSON.stringify(formData.boundary) : undefined,
+        alert_types: formData.alert_type_ids
       };
 
       await alertGeofenceService.update(Number(id), payload);

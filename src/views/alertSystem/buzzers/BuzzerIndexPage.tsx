@@ -153,7 +153,7 @@ const BuzzerIndexPage: React.FC = () => {
   if (error) {
     return (
       <Container>
-        <Alert variant="error" title="Error" message={error} />
+        <Alert variant="danger" title="Error" message={error} />
       </Container>
     );
   }
@@ -187,7 +187,7 @@ const BuzzerIndexPage: React.FC = () => {
               type="text"
               placeholder="Search buzzers..."
               value={searchTerm}
-              onChange={(e) => handleSearch(e.target.value)}
+              onChange={(e) => handleSearch(e)}
               icon={
                 <svg className="w-4 h-4 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />

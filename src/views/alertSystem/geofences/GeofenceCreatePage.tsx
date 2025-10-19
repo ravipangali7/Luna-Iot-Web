@@ -146,8 +146,8 @@ const GeofenceCreatePage: React.FC = () => {
       const payload = {
         title: formData.title.trim(),
         institute: Number(instituteId),
-        boundary: formData.boundary,
-        alert_type_ids: formData.alert_type_ids
+        boundary: formData.boundary ? JSON.stringify(formData.boundary) : '',
+        alert_types: formData.alert_type_ids
       };
 
       await alertGeofenceService.create(payload);

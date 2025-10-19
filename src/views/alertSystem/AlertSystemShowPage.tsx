@@ -1,8 +1,19 @@
 import React, { useState, useEffect, useCallback } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { useAlertSystemAccess } from '../../hooks/useAlertSystemAccess';
-import { instituteService } from '../../api/services/instituteService';
-import { alertGeofenceService, alertRadarService, alertBuzzerService, alertSwitchService, alertContactService } from '../../api/services/alertSystemService';
+import { instituteService, type Institute } from '../../api/services/instituteService';
+import { 
+  alertGeofenceService, 
+  alertRadarService, 
+  alertBuzzerService, 
+  alertSwitchService, 
+  alertContactService,
+  type AlertGeofence,
+  type AlertRadar,
+  type AlertBuzzer,
+  type AlertSwitch,
+  type AlertContact
+} from '../../api/services/alertSystemService';
 import Container from '../../components/ui/layout/Container';
 import Card from '../../components/ui/cards/Card';
 import Table from '../../components/ui/tables/Table';
@@ -17,54 +28,6 @@ import Spinner from '../../components/ui/common/Spinner';
 import Alert from '../../components/ui/common/Alert';
 import { confirmDelete, showSuccess, showError } from '../../utils/sweetAlert';
 
-interface Institute {
-  id: number;
-  name: string;
-  phone: string;
-  address: string;
-  created_at: string;
-}
-
-interface AlertGeofence {
-  id: number;
-  title: string;
-  alert_types_names: string[];
-  created_at: string;
-}
-
-interface AlertRadar {
-  id: number;
-  title: string;
-  token: string;
-  alert_geofences_names: string[];
-  created_at: string;
-}
-
-interface AlertBuzzer {
-  id: number;
-  title: string;
-  device_name: string;
-  delay: number;
-  alert_geofences_names: string[];
-  created_at: string;
-}
-
-interface AlertSwitch {
-  id: number;
-  title: string;
-  device_name: string;
-  primary_phone: string;
-  created_at: string;
-}
-
-interface AlertContact {
-  id: number;
-  name: string;
-  phone: string;
-  is_sms: boolean;
-  is_call: boolean;
-  created_at: string;
-}
 
 const AlertSystemShowPage: React.FC = () => {
   const { id } = useParams<{ id: string }>();
@@ -89,7 +52,11 @@ const AlertSystemShowPage: React.FC = () => {
       
        // Fetch institute details
        const instituteData = await instituteService.getInstituteById(instituteId);
-       setInstitute(instituteData.data || null);
+       setInstitute(instituteData.data ? {
+         ...instituteData.data,
+         phone: instituteData.data.phone || '',
+         address: instituteData.data.address || ''
+       } : null);
 
       // Fetch all alert system data for this institute
       const [geofencesData, radarsData, buzzersData, switchesData, contactsData] = await Promise.all([
@@ -102,8 +69,14 @@ const AlertSystemShowPage: React.FC = () => {
 
       setGeofences(geofencesData || []);
       setRadars(radarsData || []);
-      setBuzzers(buzzersData || []);
-      setSwitches(switchesData || []);
+      setBuzzers((buzzersData || []).map(buzzer => ({
+        ...buzzer,
+        device_name: buzzer.device_imei // Map device_imei to device_name for compatibility
+      })));
+      setSwitches((switchesData || []).map(switchItem => ({
+        ...switchItem,
+        device_name: switchItem.device_imei // Map device_imei to device_name for compatibility
+      })));
       setContacts(contactsData || []);
     } catch (err) {
       console.error('Error fetching data:', err);
@@ -527,7 +500,7 @@ const AlertSystemShowPage: React.FC = () => {
                    {buzzers.map(item => (
                      <TableRow key={item.id}>
                        <TableCell className="font-medium text-gray-900">{item.title}</TableCell>
-                       <TableCell className="text-gray-600">{item.device_name}</TableCell>
+                       <TableCell className="text-gray-600">{item.device_name || item.device_imei}</TableCell>
                        <TableCell className="text-gray-600">{item.delay}</TableCell>
                        <TableCell className="text-gray-600">{formatDate(item.created_at)}</TableCell>
                        <TableCell>
@@ -606,7 +579,7 @@ const AlertSystemShowPage: React.FC = () => {
                    {switches.map(item => (
                      <TableRow key={item.id}>
                        <TableCell className="font-medium text-gray-900">{item.title}</TableCell>
-                       <TableCell className="text-gray-600">{item.device_name}</TableCell>
+                       <TableCell className="text-gray-600">{item.device_name || item.device_imei}</TableCell>
                        <TableCell className="text-gray-600">{item.primary_phone}</TableCell>
                        <TableCell className="text-gray-600">{formatDate(item.created_at)}</TableCell>
                        <TableCell>

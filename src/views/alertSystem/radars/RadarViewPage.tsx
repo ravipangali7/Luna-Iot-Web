@@ -1,7 +1,7 @@
 import React, { useState, useEffect, useCallback } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { useAlertSystemAccess } from '../../../hooks/useAlertSystemAccess';
-import { alertRadarService, alertGeofenceService } from '../../../api/services/alertSystemService';
+import { alertRadarService, type AlertRadar } from '../../../api/services/alertSystemService';
 import Container from '../../../components/ui/layout/Container';
 import Card from '../../../components/ui/cards/Card';
 import Button from '../../../components/ui/buttons/Button';
@@ -10,22 +10,6 @@ import Spinner from '../../../components/ui/common/Spinner';
 import Alert from '../../../components/ui/common/Alert';
 import { showError } from '../../../utils/sweetAlert';
 
-interface AlertRadar {
-  id: number;
-  title: string;
-  token: string;
-  alert_geofences: number[];
-  alert_geofences_names: string[];
-  institute: number;
-  institute_name: string;
-  created_at: string;
-  updated_at: string;
-}
-
-interface AlertGeofence {
-  id: number;
-  title: string;
-}
 
 const RadarViewPage: React.FC = () => {
   const { instituteId, id } = useParams<{ instituteId: string; id: string }>();
@@ -42,21 +26,18 @@ const RadarViewPage: React.FC = () => {
       setLoading(true);
       setError(null);
 
-      const [radarResponse, geofencesResponse] = await Promise.all([
-        alertRadarService.getById(Number(id)),
-        alertGeofenceService.getByInstitute(Number(instituteId))
-      ]);
+      const radarResponse = await alertRadarService.getById(Number(id));
 
       setRadar(radarResponse);
-      setGeofences(geofencesResponse || []);
+      // setGeofences(geofencesResponse || []);
     } catch (err: unknown) {
       console.error('Error fetching radar data:', err);
-      const errorMessage = (err as any)?.response?.data?.message || 'Failed to load radar data. Please try again.';
+      const errorMessage = (err as { response?: { data?: { message?: string } } })?.response?.data?.message || 'Failed to load radar data. Please try again.';
       setError(errorMessage);
     } finally {
       setLoading(false);
     }
-  }, [id, instituteId]);
+  }, [id]);
 
   useEffect(() => {
     if (hasAccessToInstitute(Number(instituteId))) {
@@ -80,7 +61,7 @@ const RadarViewPage: React.FC = () => {
         navigate(`/alert-system/${instituteId}`);
       } catch (err: unknown) {
         console.error('Error deleting radar:', err);
-        const errorMessage = (err as any)?.response?.data?.message || 'Failed to delete radar. Please try again.';
+        const errorMessage = (err as { response?: { data?: { message?: string } } })?.response?.data?.message || 'Failed to delete radar. Please try again.';
         showError(errorMessage);
       }
     }

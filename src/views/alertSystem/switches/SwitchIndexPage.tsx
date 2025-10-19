@@ -1,7 +1,7 @@
 import React, { useState, useEffect, useCallback } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { useAlertSystemAccess } from '../../../hooks/useAlertSystemAccess';
-import { alertSwitchService } from '../../../api/services/alertSystemService';
+import { alertSwitchService, type AlertSwitch } from '../../../api/services/alertSystemService';
 import Container from '../../../components/ui/layout/Container';
 import Card from '../../../components/ui/cards/Card';
 import Button from '../../../components/ui/buttons/Button';
@@ -17,22 +17,6 @@ import Spinner from '../../../components/ui/common/Spinner';
 import Alert from '../../../components/ui/common/Alert';
 import { confirmDelete, showSuccess, showError } from '../../../utils/sweetAlert';
 
-interface AlertSwitch {
-  id: number;
-  title: string;
-  device: number;
-  device_imei: string;
-  device_phone: string;
-  latitude: number;
-  longitude: number;
-  trigger: string;
-  primary_phone: string;
-  secondary_phone?: string;
-  institute: number;
-  institute_name: string;
-  created_at: string;
-  updated_at: string;
-}
 
 const SwitchIndexPage: React.FC = () => {
   const { instituteId } = useParams<{ instituteId: string }>();
@@ -54,7 +38,10 @@ const SwitchIndexPage: React.FC = () => {
       setError(null);
 
       const response = await alertSwitchService.getByInstitute(Number(instituteId));
-      setSwitches(response || []);
+      setSwitches((response || []).map(switchItem => ({
+        ...switchItem,
+        device_name: switchItem.device_imei // Map device_imei to device_name for compatibility
+      })));
     } catch (err: unknown) {
       console.error('Error fetching switches:', err);
       const errorMessage = (err as { response?: { data?: { message?: string } } })?.response?.data?.message || 'Failed to load switches. Please try again.';
@@ -168,7 +155,7 @@ const SwitchIndexPage: React.FC = () => {
   if (error) {
     return (
       <Container>
-        <Alert variant="error" title="Error" message={error} />
+        <Alert variant="danger" title="Error" message={error} />
       </Container>
     );
   }
@@ -202,7 +189,7 @@ const SwitchIndexPage: React.FC = () => {
               type="text"
               placeholder="Search switches..."
               value={searchTerm}
-              onChange={(e) => handleSearch(e.target.value)}
+              onChange={(e) => handleSearch(e)}
               icon={
                 <svg className="w-4 h-4 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
@@ -259,7 +246,7 @@ const SwitchIndexPage: React.FC = () => {
                   </TableCell>
                   <TableCell>
                     <Badge 
-                      variant={switchItem.trigger === 'HIGH' ? 'success' : 'warning'}
+                      variant={String(switchItem.trigger) === 'HIGH' ? 'success' : 'warning'}
                       size="sm"
                     >
                       {switchItem.trigger}

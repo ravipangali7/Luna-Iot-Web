@@ -15,6 +15,7 @@ interface CommonActionButtonProps {
   disabled?: boolean;
   loading?: boolean;
   className?: string;
+  title?: string;
 }
 
 // View Action Button - Info variant, eye icon

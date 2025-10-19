@@ -71,15 +71,13 @@ const DeviceIndexPage: React.FC = () => {
 
       if (result.success && result.data) {
         setDevices(result.data.devices);
-        // Map backend pagination to frontend format
-        const backendPagination = result.data.pagination;
         setPagination({
-          current_page: backendPagination.page,
-          total_pages: backendPagination.total_pages,
-          total_items: backendPagination.total_count,
-          page_size: 25, // Default page size
-          has_next: backendPagination.has_next,
-          has_previous: backendPagination.has_previous,
+          current_page: result.data.pagination.page,
+          total_pages: result.data.pagination.total_pages,
+          total_items: result.data.pagination.total_count,
+          page_size: 25,
+          has_next: result.data.pagination.has_next,
+          has_previous: result.data.pagination.has_previous,
           next_page: null,
           previous_page: null
         });
@@ -110,15 +108,13 @@ const DeviceIndexPage: React.FC = () => {
       
       if (response.success && response.data) {
         setDevices(response.data.devices);
-        // Map backend pagination to frontend format
-        const backendPagination = response.data.pagination;
         setPagination({
-          current_page: backendPagination.page,
-          total_pages: backendPagination.total_pages,
-          total_items: backendPagination.total_count,
-          page_size: 25, // Default page size
-          has_next: backendPagination.has_next,
-          has_previous: backendPagination.has_previous,
+          current_page: response.data.pagination.page,
+          total_pages: response.data.pagination.total_pages,
+          total_items: response.data.pagination.total_count,
+          page_size: 25,
+          has_next: response.data.pagination.has_next,
+          has_previous: response.data.pagination.has_previous,
           next_page: null,
           previous_page: null
         });
@@ -197,15 +193,13 @@ const DeviceIndexPage: React.FC = () => {
       
       if (response.success && response.data) {
         setDevices(response.data.devices);
-        // Map backend pagination to frontend format
-        const backendPagination = response.data.pagination;
         setPagination({
-          current_page: backendPagination.page,
-          total_pages: backendPagination.total_pages,
-          total_items: backendPagination.total_count,
-          page_size: 25, // Default page size
-          has_next: backendPagination.has_next,
-          has_previous: backendPagination.has_previous,
+          current_page: response.data.pagination.page,
+          total_pages: response.data.pagination.total_pages,
+          total_items: response.data.pagination.total_count,
+          page_size: 25,
+          has_next: response.data.pagination.has_next,
+          has_previous: response.data.pagination.has_previous,
           next_page: null,
           previous_page: null
         });
@@ -248,15 +242,13 @@ const DeviceIndexPage: React.FC = () => {
       
       if (response.success && response.data) {
         setDevices(response.data.devices);
-        // Map backend pagination to frontend format
-        const backendPagination = response.data.pagination;
         setPagination({
-          current_page: backendPagination.page,
-          total_pages: backendPagination.total_pages,
-          total_items: backendPagination.total_count,
-          page_size: 25, // Default page size
-          has_next: backendPagination.has_next,
-          has_previous: backendPagination.has_previous,
+          current_page: response.data.pagination.page,
+          total_pages: response.data.pagination.total_pages,
+          total_items: response.data.pagination.total_count,
+          page_size: 25,
+          has_next: response.data.pagination.has_next,
+          has_previous: response.data.pagination.has_previous,
           next_page: null,
           previous_page: null
         });

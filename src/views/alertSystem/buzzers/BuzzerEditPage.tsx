@@ -1,7 +1,7 @@
 import React, { useState, useEffect, useCallback } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { useAlertSystemAccess } from '../../../hooks/useAlertSystemAccess';
-import { alertBuzzerService, alertGeofenceService } from '../../../api/services/alertSystemService';
+import { alertBuzzerService, alertGeofenceService, type AlertBuzzer } from '../../../api/services/alertSystemService';
 import { deviceService } from '../../../api/services/deviceService';
 import Container from '../../../components/ui/layout/Container';
 import Card from '../../../components/ui/cards/Card';
@@ -12,18 +12,6 @@ import Spinner from '../../../components/ui/common/Spinner';
 import Alert from '../../../components/ui/common/Alert';
 import { showSuccess, showError } from '../../../utils/sweetAlert';
 
-interface AlertBuzzer {
-  id: number;
-  title: string;
-  device: number;
-  device_name: string;
-  delay: number;
-  alert_geofences: { id: number; title: string }[];
-  institute: number;
-  institute_name: string;
-  created_at: string;
-  updated_at: string;
-}
 
 interface AlertGeofence {
   id: number;
@@ -261,7 +249,7 @@ const BuzzerEditPage: React.FC = () => {
                 <Input
                   type="text"
                   value={formData.title}
-                  onChange={(e) => handleInputChange('title', e.target.value)}
+                  onChange={(e) => handleInputChange('title', e)}
                   placeholder="Enter buzzer title"
                   error={validationErrors.title}
                 />
@@ -303,7 +291,7 @@ const BuzzerEditPage: React.FC = () => {
                   type="number"
                   min="1"
                   value={formData.delay.toString()}
-                  onChange={(e) => handleInputChange('delay', Number(e.target.value))}
+                  onChange={(e) => handleInputChange('delay', Number(e))}
                   placeholder="Enter delay in seconds"
                   error={validationErrors.delay}
                 />

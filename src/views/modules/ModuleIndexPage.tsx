@@ -147,7 +147,7 @@ const ModuleIndexPage: React.FC = () => {
                       type="text"
                       placeholder="Search modules by name or slug..."
                       value={searchInput}
-                      onChange={(e) => setSearchInput(e.target.value)}
+                      onChange={(e) => setSearchInput(e)}
                       icon={<SearchIcon />}
                     />
                   </div>
