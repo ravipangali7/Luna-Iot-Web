@@ -2,9 +2,12 @@ import React, { useState, useEffect } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
 import { instituteService, type InstituteUpdate, type InstituteService } from '../../api/services/instituteService';
 import { showSuccess, showError } from '../../utils/sweetAlert';
+import { getErrorMessage, getErrorTitle } from '../../utils/errorHandler';
+import { roundCoordinate } from '../../utils/coordinateUtils';
 import RoleBasedWidget from '../../components/role-based/RoleBasedWidget';
 import Button from '../../components/ui/buttons/Button';
 import FileInput from '../../components/ui/forms/FileInput';
+import MultiSelect from '../../components/ui/forms/MultiSelect';
 import Container from '../../components/ui/layout/Container';
 import Spinner from '../../components/ui/common/Spinner';
 
@@ -48,8 +51,8 @@ const InstituteEditPage: React.FC = () => {
           showError('Error', result.error || 'Failed to fetch institute');
           navigate('/institute');
         }
-      } catch {
-        showError('Error', 'An unexpected error occurred');
+      } catch (err: unknown) {
+        showError(getErrorTitle(err), getErrorMessage(err));
         navigate('/institute');
       } finally {
         setLoading(false);
@@ -79,9 +82,11 @@ const InstituteEditPage: React.FC = () => {
     
     if (name === 'latitude' || name === 'longitude') {
       const numValue = value ? parseFloat(value) : undefined;
+      // Round coordinates to 8 decimal places for precision
+      const roundedValue = numValue ? roundCoordinate(numValue) : undefined;
       setFormData(prev => ({
         ...prev,
-        [name]: numValue
+        [name]: roundedValue
       }));
     } else {
       setFormData(prev => ({
@@ -115,11 +120,10 @@ const InstituteEditPage: React.FC = () => {
     }
   };
 
-  const handleServiceChange = (e: React.ChangeEvent<HTMLSelectElement>) => {
-    const selectedIds = Array.from(e.target.selectedOptions, option => parseInt(option.value));
+  const handleServiceChange = (selectedValues: (number | string)[]) => {
     setFormData(prev => ({
       ...prev,
-      service_ids: selectedIds
+      service_ids: selectedValues as number[]
     }));
   };
 
@@ -155,7 +159,14 @@ const InstituteEditPage: React.FC = () => {
 
     setSaving(true);
     try {
-      const result = await instituteService.updateInstitute(parseInt(id!), formData);
+      // Ensure coordinates are properly rounded before submission
+      const submissionData = {
+        ...formData,
+        latitude: formData.latitude ? roundCoordinate(formData.latitude) : undefined,
+        longitude: formData.longitude ? roundCoordinate(formData.longitude) : undefined
+      };
+
+      const result = await instituteService.updateInstitute(parseInt(id!), submissionData);
       
       if (result.success) {
         showSuccess('Success', 'Institute updated successfully');
@@ -163,8 +174,8 @@ const InstituteEditPage: React.FC = () => {
       } else {
         showError('Error', result.error || 'Failed to update institute');
       }
-    } catch {
-      showError('Error', 'An unexpected error occurred');
+    } catch (err: unknown) {
+      showError(getErrorTitle(err), getErrorMessage(err));
     } finally {
       setSaving(false);
     }
@@ -320,24 +331,19 @@ const InstituteEditPage: React.FC = () => {
 
               {/* Services */}
               <div>
-                <label htmlFor="service_ids" className="block text-sm font-medium text-gray-700 mb-2">
-                  Services
-                </label>
-                <select
-                  id="service_ids"
-                  name="service_ids"
-                  multiple
-                  value={formData.service_ids?.map(id => id.toString()) || []}
+                <MultiSelect
+                  options={services.map(service => ({
+                    id: service.id,
+                    label: service.name,
+                    value: service.id
+                  }))}
+                  value={formData.service_ids || []}
                   onChange={handleServiceChange}
-                  className={`w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 ${errors.service_ids ? 'border-red-500' : ''}`}
-                >
-                  {services.map((service) => (
-                    <option key={service.id} value={service.id.toString()}>
-                      {service.name}
-                    </option>
-                  ))}
-                </select>
-                {errors.service_ids && <p className="mt-1 text-sm text-red-600">{errors.service_ids}</p>}
+                  placeholder="Select services..."
+                  label="Services"
+                  searchable
+                  error={errors.service_ids}
+                />
                 <p className="mt-1 text-sm text-gray-500">
                   Select multiple services offered by this institute
                 </p>

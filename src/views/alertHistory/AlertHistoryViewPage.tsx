@@ -2,6 +2,7 @@ import React, { useState, useEffect, useCallback } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { useAlertSystemAccess } from '../../hooks/useAlertSystemAccess';
 import { alertHistoryService, type AlertHistory } from '../../api/services/alertSystemService';
+import { API_CONFIG } from '../../config/config';
 import Container from '../../components/ui/layout/Container';
 import Card from '../../components/ui/cards/Card';
 import Button from '../../components/ui/buttons/Button';
@@ -364,7 +365,7 @@ const AlertHistoryViewPage: React.FC = () => {
                 <label className="text-sm font-medium text-gray-500">Image</label>
                 <div className="mt-2">
                   <img
-                    src={alertHistory.image}
+                    src={`${API_CONFIG.BASE_URL}${alertHistory.image}`}
                     alt="Alert image"
                     className="max-w-md h-auto rounded-lg shadow-sm border border-gray-200"
                   />

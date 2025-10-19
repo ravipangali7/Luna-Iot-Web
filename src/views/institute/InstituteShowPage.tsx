@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
 import { instituteService, type Institute, type InstituteModule } from '../../api/services/instituteService';
 import { showSuccess, showError, confirmDelete } from '../../utils/sweetAlert';
+import { API_CONFIG } from '../../config/config';
 import RoleBasedWidget from '../../components/role-based/RoleBasedWidget';
 import Button from '../../components/ui/buttons/Button';
 import { EditActionButton, DeleteActionButton, ActionButtonGroup } from '../../components/ui/buttons';
@@ -260,7 +261,7 @@ const InstituteShowPage: React.FC = () => {
           </CardHeader>
           <CardBody>
             <img 
-              src={institute.logo} 
+              src={`${API_CONFIG.BASE_URL}${institute.logo}`} 
               alt={`${institute.name} logo`}
               className="h-32 w-32 object-cover rounded-lg"
             />

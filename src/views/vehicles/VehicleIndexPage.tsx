@@ -4,6 +4,7 @@ import { vehicleService } from '../../api/services/vehicleService';
 import { deviceService } from '../../api/services/deviceService';
 import { confirmDelete, showSuccess, showError } from '../../utils/sweetAlert';
 import { useRefresh } from '../../contexts/RefreshContext';
+import { API_CONFIG } from '../../config/config';
 import type { Vehicle, VehicleFilters } from '../../types/vehicle';
 import { VEHICLE_TYPES } from '../../types/vehicle';
 import { getState, getStateBackgroundColor } from '../../utils/vehicleUtils';
@@ -784,7 +785,7 @@ const VehicleIndexPage: React.FC = () => {
                             <div className="w-10 h-10 rounded-lg bg-gray-100 border border-gray-200 flex items-center justify-center overflow-hidden">
                               {vehicle.device?.image ? (
                                 <img
-                                  src={vehicle.device.image}
+                                  src={`${API_CONFIG.BASE_URL}${vehicle.device.image}`}
                                   alt="Device"
                                   className="w-full h-full object-cover"
                                 />

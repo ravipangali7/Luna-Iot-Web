@@ -24,10 +24,11 @@ const DeviceEditPage: React.FC = () => {
   const [formData, setFormData] = useState<DeviceFormData>({
     imei: '',
     phone: '',
-    sim: '',
-    protocol: '',
+    sim: 'NTC',
+    protocol: 'GT06',
     iccid: '',
-    model: '',
+    model: 'EC08',
+    type: 'gps',
     subscription_plan: null
   });
   const [errors, setErrors] = useState<Partial<DeviceFormData>>({});
@@ -72,6 +73,7 @@ const DeviceEditPage: React.FC = () => {
           protocol: result.data.protocol,
           iccid: result.data.iccid || '',
           model: result.data.model,
+          type: result.data.type || 'gps',
           subscription_plan: result.data.subscription_plan?.id || null
         });
       } else {
@@ -114,6 +116,11 @@ const DeviceEditPage: React.FC = () => {
     // Model validation
     if (!formData.model) {
       newErrors.model = 'Model is required';
+    }
+
+    // Type validation
+    if (!formData.type) {
+      newErrors.type = 'Type is required';
     }
 
     // ICCID validation (optional, but if provided must be 19-20 digits)
@@ -278,7 +285,25 @@ const DeviceEditPage: React.FC = () => {
                     options={[
                       { value: '', label: 'Select model' },
                       { value: 'EC08', label: 'EC08' },
-                      { value: ' VL149', label: ' VL149' },
+                      { value: 'VL149', label: 'VL149' },
+                    ]}
+                  />
+                </div>
+
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">
+                    Type <span className="text-red-500">*</span>
+                  </label>
+                  <Select
+                    value={formData.type}
+                    onChange={(value) => handleInputChange('type', value)}
+                    error={errors.type}
+                    required
+                    options={[
+                      { value: '', label: 'Select type' },
+                      { value: 'gps', label: 'GPS' },
+                      { value: 'buzzer', label: 'Buzzer' },
+                      { value: 'sos', label: 'SOS' },
                     ]}
                   />
                 </div>

@@ -6,7 +6,7 @@ import Container from '../../../components/ui/layout/Container';
 import Card from '../../../components/ui/cards/Card';
 import Button from '../../../components/ui/buttons/Button';
 import Input from '../../../components/ui/forms/Input';
-import Checkbox from '../../../components/ui/forms/Checkbox';
+import MultiSelect from '../../../components/ui/forms/MultiSelect';
 import GeofenceMap from '../../../components/maps/GeofenceMap';
 import Spinner from '../../../components/ui/common/Spinner';
 import Alert from '../../../components/ui/common/Alert';
@@ -146,8 +146,8 @@ const GeofenceCreatePage: React.FC = () => {
       const payload = {
         title: formData.title.trim(),
         institute: Number(instituteId),
-        boundary: formData.boundary ? JSON.stringify(formData.boundary) : '',
-        alert_types: formData.alert_type_ids
+        boundary: formData.boundary!,
+        alert_type_ids: formData.alert_type_ids
       };
 
       await alertGeofenceService.create(payload);
@@ -231,36 +231,24 @@ const GeofenceCreatePage: React.FC = () => {
                     )}
                   </div>
 
-                  {/* Alert Types Field */}
-                  <div className="mb-4">
-                    <label className="block text-sm font-medium text-gray-700 mb-2">
-                      Alert Types
-                    </label>
-                    <div className="space-y-2 max-h-32 overflow-y-auto border border-gray-200 rounded-md p-3">
-                      {alertTypes.length === 0 ? (
-                        <p className="text-sm text-gray-500">No alert types available</p>
-                      ) : (
-                        alertTypes.map(type => (
-                          <Checkbox
-                            key={type.id}
-                            checked={formData.alert_type_ids.includes(type.id)}
-                            onChange={(checked) => {
-                              if (checked) {
-                                handleInputChange('alert_type_ids', [...formData.alert_type_ids, type.id]);
-                              } else {
-                                handleInputChange('alert_type_ids', formData.alert_type_ids.filter(id => id !== type.id));
-                              }
-                            }}
-                          >
-                            <span className="text-sm text-gray-700">{type.name}</span>
-                          </Checkbox>
-                        ))
-                      )}
-                    </div>
-                    <p className="mt-1 text-sm text-gray-500">
-                      Select which alert types this geofence should trigger
-                    </p>
-                  </div>
+              {/* Alert Types Field */}
+              <div className="mb-4">
+                <MultiSelect
+                  options={alertTypes.map(type => ({
+                    id: type.id,
+                    label: type.name,
+                    value: type.id
+                  }))}
+                  value={formData.alert_type_ids}
+                  onChange={(selectedValues) => handleInputChange('alert_type_ids', selectedValues as number[])}
+                  placeholder="Select alert types..."
+                  label="Alert Types"
+                  searchable
+                />
+                <p className="mt-1 text-sm text-gray-500">
+                  Select which alert types this geofence should trigger
+                </p>
+              </div>
                 </div>
               </Card>
             </div>

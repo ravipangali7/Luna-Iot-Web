@@ -53,6 +53,14 @@ const RadarViewPage: React.FC = () => {
     navigate(`/alert-system/${instituteId}/radars/${id}/edit`);
   };
 
+  // Handle view radar monitor
+  const handleViewMonitor = () => {
+    if (radar?.token) {
+      const radarUrl = `${window.location.origin}/alert-system/radar/token/${radar.token}`;
+      window.open(radarUrl, '_blank');
+    }
+  };
+
   // Handle delete
   const handleDelete = async () => {
     if (window.confirm(`Are you sure you want to delete "${radar?.title}"? This action cannot be undone.`)) {
@@ -133,6 +141,17 @@ const RadarViewPage: React.FC = () => {
             </p>
           </div>
           <div className="flex space-x-2">
+            <Button
+              variant="success"
+              onClick={handleViewMonitor}
+              icon={
+                <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9.75 17L9 20l-1 1h8l-1-1-.75-3M3 13h18M5 17h14a2 2 0 002-2V5a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z" />
+                </svg>
+              }
+            >
+              View Monitor
+            </Button>
             {isAdmin && (
               <>
                 <Button

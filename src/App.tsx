@@ -5,7 +5,10 @@ import { useAuth } from './hooks/useAuth';
 import LoginPage from './views/auth/LoginPage';
 import DashboardPage from './views/DashboardPage';
 import Layout from './components/layout/Layout';
-import { DeviceIndexPage, DeviceCreatePage, DeviceEditPage } from './views/devices';
+import { DeviceCreatePage, DeviceEditPage } from './views/devices';
+import GpsDeviceIndexPage from './views/devices/GpsDeviceIndexPage';
+import BuzzerDeviceIndexPage from './views/devices/BuzzerDeviceIndexPage';
+import SosDeviceIndexPage from './views/devices/SosDeviceIndexPage';
 import { VehicleIndexPage, VehicleCreatePage, VehicleEditPage } from './views/vehicles';
 import { VehicleAccessIndexPage, VehicleAccessCreatePage, VehicleAccessEditPage, VehicleAccessManagePage } from './views/vehicleAccess';
 import { RechargeIndexPage, RechargeCreatePage } from './views/recharges';
@@ -18,6 +21,7 @@ import { ModuleIndexPage, ModuleCreatePage, ModuleEditPage } from './views/modul
 import { AlertSystemIndexPage, AlertSystemShowPage } from './views/alertSystem';
 import { GeofenceCreatePage, GeofenceEditPage, GeofenceViewPage } from './views/alertSystem/geofences';
 import { RadarIndexPage, RadarCreatePage, RadarEditPage, RadarViewPage } from './views/alertSystem/radars';
+import RadarShowPage from './views/alertSystem/radars/RadarShowPage';
 import { BuzzerIndexPage, BuzzerCreatePage, BuzzerEditPage, BuzzerViewPage } from './views/alertSystem/buzzers';
 import { SwitchIndexPage, SwitchCreatePage, SwitchEditPage, SwitchViewPage } from './views/alertSystem/switches';
 import { ContactIndexPage, ContactCreatePage, ContactEditPage, ContactViewPage } from './views/alertSystem/contacts';
@@ -114,9 +118,20 @@ const AppRoutes: React.FC = () => {
         } />
 
         {/* Device Routes - Super Admin and Dealer only */}
-        <Route path="devices" element={
+        <Route path="devices" element={<Navigate to="/devices/gps" replace />} />
+        <Route path="devices/gps" element={
           <RoleBasedRoute allowedRoles={[ROLES.SUPER_ADMIN, ROLES.DEALER]}>
-            <DeviceIndexPage />
+            <GpsDeviceIndexPage />
+          </RoleBasedRoute>
+        } />
+        <Route path="devices/buzzer" element={
+          <RoleBasedRoute allowedRoles={[ROLES.SUPER_ADMIN, ROLES.DEALER]}>
+            <BuzzerDeviceIndexPage />
+          </RoleBasedRoute>
+        } />
+        <Route path="devices/sos" element={
+          <RoleBasedRoute allowedRoles={[ROLES.SUPER_ADMIN, ROLES.DEALER]}>
+            <SosDeviceIndexPage />
           </RoleBasedRoute>
         } />
         <Route path="devices/create" element={
@@ -362,119 +377,119 @@ const AppRoutes: React.FC = () => {
           <UserTransactionsPage />
         } />
 
-        {/* Alert System Routes - All roles can access */}
+        {/* Alert System Routes - Super Admin only */}
         <Route path="alert-system" element={
-          <RoleBasedRoute allowedRoles={[ROLES.SUPER_ADMIN, ROLES.DEALER, ROLES.CUSTOMER]}>
+          <RoleBasedRoute allowedRoles={[ROLES.SUPER_ADMIN]}>
             <AlertSystemIndexPage />
           </RoleBasedRoute>
         } />
         <Route path="alert-system/:id" element={
-          <RoleBasedRoute allowedRoles={[ROLES.SUPER_ADMIN, ROLES.DEALER, ROLES.CUSTOMER]}>
+          <RoleBasedRoute allowedRoles={[ROLES.SUPER_ADMIN]}>
             <AlertSystemShowPage />
           </RoleBasedRoute>
         } />
 
-        {/* Geofence Routes - All roles can access */}
+        {/* Geofence Routes - Super Admin only */}
         <Route path="alert-system/:instituteId/geofences/create" element={
-          <RoleBasedRoute allowedRoles={[ROLES.SUPER_ADMIN, ROLES.DEALER, ROLES.CUSTOMER]}>
+          <RoleBasedRoute allowedRoles={[ROLES.SUPER_ADMIN]}>
             <GeofenceCreatePage />
           </RoleBasedRoute>
         } />
         <Route path="alert-system/:instituteId/geofences/:id" element={
-          <RoleBasedRoute allowedRoles={[ROLES.SUPER_ADMIN, ROLES.DEALER, ROLES.CUSTOMER]}>
+          <RoleBasedRoute allowedRoles={[ROLES.SUPER_ADMIN]}>
             <GeofenceViewPage />
           </RoleBasedRoute>
         } />
         <Route path="alert-system/:instituteId/geofences/:id/edit" element={
-          <RoleBasedRoute allowedRoles={[ROLES.SUPER_ADMIN, ROLES.DEALER, ROLES.CUSTOMER]}>
+          <RoleBasedRoute allowedRoles={[ROLES.SUPER_ADMIN]}>
             <GeofenceEditPage />
           </RoleBasedRoute>
         } />
 
-        {/* Radar Routes - All roles can access */}
+        {/* Radar Routes - Super Admin only */}
         <Route path="alert-system/:instituteId/radars" element={
-          <RoleBasedRoute allowedRoles={[ROLES.SUPER_ADMIN, ROLES.DEALER, ROLES.CUSTOMER]}>
+          <RoleBasedRoute allowedRoles={[ROLES.SUPER_ADMIN]}>
             <RadarIndexPage />
           </RoleBasedRoute>
         } />
         <Route path="alert-system/:instituteId/radars/create" element={
-          <RoleBasedRoute allowedRoles={[ROLES.SUPER_ADMIN, ROLES.DEALER, ROLES.CUSTOMER]}>
+          <RoleBasedRoute allowedRoles={[ROLES.SUPER_ADMIN]}>
             <RadarCreatePage />
           </RoleBasedRoute>
         } />
         <Route path="alert-system/:instituteId/radars/:id" element={
-          <RoleBasedRoute allowedRoles={[ROLES.SUPER_ADMIN, ROLES.DEALER, ROLES.CUSTOMER]}>
+          <RoleBasedRoute allowedRoles={[ROLES.SUPER_ADMIN]}>
             <RadarViewPage />
           </RoleBasedRoute>
         } />
         <Route path="alert-system/:instituteId/radars/:id/edit" element={
-          <RoleBasedRoute allowedRoles={[ROLES.SUPER_ADMIN, ROLES.DEALER, ROLES.CUSTOMER]}>
+          <RoleBasedRoute allowedRoles={[ROLES.SUPER_ADMIN]}>
             <RadarEditPage />
           </RoleBasedRoute>
         } />
 
-        {/* Buzzer Routes - All roles can access */}
+        {/* Buzzer Routes - Super Admin only */}
         <Route path="alert-system/:instituteId/buzzers" element={
-          <RoleBasedRoute allowedRoles={[ROLES.SUPER_ADMIN, ROLES.DEALER, ROLES.CUSTOMER]}>
+          <RoleBasedRoute allowedRoles={[ROLES.SUPER_ADMIN]}>
             <BuzzerIndexPage />
           </RoleBasedRoute>
         } />
         <Route path="alert-system/:instituteId/buzzers/create" element={
-          <RoleBasedRoute allowedRoles={[ROLES.SUPER_ADMIN, ROLES.DEALER, ROLES.CUSTOMER]}>
+          <RoleBasedRoute allowedRoles={[ROLES.SUPER_ADMIN]}>
             <BuzzerCreatePage />
           </RoleBasedRoute>
         } />
         <Route path="alert-system/:instituteId/buzzers/:id" element={
-          <RoleBasedRoute allowedRoles={[ROLES.SUPER_ADMIN, ROLES.DEALER, ROLES.CUSTOMER]}>
+          <RoleBasedRoute allowedRoles={[ROLES.SUPER_ADMIN]}>
             <BuzzerViewPage />
           </RoleBasedRoute>
         } />
         <Route path="alert-system/:instituteId/buzzers/:id/edit" element={
-          <RoleBasedRoute allowedRoles={[ROLES.SUPER_ADMIN, ROLES.DEALER, ROLES.CUSTOMER]}>
+          <RoleBasedRoute allowedRoles={[ROLES.SUPER_ADMIN]}>
             <BuzzerEditPage />
           </RoleBasedRoute>
         } />
 
-        {/* Switch Routes - All roles can access */}
+        {/* Switch Routes - Super Admin only */}
         <Route path="alert-system/:instituteId/switches" element={
-          <RoleBasedRoute allowedRoles={[ROLES.SUPER_ADMIN, ROLES.DEALER, ROLES.CUSTOMER]}>
+          <RoleBasedRoute allowedRoles={[ROLES.SUPER_ADMIN]}>
             <SwitchIndexPage />
           </RoleBasedRoute>
         } />
         <Route path="alert-system/:instituteId/switches/create" element={
-          <RoleBasedRoute allowedRoles={[ROLES.SUPER_ADMIN, ROLES.DEALER, ROLES.CUSTOMER]}>
+          <RoleBasedRoute allowedRoles={[ROLES.SUPER_ADMIN]}>
             <SwitchCreatePage />
           </RoleBasedRoute>
         } />
         <Route path="alert-system/:instituteId/switches/:id" element={
-          <RoleBasedRoute allowedRoles={[ROLES.SUPER_ADMIN, ROLES.DEALER, ROLES.CUSTOMER]}>
+          <RoleBasedRoute allowedRoles={[ROLES.SUPER_ADMIN]}>
             <SwitchViewPage />
           </RoleBasedRoute>
         } />
         <Route path="alert-system/:instituteId/switches/:id/edit" element={
-          <RoleBasedRoute allowedRoles={[ROLES.SUPER_ADMIN, ROLES.DEALER, ROLES.CUSTOMER]}>
+          <RoleBasedRoute allowedRoles={[ROLES.SUPER_ADMIN]}>
             <SwitchEditPage />
           </RoleBasedRoute>
         } />
 
-        {/* Contact Routes - All roles can access */}
+        {/* Contact Routes - Super Admin only */}
         <Route path="alert-system/:instituteId/contacts" element={
-          <RoleBasedRoute allowedRoles={[ROLES.SUPER_ADMIN, ROLES.DEALER, ROLES.CUSTOMER]}>
+          <RoleBasedRoute allowedRoles={[ROLES.SUPER_ADMIN]}>
             <ContactIndexPage />
           </RoleBasedRoute>
         } />
         <Route path="alert-system/:instituteId/contacts/create" element={
-          <RoleBasedRoute allowedRoles={[ROLES.SUPER_ADMIN, ROLES.DEALER, ROLES.CUSTOMER]}>
+          <RoleBasedRoute allowedRoles={[ROLES.SUPER_ADMIN]}>
             <ContactCreatePage />
           </RoleBasedRoute>
         } />
         <Route path="alert-system/:instituteId/contacts/:id" element={
-          <RoleBasedRoute allowedRoles={[ROLES.SUPER_ADMIN, ROLES.DEALER, ROLES.CUSTOMER]}>
+          <RoleBasedRoute allowedRoles={[ROLES.SUPER_ADMIN]}>
             <ContactViewPage />
           </RoleBasedRoute>
         } />
         <Route path="alert-system/:instituteId/contacts/:id/edit" element={
-          <RoleBasedRoute allowedRoles={[ROLES.SUPER_ADMIN, ROLES.DEALER, ROLES.CUSTOMER]}>
+          <RoleBasedRoute allowedRoles={[ROLES.SUPER_ADMIN]}>
             <ContactEditPage />
           </RoleBasedRoute>
         } />
@@ -496,18 +511,21 @@ const AppRoutes: React.FC = () => {
           </RoleBasedRoute>
         } />
 
-        {/* Alert History Routes - All roles can access */}
+        {/* Alert History Routes - Super Admin only */}
         <Route path="alert-history" element={
-          <RoleBasedRoute allowedRoles={[ROLES.SUPER_ADMIN, ROLES.DEALER, ROLES.CUSTOMER]}>
+          <RoleBasedRoute allowedRoles={[ROLES.SUPER_ADMIN]}>
             <AlertHistoryIndexPage />
           </RoleBasedRoute>
         } />
         <Route path="alert-history/:id" element={
-          <RoleBasedRoute allowedRoles={[ROLES.SUPER_ADMIN, ROLES.DEALER, ROLES.CUSTOMER]}>
+          <RoleBasedRoute allowedRoles={[ROLES.SUPER_ADMIN]}>
             <AlertHistoryViewPage />
           </RoleBasedRoute>
         } />
       </Route>
+
+      {/* Radar Show Page - Public access via token (outside Layout, full screen) */}
+      <Route path="alert-system/radar/token/:token" element={<RadarShowPage />} />
     </Routes>
   );
 };

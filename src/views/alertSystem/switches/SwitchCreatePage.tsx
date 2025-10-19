@@ -7,9 +7,12 @@ import Container from '../../../components/ui/layout/Container';
 import Card from '../../../components/ui/cards/Card';
 import Button from '../../../components/ui/buttons/Button';
 import Input from '../../../components/ui/forms/Input';
+import SingleSelect from '../../../components/ui/forms/SingleSelect';
 import Spinner from '../../../components/ui/common/Spinner';
 import Alert from '../../../components/ui/common/Alert';
 import { showSuccess, showError } from '../../../utils/sweetAlert';
+import { getErrorMessage, getErrorTitle } from '../../../utils/errorHandler';
+import { roundCoordinate } from '../../../utils/coordinateUtils';
 
 interface Device {
   id: number;
@@ -83,10 +86,19 @@ const SwitchCreatePage: React.FC = () => {
 
   // Handle input changes
   const handleInputChange = (name: string, value: string | number | File | null) => {
-    setFormData(prev => ({
-      ...prev,
-      [name]: value
-    }));
+    // Round coordinates to 8 decimal places for precision
+    if (name === 'latitude' || name === 'longitude') {
+      const numValue = typeof value === 'number' ? roundCoordinate(value) : value;
+      setFormData(prev => ({
+        ...prev,
+        [name]: numValue
+      }));
+    } else {
+      setFormData(prev => ({
+        ...prev,
+        [name]: value
+      }));
+    }
 
     // Clear validation error for this field
     if (validationErrors[name]) {
@@ -155,8 +167,8 @@ const SwitchCreatePage: React.FC = () => {
       const payload = {
         title: formData.title.trim(),
         device: formData.device,
-        latitude: formData.latitude,
-        longitude: formData.longitude,
+        latitude: roundCoordinate(formData.latitude),
+        longitude: roundCoordinate(formData.longitude),
         trigger: formData.trigger,
         primary_phone: formData.primary_phone.trim(),
         secondary_phone: formData.secondary_phone.trim(),
@@ -170,8 +182,7 @@ const SwitchCreatePage: React.FC = () => {
       navigate(`/alert-system/${instituteId}/switches`);
     } catch (err: unknown) {
       console.error('Error creating switch:', err);
-      const errorMessage = (err as { response?: { data?: { message?: string } } })?.response?.data?.message || 'Failed to create switch. Please try again.';
-      showError(errorMessage);
+      showError(getErrorTitle(err), getErrorMessage(err));
     } finally {
       setSubmitting(false);
     }
@@ -242,24 +253,19 @@ const SwitchCreatePage: React.FC = () => {
 
               {/* Device Field */}
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-2">
-                  Device <span className="text-red-500">*</span>
-                </label>
-                <select
-                  className={`input select input--md ${validationErrors.device ? 'input--error' : ''}`}
-                  value={formData.device.toString()}
-                  onChange={(e) => handleInputChange('device', Number(e.target.value))}
-                >
-                  <option value={0}>Select a device</option>
-                  {(devices || []).map(device => (
-                    <option key={device.id} value={device.id}>
-                      {device.phone} - {device.imei}
-                    </option>
-                  ))}
-                </select>
-                {validationErrors.device && (
-                  <span className="input__error">{validationErrors.device}</span>
-                )}
+                <SingleSelect
+                  options={(devices || []).map(device => ({
+                    id: device.id,
+                    label: `${device.phone} - ${device.imei}`,
+                    value: device.id
+                  }))}
+                  value={formData.device || null}
+                  onChange={(value) => handleInputChange('device', value as number)}
+                  placeholder="Select a device"
+                  label="Device *"
+                  searchable
+                  error={validationErrors.device}
+                />
                 {(devices || []).length === 0 && (
                   <p className="text-sm text-gray-500 mt-1">
                     No devices available. Contact an administrator.

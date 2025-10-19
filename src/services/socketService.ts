@@ -18,6 +18,24 @@ export interface LocationUpdate {
   [key: string]: unknown;
 }
 
+export interface AlertNotificationData {
+  alert_id: number;
+  institute_id: number;
+  alert_data: {
+    id: number;
+    name: string;
+    primary_phone: string;
+    alert_type_name: string;
+    latitude: number;
+    longitude: number;
+    datetime: string;
+    status: string;
+    remarks: string | null;
+    source: string;
+    image: string | null;
+  };
+}
+
 class SocketService {
   private socket: Socket | null = null;
   private serverUrl: string;
@@ -34,6 +52,7 @@ class SocketService {
     onMessageReceived?: (message: DeviceMonitoringMessage) => void;
     onStatusUpdate?: (imei: string, status: StatusUpdate) => void;
     onLocationUpdate?: (imei: string, location: LocationUpdate) => void;
+    onNewAlert?: (alertData: AlertNotificationData) => void;
   } = {};
 
   constructor() {
@@ -55,15 +74,9 @@ class SocketService {
   }
 
   connect(): void {
-    // If already connected, don't reconnect
-    if (this.socket && this.isConnected) {
-      return;
-    }
-
-    // If socket exists but not connected, dispose it first
+    // If socket already exists (connected or connecting), don't create a new one
     if (this.socket) {
-      this.socket.disconnect();
-      this.socket = null;
+      return;
     }
 
     try {
@@ -181,6 +194,17 @@ class SocketService {
     this.socket.on('vehicle_update', (data: unknown) => {
       this.vehicleUpdateCallbacks.forEach(callback => callback(data));
     });
+
+    // Listen for New Alert notifications
+    this.socket.on('new_alert', (data: unknown) => {
+      try {
+        if (data && typeof data === 'object' && 'alert_id' in data && 'institute_id' in data && 'alert_data' in data) {
+          this.listeners.onNewAlert?.(data as AlertNotificationData);
+        }
+      } catch (error) {
+        console.error('Error processing new alert:', error);
+      }
+    });
   }
 
   private handleStatusUpdate(data: unknown): void {
@@ -290,6 +314,10 @@ class SocketService {
     this.listeners.onLocationUpdate = callback;
   }
 
+  onNewAlert(callback: (alertData: AlertNotificationData) => void): void {
+    this.listeners.onNewAlert = callback;
+  }
+
   // Additional methods for compatibility with existing code
   getConnectionStatus(): boolean {
     return this.isConnected;
@@ -342,6 +370,20 @@ class SocketService {
   public leaveVehicleRoom(imei: string): void {
     if (this.socket?.connected) {
       this.socket.emit('leave_vehicle', imei);
+    }
+  }
+
+  // Join radar room for alert notifications
+  public joinRadarRoom(token: string): void {
+    if (this.socket?.connected) {
+      this.socket.emit('join_radar', token);
+    }
+  }
+
+  // Leave radar room
+  public leaveRadarRoom(token: string): void {
+    if (this.socket?.connected) {
+      this.socket.emit('leave_radar', token);
     }
   }
 }

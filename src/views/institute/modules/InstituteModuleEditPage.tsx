@@ -6,6 +6,7 @@ import type { User } from '../../../types/auth';
 import { showSuccess, showError } from '../../../utils/sweetAlert';
 import RoleBasedWidget from '../../../components/role-based/RoleBasedWidget';
 import Button from '../../../components/ui/buttons/Button';
+import MultiSelect from '../../../components/ui/forms/MultiSelect';
 import Spinner from '../../../components/ui/common/Spinner';
 import Container from '../../../components/ui/layout/Container';
 
@@ -61,22 +62,17 @@ const InstituteModuleEditPage: React.FC = () => {
     }
   }, [id, navigate]);
 
-  const handleInputChange = (e: React.ChangeEvent<HTMLSelectElement>) => {
-    const { name } = e.target;
-    
-    if (name === 'user_ids') {
-      const selectedIds = Array.from(e.target.selectedOptions, option => parseInt(option.value));
-      setFormData(prev => ({
-        ...prev,
-        [name]: selectedIds
-      }));
-    }
+  const handleUserChange = (selectedValues: (number | string)[]) => {
+    setFormData(prev => ({
+      ...prev,
+      user_ids: selectedValues as number[]
+    }));
     
     // Clear error when user makes a selection
-    if (errors[name]) {
+    if (errors.user_ids) {
       setErrors(prev => ({
         ...prev,
-        [name]: ''
+        user_ids: ''
       }));
     }
   };
@@ -174,25 +170,19 @@ const InstituteModuleEditPage: React.FC = () => {
             <div className="space-y-6">
               {/* Users Selection */}
               <div>
-                <label htmlFor="user_ids" className="block text-sm font-medium text-gray-700 mb-2">
-                  Users *
-                </label>
-                <select
-                  id="user_ids"
-                  name="user_ids"
-                  multiple
-                  value={formData.user_ids?.map(id => id.toString()) || []}
-                  onChange={handleInputChange}
-                  className={`w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 ${errors.user_ids ? 'border-red-500' : ''}`}
-                  required
-                >
-                  {users.map((user) => (
-                    <option key={user.id} value={user.id.toString()}>
-                      {user.name} ({user.phone})
-                    </option>
-                  ))}
-                </select>
-                {errors.user_ids && <p className="mt-1 text-sm text-red-600">{errors.user_ids}</p>}
+                <MultiSelect
+                  options={users.map(user => ({
+                    id: user.id,
+                    label: `${user.name} (${user.phone})`,
+                    value: user.id
+                  }))}
+                  value={formData.user_ids || []}
+                  onChange={handleUserChange}
+                  placeholder="Select users..."
+                  label="Users *"
+                  searchable
+                  error={errors.user_ids}
+                />
                 <p className="mt-1 text-sm text-gray-500">
                   Select multiple users to assign to this module
                 </p>

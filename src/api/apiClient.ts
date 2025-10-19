@@ -13,12 +13,25 @@ export const apiClient = axios.create({
 // Request interceptor to add auth headers
 apiClient.interceptors.request.use(
   (config) => {
-    const token = localStorage.getItem('token');
-    const phone = localStorage.getItem('phone');
+    // Skip auth headers for public endpoints
+    const publicEndpoints = [
+      '/api/alert-system/alert-radar/token/',
+      '/api/alert-system/alert-history/by-radar/',
+      '/share-track/'
+    ];
     
-    if (token && phone) {
-      config.headers['x-token'] = token;
-      config.headers['x-phone'] = phone;
+    const isPublicEndpoint = publicEndpoints.some(endpoint => 
+      config.url?.includes(endpoint)
+    );
+    
+    if (!isPublicEndpoint) {
+      const token = localStorage.getItem('token');
+      const phone = localStorage.getItem('phone');
+      
+      if (token && phone) {
+        config.headers['x-token'] = token;
+        config.headers['x-phone'] = phone;
+      }
     }
     return config;
   },
@@ -34,10 +47,17 @@ apiClient.interceptors.response.use(
   },
   (error) => {
     if (error.response?.status === 401) {
-      // Clear auth and redirect to login
-      localStorage.removeItem('token');
-      localStorage.removeItem('phone');
-      window.location.href = '/login';
+      // Don't redirect if we're on a public page
+      const publicPaths = ['/alert-system/radar/token/', '/share-track/'];
+      const isPublicPath = publicPaths.some(path => 
+        window.location.pathname.includes(path)
+      );
+      
+      if (!isPublicPath) {
+        localStorage.removeItem('token');
+        localStorage.removeItem('phone');
+        window.location.href = '/login';
+      }
     }
     return Promise.reject(error);
   }

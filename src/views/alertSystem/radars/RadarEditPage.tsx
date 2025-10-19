@@ -7,7 +7,7 @@ import Container from '../../../components/ui/layout/Container';
 import Card from '../../../components/ui/cards/Card';
 import Button from '../../../components/ui/buttons/Button';
 import Input from '../../../components/ui/forms/Input';
-import Checkbox from '../../../components/ui/forms/Checkbox';
+import MultiSelect from '../../../components/ui/forms/MultiSelect';
 import Spinner from '../../../components/ui/common/Spinner';
 import Alert from '../../../components/ui/common/Alert';
 import { showSuccess, showError } from '../../../utils/sweetAlert';
@@ -248,30 +248,18 @@ const RadarEditPage: React.FC = () => {
 
                 {/* Geofences Field */}
                 <div className="mb-4">
-                  <label className="block text-sm font-medium text-gray-700 mb-2">
-                    Alert Geofences
-                  </label>
-                  <div className="space-y-2 max-h-32 overflow-y-auto border border-gray-200 rounded-md p-3">
-                    {geofences.length === 0 ? (
-                      <p className="text-sm text-gray-500">No geofences available</p>
-                    ) : (
-                      geofences.map(geofence => (
-                        <Checkbox
-                          key={geofence.id}
-                          checked={formData.alert_geofence_ids.includes(geofence.id)}
-                          onChange={(checked) => {
-                            if (checked) {
-                              handleInputChange('alert_geofence_ids', [...formData.alert_geofence_ids, geofence.id]);
-                            } else {
-                              handleInputChange('alert_geofence_ids', formData.alert_geofence_ids.filter(id => id !== geofence.id));
-                            }
-                          }}
-                        >
-                          <span className="text-sm text-gray-700">{geofence.title}</span>
-                        </Checkbox>
-                      ))
-                    )}
-                  </div>
+                  <MultiSelect
+                    options={geofences.map(geofence => ({
+                      id: geofence.id,
+                      label: geofence.title,
+                      value: geofence.id
+                    }))}
+                    value={formData.alert_geofence_ids}
+                    onChange={(selectedValues) => handleInputChange('alert_geofence_ids', selectedValues as number[])}
+                    placeholder="Select geofences..."
+                    label="Alert Geofences"
+                    searchable
+                  />
                   <p className="mt-1 text-sm text-gray-500">
                     Select which geofences this radar should monitor
                   </p>

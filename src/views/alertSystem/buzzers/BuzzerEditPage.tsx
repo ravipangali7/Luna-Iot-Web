@@ -7,7 +7,8 @@ import Container from '../../../components/ui/layout/Container';
 import Card from '../../../components/ui/cards/Card';
 import Button from '../../../components/ui/buttons/Button';
 import Input from '../../../components/ui/forms/Input';
-import Checkbox from '../../../components/ui/forms/Checkbox';
+import MultiSelect from '../../../components/ui/forms/MultiSelect';
+import SingleSelect from '../../../components/ui/forms/SingleSelect';
 import Spinner from '../../../components/ui/common/Spinner';
 import Alert from '../../../components/ui/common/Alert';
 import { showSuccess, showError } from '../../../utils/sweetAlert';
@@ -122,15 +123,6 @@ const BuzzerEditPage: React.FC = () => {
     }
   };
 
-  // Handle geofence selection
-  const handleGeofenceToggle = (geofenceId: number) => {
-    setFormData(prev => ({
-      ...prev,
-      alert_geofence_ids: prev.alert_geofence_ids.includes(geofenceId)
-        ? prev.alert_geofence_ids.filter(id => id !== geofenceId)
-        : [...prev.alert_geofence_ids, geofenceId]
-    }));
-  };
 
   // Validate form
   const validateForm = (): boolean => {
@@ -257,24 +249,19 @@ const BuzzerEditPage: React.FC = () => {
 
               {/* Device Field */}
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-2">
-                  Device <span className="text-red-500">*</span>
-                </label>
-                <select
-                  className={`input select input--md ${validationErrors.device ? 'input--error' : ''}`}
-                  value={formData.device.toString()}
-                  onChange={(e) => handleInputChange('device', Number(e.target.value))}
-                >
-                  <option value={0}>Select a device</option>
-                  {(devices || []).map(device => (
-                    <option key={device.id} value={device.id}>
-                      {device.phone} - {device.imei}
-                    </option>
-                  ))}
-                </select>
-                {validationErrors.device && (
-                  <span className="input__error">{validationErrors.device}</span>
-                )}
+                <SingleSelect
+                  options={(devices || []).map(device => ({
+                    id: device.id,
+                    label: `${device.phone} - ${device.imei}`,
+                    value: device.id
+                  }))}
+                  value={formData.device || null}
+                  onChange={(value) => handleInputChange('device', value as number)}
+                  placeholder="Select a device"
+                  label="Device *"
+                  searchable
+                  error={validationErrors.device}
+                />
                 {(devices || []).length === 0 && (
                   <p className="text-sm text-gray-500 mt-1">
                     No devices available. Contact an administrator.
@@ -302,29 +289,18 @@ const BuzzerEditPage: React.FC = () => {
 
               {/* Geofences Field */}
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-2">
-                  Associated Geofences
-                </label>
-                <div className="space-y-2 max-h-48 overflow-y-auto border border-gray-200 rounded-md p-3">
-                  {(geofences || []).length === 0 ? (
-                    <p className="text-sm text-gray-500">No geofences available</p>
-                  ) : (
-                    (geofences || []).map(geofence => (
-                      <div key={geofence.id} className="flex items-center">
-                        <Checkbox
-                          checked={formData.alert_geofence_ids.includes(geofence.id)}
-                          onChange={() => handleGeofenceToggle(geofence.id)}
-                        />
-                        <label
-                          htmlFor={`geofence-${geofence.id}`}
-                          className="ml-2 text-sm text-gray-700 cursor-pointer"
-                        >
-                          {geofence.title}
-                        </label>
-                      </div>
-                    ))
-                  )}
-                </div>
+                <MultiSelect
+                  options={(geofences || []).map(geofence => ({
+                    id: geofence.id,
+                    label: geofence.title,
+                    value: geofence.id
+                  }))}
+                  value={formData.alert_geofence_ids}
+                  onChange={(selectedValues) => handleInputChange('alert_geofence_ids', selectedValues as number[])}
+                  placeholder="Select geofences..."
+                  label="Associated Geofences"
+                  searchable
+                />
                 <p className="text-sm text-gray-500 mt-1">
                   Select which geofences this buzzer should monitor
                 </p>

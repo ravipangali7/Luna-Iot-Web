@@ -6,6 +6,7 @@ import Container from '../../../components/ui/layout/Container';
 import Card from '../../../components/ui/cards/Card';
 import Button from '../../../components/ui/buttons/Button';
 import Input from '../../../components/ui/forms/Input';
+import MultiSelect from '../../../components/ui/forms/MultiSelect';
 import Checkbox from '../../../components/ui/forms/Checkbox';
 import Spinner from '../../../components/ui/common/Spinner';
 import Alert from '../../../components/ui/common/Alert';
@@ -108,25 +109,6 @@ const ContactEditPage: React.FC = () => {
     }
   };
 
-  // Handle geofence selection
-  const handleGeofenceToggle = (geofenceId: number) => {
-    setFormData(prev => ({
-      ...prev,
-      geofence_ids: prev.geofence_ids.includes(geofenceId)
-        ? prev.geofence_ids.filter(id => id !== geofenceId)
-        : [...prev.geofence_ids, geofenceId]
-    }));
-  };
-
-  // Handle alert type selection
-  const handleAlertTypeToggle = (alertTypeId: number) => {
-    setFormData(prev => ({
-      ...prev,
-      alert_type_ids: prev.alert_type_ids.includes(alertTypeId)
-        ? prev.alert_type_ids.filter(id => id !== alertTypeId)
-        : [...prev.alert_type_ids, alertTypeId]
-    }));
-  };
 
   // Validate form
   const validateForm = (): boolean => {
@@ -261,57 +243,47 @@ const ContactEditPage: React.FC = () => {
 
             {/* Geofences Selection */}
             <div className="space-y-4">
-              <h2 className="text-lg font-semibold text-gray-900">Associated Geofences</h2>
-              {validationErrors.geofence_ids && (
-                <Alert variant="danger">{validationErrors.geofence_ids}</Alert>
-              )}
-              
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
-                {(geofences || []).map((geofence) => (
-                  <div key={geofence.id} className="flex items-center">
-                    <Checkbox
-                      checked={formData.geofence_ids.includes(geofence.id)}
-                      onChange={() => handleGeofenceToggle(geofence.id)}
-                    />
-                    <label className="ml-2 text-sm text-gray-700">
-                      {geofence.title}
-                    </label>
-                  </div>
-                ))}
-              </div>
-              
+              <MultiSelect
+                options={(geofences || []).map(geofence => ({
+                  id: geofence.id,
+                  label: geofence.title,
+                  value: geofence.id
+                }))}
+                value={formData.geofence_ids}
+                onChange={(selectedValues) => setFormData(prev => ({
+                  ...prev,
+                  geofence_ids: selectedValues as number[]
+                }))}
+                placeholder="Select geofences..."
+                label="Associated Geofences *"
+                searchable
+                error={validationErrors.geofence_ids}
+              />
               {(geofences || []).length === 0 && (
-                <p className="text-sm text-gray-500">
-                  No geofences available. Create geofences first to associate with contacts.
-                </p>
+                <p className="text-sm text-gray-500">No geofences available for this institute.</p>
               )}
             </div>
 
             {/* Alert Types Selection */}
             <div className="space-y-4">
-              <h2 className="text-lg font-semibold text-gray-900">Alert Types</h2>
-              {validationErrors.alert_type_ids && (
-                <Alert variant="danger">{validationErrors.alert_type_ids}</Alert>
-              )}
-              
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
-                {(alertTypes || []).map((alertType) => (
-                  <div key={alertType.id} className="flex items-center">
-                    <Checkbox
-                      checked={formData.alert_type_ids.includes(alertType.id)}
-                      onChange={() => handleAlertTypeToggle(alertType.id)}
-                    />
-                    <label className="ml-2 text-sm text-gray-700">
-                      {alertType.name}
-                    </label>
-                  </div>
-                ))}
-              </div>
-              
+              <MultiSelect
+                options={(alertTypes || []).map(alertType => ({
+                  id: alertType.id,
+                  label: alertType.name,
+                  value: alertType.id
+                }))}
+                value={formData.alert_type_ids}
+                onChange={(selectedValues) => setFormData(prev => ({
+                  ...prev,
+                  alert_type_ids: selectedValues as number[]
+                }))}
+                placeholder="Select alert types..."
+                label="Alert Types *"
+                searchable
+                error={validationErrors.alert_type_ids}
+              />
               {(alertTypes || []).length === 0 && (
-                <p className="text-sm text-gray-500">
-                  No alert types available. Create alert types first to associate with contacts.
-                </p>
+                <p className="text-sm text-gray-500">No alert types available.</p>
               )}
             </div>
 

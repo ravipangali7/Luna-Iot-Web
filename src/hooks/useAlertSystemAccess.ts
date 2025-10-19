@@ -31,26 +31,20 @@ export const useAlertSystemAccess = (instituteId?: number): UseAlertSystemAccess
         setLoading(true);
         
         if (isAdmin) {
-          // Admin has access to everything
+          // Super Admin has access to all Alert Systems
           setHasAccess(true);
           setAccessibleInstitutes([]); // Admin doesn't need specific institute list
         } else {
-          // Regular user - check their institute modules
-          const response = await apiClient.get<{ data: InstituteModuleAccess[] }>(
-            '/api/core/institute-module/alert-system-institutes/'
-          );
-          const institutes = response.data.data || [];
-          setAccessibleInstitutes(institutes);
+          // Regular users need to check their institute module access
+          const response = await apiClient.get<{ success: boolean; data: InstituteModuleAccess[] }>('/api/institutes/modules/alert-system-institutes/');
           
-          if (instituteId) {
-            // Check specific institute access
-            const hasSpecificAccess = institutes.some(
-              inst => inst.institute_id === instituteId && inst.has_alert_system_access
-            );
-            setHasAccess(hasSpecificAccess);
+          if (response.data.success && response.data.data) {
+            const institutes = response.data.data;
+            setAccessibleInstitutes(institutes);
+            setHasAccess(institutes.length > 0);
           } else {
-            // General access check - user has access if they have any alert-system institutes
-            setHasAccess(institutes.some(inst => inst.has_alert_system_access));
+            setAccessibleInstitutes([]);
+            setHasAccess(false);
           }
         }
       } catch (error) {
@@ -70,9 +64,13 @@ export const useAlertSystemAccess = (instituteId?: number): UseAlertSystemAccess
   }, [user, instituteId, isAdmin]);
 
   const hasAccessToInstitute = useCallback((instituteId: number): boolean => {
-    if (isAdmin) return true;
-    return accessibleInstitutes.some(
-      inst => inst.institute_id === instituteId && inst.has_alert_system_access
+    if (isAdmin) {
+      return true; // Super Admin has access to all institutes
+    }
+    
+    // Check if user has access to this specific institute
+    return accessibleInstitutes.some(inst => 
+      inst.institute_id === instituteId && inst.has_alert_system_access
     );
   }, [isAdmin, accessibleInstitutes]);
 

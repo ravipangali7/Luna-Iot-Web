@@ -2,6 +2,19 @@ import { apiClient } from '../apiClient';
 
 // ===== TYPES =====
 
+// GeoJSON type definitions
+interface GeoJSONPolygon {
+  type: 'Polygon';
+  coordinates: number[][][];
+}
+
+interface GeoJSONMultiPolygon {
+  type: 'MultiPolygon';
+  coordinates: number[][][][];
+}
+
+type GeoJSONGeometry = GeoJSONPolygon | GeoJSONMultiPolygon;
+
 export interface AlertType {
   id: number;
   name: string;
@@ -26,9 +39,17 @@ export interface AlertRadar {
   id: number;
   title: string;
   token: string;
-  alert_geofences: { id: number; title: string }[];
+  alert_geofences: {
+    id: number;
+    title: string;
+    boundary: GeoJSONGeometry;
+  }[];
   alert_geofences_names: string[];
-  institute: number;
+  institute: {
+    id: number;
+    name: string;
+    logo: string | null;
+  };
   institute_name: string;
   created_at: string;
   updated_at: string;
@@ -101,6 +122,8 @@ export interface AlertHistory {
   image: string | null;
   institute: number;
   institute_name: string;
+  latitude: number | string;
+  longitude: number | string;
   created_at: string;
   updated_at: string;
 }
@@ -119,15 +142,15 @@ export interface AlertTypeUpdate {
 
 export interface AlertGeofenceCreate {
   title: string;
-  alert_types: number[];
-  boundary: string;
+  alert_type_ids: number[];
+  boundary: GeoJSONGeometry;
   institute: number;
 }
 
 export interface AlertGeofenceUpdate {
   title?: string;
-  alert_types?: number[];
-  boundary?: string;
+  alert_type_ids?: number[];
+  boundary?: GeoJSONGeometry;
 }
 
 export interface AlertRadarCreate {
@@ -313,6 +336,11 @@ export const alertRadarService = {
 
   delete: async (id: number): Promise<void> => {
     await apiClient.delete(`/api/alert-system/alert-radar/${id}/delete/`);
+  },
+
+  getByToken: async (token: string): Promise<AlertRadar> => {
+    const response = await apiClient.get<AlertSystemApiResponse<AlertRadar>>(`/api/alert-system/alert-radar/token/${token}/`);
+    return response.data.data;
   }
 };
 
@@ -481,6 +509,11 @@ export const alertHistoryService = {
 
   delete: async (id: number): Promise<void> => {
     await apiClient.delete(`/api/alert-system/alert-history/${id}/delete/`);
+  },
+
+  getByRadar: async (radarId: number): Promise<AlertHistory[]> => {
+    const response = await apiClient.get<AlertSystemApiResponse<AlertHistory[]>>(`/api/alert-system/alert-history/by-radar/${radarId}/`);
+    return response.data.data;
   }
 };
 
@@ -494,7 +527,7 @@ export interface InstituteModuleAccess {
 
 export const instituteModuleAccessService = {
   getAlertSystemInstitutes: async (): Promise<InstituteModuleAccess[]> => {
-    const response = await apiClient.get<AlertSystemApiResponse<InstituteModuleAccess[]>>('/api/core/institute-module/alert-system-institutes/');
+    const response = await apiClient.get<AlertSystemApiResponse<InstituteModuleAccess[]>>('/api/core/institute/modules/alert-system-institutes/');
     return response.data.data;
   }
 };

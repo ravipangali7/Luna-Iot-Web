@@ -1,7 +1,9 @@
 import React, { useState, useEffect, useCallback } from 'react';
-import { useNavigate } from 'react-router-dom';
 import { useAlertSystemAccess } from '../../hooks/useAlertSystemAccess';
 import { alertHistoryService, type AlertHistory } from '../../api/services/alertSystemService';
+import { API_CONFIG } from '../../config/config';
+import GeoUtils from '../../utils/geoUtils';
+import AlertLocationMap from '../../components/maps/AlertLocationMap';
 import Container from '../../components/ui/layout/Container';
 import Card from '../../components/ui/cards/Card';
 import Table from '../../components/ui/tables/Table';
@@ -13,14 +15,12 @@ import TableCell from '../../components/ui/tables/TableCell';
 import Button from '../../components/ui/buttons/Button';
 import Input from '../../components/ui/forms/Input';
 import Select from '../../components/ui/forms/Select';
-import Swal from 'sweetalert2';
 import Badge from '../../components/ui/common/Badge';
 import Spinner from '../../components/ui/common/Spinner';
 import Alert from '../../components/ui/common/Alert';
 import { confirmDelete, showSuccess, showError } from '../../utils/sweetAlert';
 
 const AlertHistoryIndexPage: React.FC = () => {
-  const navigate = useNavigate();
   const { hasAccess, loading: accessLoading, isAdmin, accessibleInstitutes } = useAlertSystemAccess();
   
   const [alertHistory, setAlertHistory] = useState<AlertHistory[]>([]);
@@ -34,6 +34,14 @@ const AlertHistoryIndexPage: React.FC = () => {
   const [totalPages, setTotalPages] = useState(1);
   const [totalCount, setTotalCount] = useState(0);
   const itemsPerPage = 10;
+
+  // Modal state
+  const [showAlertModal, setShowAlertModal] = useState(false);
+  const [selectedAlert, setSelectedAlert] = useState<AlertHistory | null>(null);
+  const [alertAddress, setAlertAddress] = useState<string>('Loading address...');
+  const [updatingAlert, setUpdatingAlert] = useState(false);
+  const [alertStatus, setAlertStatus] = useState<string>('');
+  const [alertRemarks, setAlertRemarks] = useState<string>('');
 
   const statusOptions = [
     { value: '', label: 'All Statuses' },
@@ -163,79 +171,62 @@ const AlertHistoryIndexPage: React.FC = () => {
     setCurrentPage(1);
   };
 
-  const handleView = (historyId: number) => {
-    navigate(`/alert-history/${historyId}`);
+
+  // Modal handlers
+  const handleOpenModal = (alert: AlertHistory) => {
+    console.log('Opening modal for alert:', alert);
+    console.log('Alert remarks:', alert.remarks);
+    setSelectedAlert(alert);
+    setAlertStatus(alert.status);
+    setAlertRemarks(alert.remarks || '');
+    setShowAlertModal(true);
   };
 
-   const handleStatusChange = async (historyId: number) => {
-     const { value: newStatus } = await Swal.fire({
-       title: 'Change Status',
-       input: 'select',
-       inputOptions: {
-         'pending': 'Pending',
-         'approved': 'Approved',
-         'rejected': 'Rejected'
-       },
-       inputPlaceholder: 'Select a status',
-       showCancelButton: true,
-       confirmButtonText: 'Update',
-       cancelButtonText: 'Cancel',
-       confirmButtonColor: '#3085d6',
-       cancelButtonColor: '#6b7280',
-       reverseButtons: false,
-       focusCancel: false,
-       inputValidator: (value) => {
-         if (!value) {
-           return 'You need to select a status!';
-         }
-       }
-     });
+  const handleCloseModal = () => {
+    setShowAlertModal(false);
+    setSelectedAlert(null);
+    setAlertAddress('Loading address...');
+  };
 
-     if (newStatus) {
-       try {
-         await alertHistoryService.updateStatus(historyId, { status: newStatus });
-         showSuccess('Status updated successfully');
-         fetchAlertHistory();
-       } catch (err) {
-         console.error('Error updating status:', err);
-         showError('Failed to update status. Please try again.');
-       }
-     }
-   };
+  // Fetch reverse geocoded address when alert is shown
+  useEffect(() => {
+    if (selectedAlert) {
+      GeoUtils.getReverseGeoCode(Number(selectedAlert.latitude), Number(selectedAlert.longitude))
+        .then(address => setAlertAddress(address))
+        .catch(() => setAlertAddress('Address unavailable'));
+    }
+  }, [selectedAlert]);
 
-   const handleRemarksChange = async (historyId: number) => {
-     const { value: newRemarks } = await Swal.fire({
-       title: 'Change Remarks',
-       input: 'textarea',
-       inputPlaceholder: 'Enter remarks...',
-       inputAttributes: {
-         'aria-label': 'Enter remarks'
-       },
-       showCancelButton: true,
-       confirmButtonText: 'Update',
-       cancelButtonText: 'Cancel',
-       confirmButtonColor: '#3085d6',
-       cancelButtonColor: '#6b7280',
-       reverseButtons: false,
-       focusCancel: false,
-       inputValidator: (value) => {
-         if (value === undefined || value === null) {
-           return 'Remarks cannot be empty!';
-         }
-       }
-     });
+  // Handle alert status/remarks update
+  const handleAlertUpdate = async () => {
+    if (!selectedAlert) return;
+    
+    try {
+      setUpdatingAlert(true);
+      
+      // Update status if changed
+      if (alertStatus !== selectedAlert.status) {
+        await alertHistoryService.updateStatus(selectedAlert.id, { status: alertStatus });
+      }
+      
+      // Update remarks if changed
+      if (alertRemarks !== (selectedAlert.remarks || '')) {
+        await alertHistoryService.updateRemarks(selectedAlert.id, { remarks: alertRemarks });
+      }
+      
+      showSuccess('Alert updated successfully!');
+      handleCloseModal();
+      
+      // Refresh alert history
+      fetchAlertHistory();
+    } catch (error) {
+      console.error('Error updating alert:', error);
+      showError('Failed to update alert');
+    } finally {
+      setUpdatingAlert(false);
+    }
+  };
 
-     if (newRemarks !== undefined) {
-       try {
-         await alertHistoryService.updateRemarks(historyId, { remarks: newRemarks });
-         showSuccess('Remarks updated successfully');
-         fetchAlertHistory();
-       } catch (err) {
-         console.error('Error updating remarks:', err);
-         showError('Failed to update remarks. Please try again.');
-       }
-     }
-   };
 
    const handleDelete = async (historyId: number, name: string) => {
      const confirmed = await confirmDelete(
@@ -431,7 +422,11 @@ const AlertHistoryIndexPage: React.FC = () => {
                   </TableHead>
                   <TableBody>
                     {alertHistory.map(item => (
-                      <TableRow key={item.id}>
+                      <TableRow 
+                        key={item.id} 
+                        className="cursor-pointer hover:bg-gray-50"
+                        onClick={() => handleOpenModal(item)}
+                      >
                         <TableCell>{getSourceBadge(item.source)}</TableCell>
                         <TableCell className="font-medium text-gray-900">{item.name}</TableCell>
                         <TableCell className="text-gray-600">{item.primary_phone}</TableCell>
@@ -442,11 +437,11 @@ const AlertHistoryIndexPage: React.FC = () => {
                           {item.remarks || 'N/A'}
                         </TableCell>
                         <TableCell>
-                          <div className="flex space-x-2">
+                          <div className="flex space-x-2" onClick={(e) => e.stopPropagation()}>
                             <Button
                               variant="primary"
                               size="sm"
-                              onClick={() => handleView(item.id)}
+                              onClick={() => handleOpenModal(item)}
                               icon={
                                 <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
@@ -455,32 +450,6 @@ const AlertHistoryIndexPage: React.FC = () => {
                               }
                             >
                               View
-                            </Button>
-                            
-                            <Button
-                              variant="secondary"
-                              size="sm"
-                              onClick={() => handleStatusChange(item.id)}
-                              icon={
-                                <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" />
-                                </svg>
-                              }
-                            >
-                              Status
-                            </Button>
-                            
-                            <Button
-                              variant="secondary"
-                              size="sm"
-                              onClick={() => handleRemarksChange(item.id)}
-                              icon={
-                                <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z" />
-                                </svg>
-                              }
-                            >
-                              Remarks
                             </Button>
                             
                             {isAdmin && (
@@ -540,6 +509,165 @@ const AlertHistoryIndexPage: React.FC = () => {
           </div>
         </Card>
       </div>
+
+      {/* Alert Details Modal */}
+      {showAlertModal && selectedAlert && (
+        <div style={{backgroundColor: 'rgba(0,0,0,0.7'}} className="fixed inset-0 flex items-center justify-center z-50 p-4">
+          <div className="bg-white rounded-lg shadow-xl max-w-2xl w-full mx-4 max-h-[90vh] overflow-y-auto">
+            <div className="p-6">
+              {/* Header */}
+              <div className="flex items-center justify-between mb-4">
+                <h3 className="text-lg font-semibold text-gray-900">Alert Details</h3>
+                <button
+                  onClick={handleCloseModal}
+                  className="text-gray-400 hover:text-gray-600 transition-colors"
+                >
+                  <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+                  </svg>
+                </button>
+              </div>
+              
+              {/* Address Section */}
+              <div className="mb-4">
+                <p className="text-base text-gray-900">{alertAddress}</p>
+              </div>
+              
+              {/* Badges Row */}
+              <div className="flex gap-3 mb-4">
+                <Badge variant="danger" className="px-3 py-2 text-sm font-medium">
+                  {selectedAlert.alert_type_name}
+                </Badge>
+                <Badge variant="primary" className="px-3 py-2 text-sm font-medium flex items-center gap-2">
+                  <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" />
+                  </svg>
+                  {selectedAlert.name}
+                </Badge>
+                <Badge variant="primary" className="px-3 py-2 text-sm font-medium flex items-center gap-2">
+                  <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 5a2 2 0 012-2h3.28a1 1 0 01.948.684l1.498 4.493a1 1 0 01-.502 1.21l-2.257 1.13a11.042 11.042 0 005.516 5.516l1.13-2.257a1 1 0 011.21-.502l4.493 1.498a1 1 0 01.684.949V19a2 2 0 01-2 2h-1C9.716 21 3 14.284 3 6V5z" />
+                  </svg>
+                  {selectedAlert.primary_phone}
+                </Badge>
+              </div>
+              
+              {/* Coordinates */}
+              <div className="mb-4 flex items-center gap-2 text-sm text-gray-600">
+                <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z" />
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 11a3 3 0 11-6 0 3 3 0 016 0z" />
+                </svg>
+                {Number(selectedAlert.latitude).toFixed(6)}, {Number(selectedAlert.longitude).toFixed(6)}
+              </div>
+              
+              {/* Map */}
+              <div className="mb-4">
+                <div className="border border-gray-200 rounded-md overflow-hidden">
+                  <AlertLocationMap 
+                    latitude={Number(selectedAlert.latitude)} 
+                    longitude={Number(selectedAlert.longitude)} 
+                    height="200px" 
+                  />
+                </div>
+              </div>
+              
+              {/* Image Section - Show for non-app sources */}
+              {selectedAlert.source !== 'app' && selectedAlert.image && (
+                <div className="mb-4">
+                  <img
+                    src={`${API_CONFIG.BASE_URL}${selectedAlert.image}`}
+                    alt="Alert image"
+                    className="w-full h-auto rounded-md border border-gray-200"
+                  />
+                </div>
+              )}
+              
+              {/* Current Remarks Display */}
+              <div className="mb-4 p-3 bg-blue-50 border border-blue-200 rounded-md">
+                <h4 className="text-sm font-medium text-blue-900 mb-2">Current Remarks</h4>
+                <p className="text-sm text-blue-800">
+                  {selectedAlert.remarks || 'No remarks available'}
+                </p>
+              </div>
+              
+              {/* Review SOS Request Section */}
+              <div className="space-y-4 mb-6 p-4 bg-gray-50 rounded-md">
+                <h4 className="text-sm font-medium text-gray-900">Review SOS Request</h4>
+                
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-2">
+                    Update Remarks
+                  </label>
+                  <textarea
+                    value={alertRemarks}
+                    onChange={(e) => setAlertRemarks(e.target.value)}
+                    rows={3}
+                    className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                    placeholder="Add or update remarks..."
+                  />
+                </div>
+                
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-2">
+                    Action
+                  </label>
+                  <div className="flex gap-4">
+                    <label className="flex items-center">
+                      <input
+                        type="radio"
+                        name="action"
+                        value="approved"
+                        checked={alertStatus === 'approved'}
+                        onChange={(e) => setAlertStatus(e.target.value)}
+                        className="mr-2"
+                      />
+                      Approve
+                    </label>
+                    <label className="flex items-center">
+                      <input
+                        type="radio"
+                        name="action"
+                        value="rejected"
+                        checked={alertStatus === 'rejected'}
+                        onChange={(e) => setAlertStatus(e.target.value)}
+                        className="mr-2"
+                      />
+                      Disapprove
+                    </label>
+                  </div>
+                </div>
+                
+              </div>
+              
+              {/* Action Buttons */}
+              <div className="flex gap-3">
+                <button
+                  onClick={handleAlertUpdate}
+                  disabled={updatingAlert}
+                  className="flex-1 px-4 py-2 bg-green-600 text-white rounded-md hover:bg-green-700 transition-colors disabled:opacity-50 flex items-center justify-center gap-2"
+                >
+                  {updatingAlert ? (
+                    <>
+                      <Spinner size="sm" />
+                      <span>Updating...</span>
+                    </>
+                  ) : (
+                    <span>Submit Action</span>
+                  )}
+                </button>
+                <button
+                  onClick={handleCloseModal}
+                  disabled={updatingAlert}
+                  className="flex-1 px-4 py-2 bg-orange-500 text-white rounded-md hover:bg-orange-600 transition-colors disabled:opacity-50"
+                >
+                  Cancel
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
     </Container>
   );
 };

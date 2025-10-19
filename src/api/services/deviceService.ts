@@ -32,7 +32,7 @@ class DeviceService {
 
   async getDevicesPaginated(page: number = 1): Promise<{ 
     success: boolean; 
-    data?: { devices: Device[]; pagination: { page: number; total_pages: number; total_count: number; has_next: boolean; has_previous: boolean } }; 
+    data?: { devices: Device[]; pagination: { current_page: number; total_pages: number; total_items: number; has_next: boolean; has_previous: boolean } }; 
     error?: string 
   }> {
     try {
@@ -53,7 +53,7 @@ class DeviceService {
 
   async searchDevices(query: string, page: number = 1): Promise<{ 
     success: boolean; 
-    data?: { devices: Device[]; pagination: { page: number; total_pages: number; total_count: number; has_next: boolean; has_previous: boolean } }; 
+    data?: { devices: Device[]; pagination: { current_page: number; total_pages: number; total_items: number; has_next: boolean; has_previous: boolean } }; 
     error?: string 
   }> {
     try {
@@ -231,6 +231,81 @@ class DeviceService {
       }
     } catch (error) {
       console.error('Send relay off error:', error);
+      return { success: false, error: 'Network error: ' + (error as Error).message };
+    }
+  }
+
+  async getGpsDevicesPaginated(page: number = 1, query?: string): Promise<{ 
+    success: boolean; 
+    data?: { devices: Device[]; pagination: { current_page: number; total_pages: number; total_items: number; has_next: boolean; has_previous: boolean } }; 
+    error?: string 
+  }> {
+    try {
+      const url = query 
+        ? `/api/device/device/gps/paginated?page=${page}&q=${encodeURIComponent(query)}`
+        : `/api/device/device/gps/paginated?page=${page}`;
+      
+      const response = await apiClient.get(url, {
+        timeout: 120000 // 2 minutes for large responses
+      });
+      
+      if (response.data.success) {
+        return { success: true, data: response.data.data };
+      } else {
+        return { success: false, error: response.data.message || 'Failed to fetch GPS devices' };
+      }
+    } catch (error) {
+      console.error('Get GPS devices error:', error);
+      return { success: false, error: 'Network error: ' + (error as Error).message };
+    }
+  }
+
+  async getBuzzerDevicesPaginated(page: number = 1, query?: string): Promise<{ 
+    success: boolean; 
+    data?: { devices: Device[]; pagination: { current_page: number; total_pages: number; total_items: number; has_next: boolean; has_previous: boolean } }; 
+    error?: string 
+  }> {
+    try {
+      const url = query 
+        ? `/api/device/device/buzzer/paginated?page=${page}&q=${encodeURIComponent(query)}`
+        : `/api/device/device/buzzer/paginated?page=${page}`;
+      
+      const response = await apiClient.get(url, {
+        timeout: 120000 // 2 minutes for large responses
+      });
+      
+      if (response.data.success) {
+        return { success: true, data: response.data.data };
+      } else {
+        return { success: false, error: response.data.message || 'Failed to fetch Buzzer devices' };
+      }
+    } catch (error) {
+      console.error('Get Buzzer devices error:', error);
+      return { success: false, error: 'Network error: ' + (error as Error).message };
+    }
+  }
+
+  async getSosDevicesPaginated(page: number = 1, query?: string): Promise<{ 
+    success: boolean; 
+    data?: { devices: Device[]; pagination: { current_page: number; total_pages: number; total_items: number; has_next: boolean; has_previous: boolean } }; 
+    error?: string 
+  }> {
+    try {
+      const url = query 
+        ? `/api/device/device/sos/paginated?page=${page}&q=${encodeURIComponent(query)}`
+        : `/api/device/device/sos/paginated?page=${page}`;
+      
+      const response = await apiClient.get(url, {
+        timeout: 120000 // 2 minutes for large responses
+      });
+      
+      if (response.data.success) {
+        return { success: true, data: response.data.data };
+      } else {
+        return { success: false, error: response.data.message || 'Failed to fetch SOS devices' };
+      }
+    } catch (error) {
+      console.error('Get SOS devices error:', error);
       return { success: false, error: 'Network error: ' + (error as Error).message };
     }
   }

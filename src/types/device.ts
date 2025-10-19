@@ -48,6 +48,7 @@ export interface Device {
   protocol: string;
   iccid: string | null;
   model: string;
+  type: string;
   status: string;
   image?: string;
   subscription_plan?: {
@@ -68,6 +69,7 @@ export interface DeviceFormData {
   protocol: string;
   iccid: string;
   model: string;
+  type: string;
   subscription_plan?: number | null;
 }
 
