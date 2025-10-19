@@ -16,7 +16,7 @@ import { confirmDelete, showSuccess, showError } from '../../../utils/sweetAlert
 const ContactIndexPage: React.FC = () => {
   const { instituteId } = useParams<{ instituteId: string }>();
   const navigate = useNavigate();
-  const { hasAccessToInstitute, isAdmin } = useAlertSystemAccess(Number(instituteId));
+  const { hasAccessToInstitute } = useAlertSystemAccess(Number(instituteId));
 
   const [contacts, setContacts] = useState<AlertContact[]>([]);
   const [loading, setLoading] = useState(true);

@@ -1,7 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
 import { instituteService, type InstituteModule, type InstituteModuleUpdate } from '../../../api/services/instituteService';
-import { moduleService } from '../../../api/services/moduleService';
 import { userService } from '../../../api/services/userService';
 import type { User } from '../../../types/auth';
 import { showSuccess, showError } from '../../../utils/sweetAlert';

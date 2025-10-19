@@ -71,7 +71,18 @@ const DeviceIndexPage: React.FC = () => {
 
       if (result.success && result.data) {
         setDevices(result.data.devices);
-        setPagination(result.data.pagination);
+        // Map backend pagination to frontend format
+        const backendPagination = result.data.pagination;
+        setPagination({
+          current_page: backendPagination.page,
+          total_pages: backendPagination.total_pages,
+          total_items: backendPagination.total_count,
+          page_size: 25, // Default page size
+          has_next: backendPagination.has_next,
+          has_previous: backendPagination.has_previous,
+          next_page: null,
+          previous_page: null
+        });
       } else {
         setError(result.error || 'Failed to load devices');
       }
@@ -99,7 +110,18 @@ const DeviceIndexPage: React.FC = () => {
       
       if (response.success && response.data) {
         setDevices(response.data.devices);
-        setPagination(response.data.pagination);
+        // Map backend pagination to frontend format
+        const backendPagination = response.data.pagination;
+        setPagination({
+          current_page: backendPagination.page,
+          total_pages: backendPagination.total_pages,
+          total_items: backendPagination.total_count,
+          page_size: 25, // Default page size
+          has_next: backendPagination.has_next,
+          has_previous: backendPagination.has_previous,
+          next_page: null,
+          previous_page: null
+        });
         setCurrentPage(page);
         setIsInSearchMode(true);
       } else {
@@ -175,7 +197,18 @@ const DeviceIndexPage: React.FC = () => {
       
       if (response.success && response.data) {
         setDevices(response.data.devices);
-        setPagination(response.data.pagination);
+        // Map backend pagination to frontend format
+        const backendPagination = response.data.pagination;
+        setPagination({
+          current_page: backendPagination.page,
+          total_pages: backendPagination.total_pages,
+          total_items: backendPagination.total_count,
+          page_size: 25, // Default page size
+          has_next: backendPagination.has_next,
+          has_previous: backendPagination.has_previous,
+          next_page: null,
+          previous_page: null
+        });
         setSearchQuery(searchInput);
         // Reset pagination when searching
         setCurrentPage(1);
@@ -215,7 +248,18 @@ const DeviceIndexPage: React.FC = () => {
       
       if (response.success && response.data) {
         setDevices(response.data.devices);
-        setPagination(response.data.pagination);
+        // Map backend pagination to frontend format
+        const backendPagination = response.data.pagination;
+        setPagination({
+          current_page: backendPagination.page,
+          total_pages: backendPagination.total_pages,
+          total_items: backendPagination.total_count,
+          page_size: 25, // Default page size
+          has_next: backendPagination.has_next,
+          has_previous: backendPagination.has_previous,
+          next_page: null,
+          previous_page: null
+        });
         setCurrentPage(page);
         // Update URL with new page
         setSearchParams({ q: searchQuery, page: page.toString() });

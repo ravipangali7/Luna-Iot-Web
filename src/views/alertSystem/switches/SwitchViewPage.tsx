@@ -31,7 +31,7 @@ interface AlertSwitch {
 const SwitchViewPage: React.FC = () => {
   const { instituteId, id } = useParams<{ instituteId: string; id: string }>();
   const navigate = useNavigate();
-  const { hasAccessToInstitute, isAdmin } = useAlertSystemAccess(Number(instituteId));
+  const { hasAccessToInstitute } = useAlertSystemAccess(Number(instituteId));
 
   const [switchItem, setSwitchItem] = useState<AlertSwitch | null>(null);
   const [loading, setLoading] = useState(true);

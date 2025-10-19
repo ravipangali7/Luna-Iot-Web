@@ -8,6 +8,8 @@ const Alert: React.FC<AlertProps> = ({
   dismissible = false,
   onDismiss,
   className = '',
+  title,
+  message,
   ...props
 }) => {
   const baseClasses = 'alert';
@@ -23,7 +25,11 @@ const Alert: React.FC<AlertProps> = ({
 
   return (
     <div className={combinedClasses} {...props}>
-      <div className="alert__content">{children}</div>
+      <div className="alert__content">
+        {title && <div className="alert__title">{title}</div>}
+        {message && <div className="alert__message">{message}</div>}
+        {children}
+      </div>
       {dismissible && (
         <button
           className="alert__dismiss"

@@ -15,6 +15,7 @@ const Input = forwardRef<HTMLInputElement, InputProps>(({
     onBlur,
     onFocus,
     className = '',
+    icon,
     ...props
 }, ref) => {
     const baseClasses = 'input';
@@ -31,16 +32,12 @@ const Input = forwardRef<HTMLInputElement, InputProps>(({
     ].filter(Boolean).join(' ');
 
     const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-        if (type === 'file') {
-            // For file inputs, pass the files directly
-            onChange?.(e.target.files ? 'file selected' : '');
-        } else {
-            onChange?.(e.target.value);
-        }
+        onChange?.(e);
     };
 
     return (
         <div className="input-wrapper">
+            {icon && <div className="input__icon">{icon}</div>}
             <input
                 ref={ref}
                 type={type}

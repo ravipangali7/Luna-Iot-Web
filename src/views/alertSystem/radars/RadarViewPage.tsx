@@ -33,7 +33,6 @@ const RadarViewPage: React.FC = () => {
   const { hasAccessToInstitute, isAdmin } = useAlertSystemAccess(Number(instituteId));
 
   const [radar, setRadar] = useState<AlertRadar | null>(null);
-  const [geofences, setGeofences] = useState<AlertGeofence[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 

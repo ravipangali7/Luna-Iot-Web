@@ -35,7 +35,7 @@ interface AlertBuzzer {
 const BuzzerIndexPage: React.FC = () => {
   const { instituteId } = useParams<{ instituteId: string }>();
   const navigate = useNavigate();
-  const { hasAccessToInstitute, isAdmin } = useAlertSystemAccess(Number(instituteId));
+  const { hasAccessToInstitute } = useAlertSystemAccess(Number(instituteId));
 
   const [buzzers, setBuzzers] = useState<AlertBuzzer[]>([]);
   const [loading, setLoading] = useState(true);

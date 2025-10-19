@@ -13,9 +13,9 @@ export interface AlertType {
 export interface AlertGeofence {
   id: number;
   title: string;
-  alert_types: number[];
+  alert_types: { id: number; name: string; icon: string | null }[];
   alert_types_names: string[];
-  boundary: string; // GeoJSON string
+  boundary: any; // GeoJSON object
   institute: number;
   institute_name: string;
   created_at: string;
@@ -40,6 +40,7 @@ export interface AlertBuzzer {
   device: number;
   device_imei: string;
   device_phone: string;
+  device_name: string;
   delay: number;
   alert_geofences: { id: number; title: string }[];
   alert_geofences_names: string[];
@@ -74,6 +75,7 @@ export interface AlertSwitch {
   device: number;
   device_imei: string;
   device_phone: string;
+  device_name: string;
   latitude: number;
   longitude: number;
   trigger: number;
@@ -117,15 +119,15 @@ export interface AlertTypeUpdate {
 
 export interface AlertGeofenceCreate {
   title: string;
-  alert_types: number[];
-  boundary: string;
+  alert_type_ids: number[];
+  boundary: any; // GeoJSON object
   institute: number;
 }
 
 export interface AlertGeofenceUpdate {
   title?: string;
-  alert_types?: number[];
-  boundary?: string;
+  alert_type_ids?: number[];
+  boundary?: any; // GeoJSON object
 }
 
 export interface AlertRadarCreate {

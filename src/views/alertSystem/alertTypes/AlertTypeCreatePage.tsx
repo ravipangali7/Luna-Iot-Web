@@ -6,7 +6,7 @@ import Button from '../../../components/ui/buttons/Button';
 import Input from '../../../components/ui/forms/Input';
 import Spinner from '../../../components/ui/common/Spinner';
 import Alert from '../../../components/ui/common/Alert';
-import { showSuccess, showError } from '../../../utils/sweetAlert';
+import { showSuccess } from '../../../utils/sweetAlert';
 import { alertTypeService } from '../../../api/services/alertSystemService';
 import type { AlertTypeCreate } from '../../../api/services/alertSystemService';
 

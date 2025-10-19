@@ -302,7 +302,7 @@ const BuzzerEditPage: React.FC = () => {
                 <Input
                   type="number"
                   min="1"
-                  value={formData.delay}
+                  value={formData.delay.toString()}
                   onChange={(e) => handleInputChange('delay', Number(e.target.value))}
                   placeholder="Enter delay in seconds"
                   error={validationErrors.delay}

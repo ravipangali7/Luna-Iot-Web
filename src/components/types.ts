@@ -7,7 +7,7 @@ export type InputSize = 'sm' | 'md' | 'lg';
 
 export type TableVariant = 'striped' | 'bordered' | 'hover';
 
-export type AlertVariant = 'primary' | 'secondary' | 'success' | 'warning' | 'danger' | 'info';
+export type AlertVariant = 'primary' | 'secondary' | 'success' | 'warning' | 'danger' | 'info' | 'error';
 export type BadgeVariant = 'primary' | 'secondary' | 'success' | 'warning' | 'danger' | 'info';
 export type BadgeSize = 'sm' | 'md' | 'lg';
 
@@ -15,6 +15,8 @@ export interface BaseProps {
   className?: string;
   children?: React.ReactNode;
   style?: React.CSSProperties;
+  title?: string;
+  colSpan?: number;
 }
 
 export interface ButtonProps extends BaseProps {
@@ -25,6 +27,7 @@ export interface ButtonProps extends BaseProps {
   loading?: boolean;
   onClick?: () => void;
   icon?: React.ReactNode;
+  title?: string;
 }
 
 export interface InputProps extends BaseProps {
@@ -36,7 +39,7 @@ export interface InputProps extends BaseProps {
   disabled?: boolean;
   required?: boolean;
   error?: string;
-  onChange?: (value: string) => void;
+  onChange?: (e: React.ChangeEvent<HTMLInputElement>) => void;
   onBlur?: () => void;
   onFocus?: () => void;
   min?: string;
@@ -44,6 +47,7 @@ export interface InputProps extends BaseProps {
   step?: string;
   id?: string;
   name?: string;
+  icon?: React.ReactNode;
 }
 
 export interface TableProps extends BaseProps {
@@ -62,6 +66,8 @@ export interface AlertProps extends BaseProps {
   variant?: AlertVariant;
   dismissible?: boolean;
   onDismiss?: () => void;
+  title?: string;
+  message?: string;
 }
 
 export interface BadgeProps extends BaseProps {

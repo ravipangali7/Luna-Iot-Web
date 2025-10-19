@@ -28,7 +28,7 @@ export interface Institute {
   id: number;
   name: string;
   description?: string;
-  phone?: string;
+  phone?: string | undefined;
   address?: string;
   latitude?: number;
   longitude?: number;

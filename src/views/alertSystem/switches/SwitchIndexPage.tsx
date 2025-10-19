@@ -37,7 +37,7 @@ interface AlertSwitch {
 const SwitchIndexPage: React.FC = () => {
   const { instituteId } = useParams<{ instituteId: string }>();
   const navigate = useNavigate();
-  const { hasAccessToInstitute, isAdmin } = useAlertSystemAccess(Number(instituteId));
+  const { hasAccessToInstitute } = useAlertSystemAccess(Number(instituteId));
 
   const [switches, setSwitches] = useState<AlertSwitch[]>([]);
   const [loading, setLoading] = useState(true);
