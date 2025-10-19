@@ -1,38 +1,60 @@
-// Google Maps Configuration
+/**
+ * Google Maps Configuration
+ * Centralized configuration for Google Maps API settings
+ */
+
 export const GOOGLE_MAPS_CONFIG = {
   apiKey: 'AIzaSyDakyL49GU8gPjnK0jihVQuRDxh6lTx-O8',
-  libraries: ['geometry'] as const,
-  defaultCenter: {
-    lat: 28.3949, // Kathmandu, Nepal
-    lng: 84.1240
+  defaultCenter: { lat: 27.7172, lng: 85.3240 }, // Kathmandu, Nepal
+  defaultZoom: 12,
+  libraries: ['drawing', 'geometry'] as const,
+  mapOptions: {
+    disableDefaultUI: false,
+    zoomControl: true,
+    mapTypeControl: true,
+    scaleControl: true,
+    streetViewControl: true,
+    rotateControl: true,
+    fullscreenControl: true,
   },
-  defaultZoom: 15,
-  mapTypes: {
-    roadmap: 'roadmap',
-    satellite: 'satellite',
-    hybrid: 'hybrid',
-    terrain: 'terrain'
-  }
-};
+  drawingOptions: {
+    // drawingMode, drawingControl, and drawingControlOptions will be set in component with proper enums
+    polygonOptions: {
+      fillColor: '#FF0000',
+      fillOpacity: 0.2,
+      strokeColor: '#FF0000',
+      strokeOpacity: 0.8,
+      strokeWeight: 2,
+      clickable: false,
+      editable: true,
+      zIndex: 1,
+    },
+  },
+  geofenceStyles: {
+    default: {
+      fillColor: '#FF0000',
+      fillOpacity: 0.2,
+      strokeColor: '#FF0000',
+      strokeOpacity: 0.8,
+      strokeWeight: 2,
+    },
+    selected: {
+      fillColor: '#0000FF',
+      fillOpacity: 0.3,
+      strokeColor: '#0000FF',
+      strokeOpacity: 1,
+      strokeWeight: 3,
+    },
+    editing: {
+      fillColor: '#00FF00',
+      fillOpacity: 0.3,
+      strokeColor: '#00FF00',
+      strokeOpacity: 1,
+      strokeWeight: 3,
+    },
+  },
+} as const;
 
-// Map styling options
-export const MAP_STYLES = {
-  default: [],
-  dark: [
-    {
-      featureType: 'all',
-      elementType: 'geometry',
-      stylers: [{ color: '#242f3e' }]
-    },
-    {
-      featureType: 'all',
-      elementType: 'labels.text.stroke',
-      stylers: [{ light: -80 }]
-    },
-    {
-      featureType: 'all',
-      elementType: 'labels.text.fill',
-      stylers: [{ color: '#746855' }]
-    }
-  ]
-};
+export type GoogleMapsConfig = typeof GOOGLE_MAPS_CONFIG;
+// Drawing mode and control options are now handled in the component
+export type Libraries = typeof GOOGLE_MAPS_CONFIG.libraries;

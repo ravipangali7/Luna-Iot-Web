@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { useNavigate, useSearchParams } from 'react-router-dom';
 import { instituteService, type InstituteModuleCreate, type Institute } from '../../../api/services/instituteService';
+import { moduleService } from '../../../api/services/moduleService';
 import { userService } from '../../../api/services/userService';
 import type { User } from '../../../types/auth';
 import { showSuccess, showError } from '../../../utils/sweetAlert';
@@ -16,10 +17,10 @@ const InstituteModuleCreatePage: React.FC = () => {
   const [loading, setLoading] = useState(false);
   const [institutes, setInstitutes] = useState<Institute[]>([]);
   const [users, setUsers] = useState<User[]>([]);
-  const [groups, setGroups] = useState<Array<{ id: number; name: string }>>([]);
+  const [modules, setModules] = useState<Array<{ id: number; name: string }>>([]);
   const [formData, setFormData] = useState<InstituteModuleCreate>({
     institute: parseInt(searchParams.get('institute') || '0'),
-    group: 0,
+    module: 0,
     user_ids: []
   });
   const [errors, setErrors] = useState<Record<string, string>>({});
@@ -44,10 +45,10 @@ const InstituteModuleCreatePage: React.FC = () => {
         setUsers(usersResult.data);
       }
 
-      // Fetch groups (roles)
-      const groupsResult = await userService.getAllRoles();
-      if (groupsResult.success && groupsResult.data) {
-        setGroups(groupsResult.data);
+      // Fetch modules
+      const modulesResult = await moduleService.getAllModules();
+      if (modulesResult.success && modulesResult.data) {
+        setModules(modulesResult.data);
       }
     } catch {
       showError('Error', 'Failed to fetch required data');
@@ -88,8 +89,8 @@ const InstituteModuleCreatePage: React.FC = () => {
       newErrors.institute = 'Institute is required';
     }
 
-    if (!formData.group || formData.group === 0) {
-      newErrors.group = 'Group is required';
+    if (!formData.module || formData.module === 0) {
+      newErrors.module = 'Module is required';
     }
 
     setErrors(newErrors);
@@ -169,20 +170,20 @@ const InstituteModuleCreatePage: React.FC = () => {
                 />
               </div>
 
-              {/* Group Selection */}
+              {/* Module Selection */}
               <div>
-                <label htmlFor="group" className="block text-sm font-medium text-gray-700 mb-2">
-                  Group *
+                <label htmlFor="module" className="block text-sm font-medium text-gray-700 mb-2">
+                  Module *
                 </label>
                 <Select
-                  value={formData.group.toString()}
-                  onChange={(value) => setFormData(prev => ({ ...prev, group: parseInt(value) }))}
-                  error={errors.group}
+                  value={formData.module.toString()}
+                  onChange={(value) => setFormData(prev => ({ ...prev, module: parseInt(value) }))}
+                  error={errors.module}
                   options={[
-                    { value: "0", label: "Select a group" },
-                    ...groups.map((group) => ({
-                      value: group.id.toString(),
-                      label: group.name
+                    { value: "0", label: "Select a module" },
+                    ...modules.map((module) => ({
+                      value: module.id.toString(),
+                      label: module.name
                     }))
                   ]}
                 />

@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
 import { instituteService, type InstituteModule, type InstituteModuleUpdate } from '../../../api/services/instituteService';
+import { moduleService } from '../../../api/services/moduleService';
 import { userService } from '../../../api/services/userService';
 import type { User } from '../../../types/auth';
 import { showSuccess, showError } from '../../../utils/sweetAlert';
@@ -150,7 +151,7 @@ const InstituteModuleEditPage: React.FC = () => {
         <div>
           <h1 className="text-2xl font-bold text-gray-900">Edit Institute Module</h1>
           <p className="text-gray-600">
-            Update users for {module.institute_name} - {module.group_name}
+            Update users for {module.institute_name} - {module.module_name}
           </p>
         </div>
 
@@ -162,8 +163,8 @@ const InstituteModuleEditPage: React.FC = () => {
               <p className="text-gray-900">{module.institute_name}</p>
             </div>
             <div>
-              <span className="font-medium text-gray-500">Group:</span>
-              <p className="text-gray-900">{module.group_name}</p>
+              <span className="font-medium text-gray-500">Module:</span>
+              <p className="text-gray-900">{module.module_name}</p>
             </div>
           </div>
         </div>

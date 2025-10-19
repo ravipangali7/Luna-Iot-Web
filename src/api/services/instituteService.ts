@@ -66,8 +66,8 @@ export interface InstituteModule {
   id: number;
   institute: number;
   institute_name: string;
-  group: number;
-  group_name: string;
+  module: number;
+  module_name: string;
   users: Array<{
     id: number;
     name: string;
@@ -81,13 +81,13 @@ export interface InstituteModule {
 
 export interface InstituteModuleCreate {
   institute: number;
-  group: number;
+  module: number;
   user_ids?: number[];
 }
 
 export interface InstituteModuleUpdate {
   institute?: number;
-  group?: number;
+  module?: number;
   user_ids?: number[];
 }
 

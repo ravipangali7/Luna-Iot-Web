@@ -295,7 +295,7 @@ const InstituteShowPage: React.FC = () => {
               <Table striped hover>
                 <TableHead>
                 <TableRow>
-                  <TableHeader>Group</TableHeader>
+                  <TableHeader>Module</TableHeader>
                   <TableHeader>Users</TableHeader>
                   <TableHeader>Created</TableHeader>
                   <TableHeader>Actions</TableHeader>
@@ -304,7 +304,7 @@ const InstituteShowPage: React.FC = () => {
               <TableBody>
                 {modules.map((module) => (
                   <TableRow key={module.id}>
-                    <TableCell className="font-medium">{module.group_name}</TableCell>
+                    <TableCell className="font-medium">{module.module_name}</TableCell>
                     <TableCell>
                       <div className="flex items-center space-x-2">
                         <span>{module.user_count}</span>
@@ -320,7 +320,7 @@ const InstituteShowPage: React.FC = () => {
                       <ActionButtonGroup>
                         <RoleBasedWidget allowedRoles={['Super Admin']}>
                           <EditActionButton onClick={() => handleEditModule(module.id)} />
-                          <DeleteActionButton onClick={() => handleDeleteModule(module.id, `${institute.name} - ${module.group_name}`)} />
+                          <DeleteActionButton onClick={() => handleDeleteModule(module.id, `${institute.name} - ${module.module_name}`)} />
                         </RoleBasedWidget>
                       </ActionButtonGroup>
                     </TableCell>
