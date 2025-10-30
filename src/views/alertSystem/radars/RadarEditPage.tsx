@@ -137,7 +137,7 @@ const RadarEditPage: React.FC = () => {
       await alertRadarService.update(Number(id), payload);
       
       showSuccess('Radar updated successfully!');
-      navigate(`/alert-system/${instituteId}/radars/${id}`);
+      navigate(`/alert-system/${instituteId}`);
     } catch (err: unknown) {
       console.error('Error updating radar:', err);
       const errorMessage = (err as { response?: { data?: { message?: string } } })?.response?.data?.message || 'Failed to update radar. Please try again.';
@@ -150,7 +150,7 @@ const RadarEditPage: React.FC = () => {
 
   // Handle cancel
   const handleCancel = () => {
-    navigate(`/alert-system/${instituteId}/radars/${id}`);
+    navigate(`/alert-system/${instituteId}`);
   };
 
   if (loading) {

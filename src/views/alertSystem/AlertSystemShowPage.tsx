@@ -68,7 +68,30 @@ const AlertSystemShowPage: React.FC = () => {
       ]);
 
       setGeofences(geofencesData || []);
-      setRadars(radarsData || []);
+      // Ensure token is present for radars; some list endpoints may omit it
+      const radarsList = radarsData || [];
+      const missingToken = radarsList.filter(r => !r.token || String(r.token).trim().length === 0);
+      if (missingToken.length > 0) {
+        try {
+          const fetched = await Promise.all(
+            missingToken.map(r => alertRadarService.getById(r.id).catch(() => null))
+          );
+          const idToToken = new Map<number, string>();
+          fetched.forEach(fr => {
+            if (fr && fr.token) idToToken.set(fr.id, fr.token);
+          });
+          setRadars(
+            radarsList.map(r => ({
+              ...r,
+              token: r.token || idToToken.get(r.id) || ''
+            }))
+          );
+        } catch {
+          setRadars(radarsList);
+        }
+      } else {
+        setRadars(radarsList);
+      }
       setBuzzers((buzzersData || []).map(buzzer => ({
         ...buzzer,
         device_name: buzzer.device_imei // Map device_imei to device_name for compatibility
@@ -122,9 +145,7 @@ const AlertSystemShowPage: React.FC = () => {
     navigate(`/alert-system/${id}/contacts/create`);
   };
 
-  const handleView = (type: string, itemId: number) => {
-    navigate(`/alert-system/${id}/${type}/${itemId}`);
-  };
+  // Per-item View removed; keep create/edit/delete
 
   const handleEdit = (type: string, itemId: number) => {
     navigate(`/alert-system/${id}/${type}/${itemId}/edit`);
@@ -170,6 +191,25 @@ const AlertSystemShowPage: React.FC = () => {
       month: 'short',
       day: 'numeric'
     });
+  };
+
+  // Open public radar monitor by token in a new tab
+  const handleOpenRadarMonitor = async (id: number, token?: string) => {
+    let useToken = token;
+    if (!useToken || useToken.trim().length === 0) {
+      try {
+        const radar = await alertRadarService.getById(id);
+        useToken = radar?.token;
+      } catch {
+        // ignore; handled below
+      }
+    }
+    if (!useToken || useToken.trim().length === 0) {
+      showError('Missing radar token', 'This radar does not have a valid token.');
+      return;
+    }
+    const radarUrl = `${window.location.origin}/alert-system/radar/token/${useToken}`;
+    window.open(radarUrl, '_blank');
   };
 
 
@@ -331,19 +371,6 @@ const AlertSystemShowPage: React.FC = () => {
                        <TableCell className="text-gray-600">{formatDate(item.created_at)}</TableCell>
                        <TableCell>
                          <div className="flex space-x-2">
-                           <Button
-                             variant="primary"
-                             size="sm"
-                             onClick={() => handleView('geofences', item.id)}
-                             icon={
-                               <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
-                                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z" />
-                               </svg>
-                             }
-                           >
-                             View
-                           </Button>
                            {isAdmin && (
                              <Button
                                variant="secondary"
@@ -405,40 +432,43 @@ const AlertSystemShowPage: React.FC = () => {
                    {radars.map(item => (
                      <TableRow key={item.id}>
                        <TableCell className="font-medium text-gray-900">{item.title}</TableCell>
-                       <TableCell className="text-gray-600 font-mono text-sm">
-                         <div className="flex items-center space-x-2">
-                           <span className="truncate max-w-[200px]">{item.token}</span>
-                           <button
-                             onClick={() => {
-                               navigator.clipboard.writeText(item.token);
-                               showSuccess('Token copied to clipboard!');
-                             }}
-                             className="text-blue-600 hover:text-blue-800 transition-colors"
-                             title="Copy token"
-                           >
-                             <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 16H6a2 2 0 01-2-2V6a2 2 0 012-2h8a2 2 0 012 2v2m-6 12h8a2 2 0 002-2v-8a2 2 0 00-2-2h-8a2 2 0 00-2 2v8a2 2 0 002 2z" />
-                             </svg>
-                           </button>
-                         </div>
-                       </TableCell>
+                      <TableCell className="text-gray-600 font-mono text-sm">
+                        <div className="flex items-center space-x-2">
+                          <span className="truncate max-w-[200px]">{item.token || 'N/A'}</span>
+                          {item.token && (
+                            <button
+                              onClick={() => {
+                                navigator.clipboard.writeText(item.token as string);
+                                showSuccess('Token copied to clipboard!');
+                              }}
+                              className="text-blue-600 hover:text-blue-800 transition-colors"
+                              title="Copy token"
+                            >
+                              <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 16H6a2 2 0 01-2-2V6a2 2 0 012-2h8a2 2 0 012 2v2m-6 12h8a2 2 0 002-2v-8a2 2 0 00-2-2h-8a2 2 0 00-2 2v8a2 2 0 002 2z" />
+                              </svg>
+                            </button>
+                          )}
+                        </div>
+                      </TableCell>
                        <TableCell className="text-gray-600">{item.alert_geofences_names?.length || 0} geofences</TableCell>
                        <TableCell className="text-gray-600">{formatDate(item.created_at)}</TableCell>
                        <TableCell>
                          <div className="flex space-x-2">
-                           <Button
-                             variant="primary"
+                          <Button
+                             variant="success"
                              size="sm"
-                             onClick={() => handleView('radars', item.id)}
+                            onClick={() => handleOpenRadarMonitor(item.id, item.token)}
                              icon={
                                <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
-                                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z" />
+                                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9.75 17L9 20l-1 1h8l-1-1-.75-3M3 13h18M5 17h14a2 2 0 002-2V5a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z" />
                                </svg>
                              }
+                            
                            >
-                             View
+                             Monitor
                            </Button>
+                           
                            {isAdmin && (
                              <Button
                                variant="secondary"
@@ -505,19 +535,7 @@ const AlertSystemShowPage: React.FC = () => {
                        <TableCell className="text-gray-600">{formatDate(item.created_at)}</TableCell>
                        <TableCell>
                          <div className="flex space-x-2">
-                           <Button
-                             variant="primary"
-                             size="sm"
-                             onClick={() => handleView('buzzers', item.id)}
-                             icon={
-                               <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
-                                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z" />
-                               </svg>
-                             }
-                           >
-                             View
-                           </Button>
+                          
                            {isAdmin && (
                              <Button
                                variant="secondary"
@@ -584,19 +602,7 @@ const AlertSystemShowPage: React.FC = () => {
                        <TableCell className="text-gray-600">{formatDate(item.created_at)}</TableCell>
                        <TableCell>
                          <div className="flex space-x-2">
-                           <Button
-                             variant="primary"
-                             size="sm"
-                             onClick={() => handleView('switches', item.id)}
-                             icon={
-                               <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
-                                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z" />
-                               </svg>
-                             }
-                           >
-                             View
-                           </Button>
+                          
                            {isAdmin && (
                              <Button
                                variant="secondary"
@@ -668,19 +674,7 @@ const AlertSystemShowPage: React.FC = () => {
                        <TableCell className="text-gray-600">{formatDate(item.created_at)}</TableCell>
                        <TableCell>
                          <div className="flex space-x-2">
-                           <Button
-                             variant="primary"
-                             size="sm"
-                             onClick={() => handleView('contacts', item.id)}
-                             icon={
-                               <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
-                                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z" />
-                               </svg>
-                             }
-                           >
-                             View
-                           </Button>
+                          
                            {isAdmin && (
                              <Button
                                variant="secondary"

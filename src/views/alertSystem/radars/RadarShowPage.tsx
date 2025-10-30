@@ -34,6 +34,9 @@ const RadarShowPage: React.FC = () => {
   const originalTitleRef = useRef<string>(document.title);
   const autoCloseTimerRef = useRef<number | null>(null);
   const pageLoadTimeRef = useRef<number>(Date.now());
+  // Mute state for popup/audio
+  const [isMuted, setIsMuted] = useState<boolean>(false);
+  const muteUntilRef = useRef<number | null>(null);
   
   // Audio ref for emergency siren
   const audioRef = useRef<HTMLAudioElement | null>(null);
@@ -255,7 +258,7 @@ const RadarShowPage: React.FC = () => {
       };
 
       tryEnableAudio().then(audioReady => {
-        if (audioReady && audioRef.current) {
+        if (!isMuted && audioReady && audioRef.current) {
           audioRef.current.currentTime = 0;
           audioRef.current.play().catch(() => {
             document.title = '🚨 NEW ALERT! - Radar';
@@ -337,20 +340,29 @@ const RadarShowPage: React.FC = () => {
     }
   }, [currentAlert]);
 
-  // Auto-close popup and stop sound after 30 seconds
+  // Auto-close popup and stop sound after 30 seconds (respects mute)
   useEffect(() => {
     if (showAlertPopup && currentAlert) {
       if (autoCloseTimerRef.current) {
         window.clearTimeout(autoCloseTimerRef.current);
       }
-      autoCloseTimerRef.current = window.setTimeout(() => {
-        if (audioRef.current) {
-          audioRef.current.pause();
-          audioRef.current.currentTime = 0;
-        }
-        document.title = originalTitleRef.current;
-        setShowAlertPopup(false);
-      }, 30000);
+      const timeoutMs = 30000;
+      const scheduleClose = () => {
+        autoCloseTimerRef.current = window.setTimeout(() => {
+          // If muted and within grace period, reschedule until grace period ends
+          if (isMuted && muteUntilRef.current && Date.now() < muteUntilRef.current) {
+            scheduleClose();
+            return;
+          }
+          if (audioRef.current) {
+            audioRef.current.pause();
+            audioRef.current.currentTime = 0;
+          }
+          document.title = originalTitleRef.current;
+          setShowAlertPopup(false);
+        }, timeoutMs);
+      };
+      scheduleClose();
     }
 
     return () => {
@@ -653,8 +665,49 @@ const RadarShowPage: React.FC = () => {
             <div className="bg-white rounded-lg shadow-2xl w-full h-full overflow-hidden">
               {/* Header */}
               <div className="flex items-center justify-between px-6 py-4 border-b border-gray-200">
-                <h3 className="text-lg font-semibold text-gray-900">Alert Details</h3>
-                <button
+                {/* Left: badges row (alert type, name, phone) */}
+                <div className="flex items-center gap-2">
+                  <Badge variant="danger" className="px-3 py-1.5 text-sm font-medium">
+                    {currentAlert.alert_type_name}
+                  </Badge>
+                  <Badge variant="primary" className="px-3 py-1.5 text-sm font-medium flex items-center gap-2">
+                    <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" />
+                    </svg>
+                    {currentAlert.name}
+                  </Badge>
+                  <Badge variant="primary" className="px-3 py-1.5 text-sm font-medium flex items-center gap-2">
+                    <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 5a2 2 0 012-2h3.28a1 1 0 01.948.684l1.498 4.493a1 1 0 01-.502 1.21l-2.257 1.13a11.042 11.042 0 005.516 5.516l1.13-2.257a1 1 0 01.684.949V19a2 2 0 01-2 2h-1C9.716 21 3 14.284 3 6V5z" />
+                    </svg>
+                    {currentAlert.primary_phone}
+                  </Badge>
+                </div>
+
+                {/* Right controls: Mute and Close */}
+                <div className="flex items-center gap-3">
+                  <button
+                    onClick={() => {
+                      setIsMuted(true);
+                      muteUntilRef.current = Date.now() + 30000; // keep muted grace for 30s
+                      if (audioRef.current) {
+                        audioRef.current.pause();
+                        audioRef.current.currentTime = 0;
+                      }
+                      // reset auto-close countdown from now
+                      if (autoCloseTimerRef.current) {
+                        window.clearTimeout(autoCloseTimerRef.current);
+                        autoCloseTimerRef.current = null;
+                      }
+                      // schedule immediate reschedule via effect by toggling state
+                      setShowAlertPopup(true);
+                    }}
+                    className="inline-flex items-center px-3 py-1.5 text-xs font-medium rounded-md bg-gray-100 text-gray-700 hover:bg-gray-200 border border-gray-300"
+                    title="Mute audio and keep popup for 30s"
+                  >
+                    Mute
+                  </button>
+                  <button
                   onClick={() => {
                     if (audioRef.current) {
                       audioRef.current.pause();
@@ -669,6 +722,7 @@ const RadarShowPage: React.FC = () => {
                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
                   </svg>
                 </button>
+                </div>
               </div>
 
               {/* Grid: 80% map, 20% details */}
@@ -689,24 +743,7 @@ const RadarShowPage: React.FC = () => {
                     <p className="text-base text-gray-900">{alertAddress}</p>
                   </div>
 
-                  {/* Badges */}
-                  <div className="flex flex-wrap gap-2 mb-3">
-                    <Badge variant="danger" className="px-3 py-1.5 text-sm font-medium">
-                      {currentAlert.alert_type_name}
-                    </Badge>
-                    <Badge variant="primary" className="px-3 py-1.5 text-sm font-medium flex items-center gap-2">
-                      <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" />
-                      </svg>
-                      {currentAlert.name}
-                    </Badge>
-                    <Badge variant="primary" className="px-3 py-1.5 text-sm font-medium flex items-center gap-2">
-                      <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 5a2 2 0 012-2h3.28a1 1 0 01.948.684l1.498 4.493a1 1 0 01-.502 1.21l-2.257 1.13a11.042 11.042 0 005.516 5.516l1.13-2.257a1 1 0 01.684.949V19a2 2 0 01-2 2h-1C9.716 21 3 14.284 3 6V5z" />
-                      </svg>
-                      {currentAlert.primary_phone}
-                    </Badge>
-                  </div>
+                  {/* Badges moved to header */}
 
                   {/* Coordinates */}
                   <div className="mb-4 flex items-center gap-2 text-sm text-gray-600">

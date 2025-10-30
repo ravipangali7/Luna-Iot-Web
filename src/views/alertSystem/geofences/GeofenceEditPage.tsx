@@ -192,7 +192,7 @@ const GeofenceEditPage: React.FC = () => {
       await alertGeofenceService.update(Number(id), payload);
       
       showSuccess('Geofence updated successfully!');
-      navigate(`/alert-system/${instituteId}/geofences/${id}`);
+      navigate(`/alert-system/${instituteId}`);
     } catch (err: unknown) {
       console.error('Error updating geofence:', err);
       const errorMessage = (err as any)?.response?.data?.message || 'Failed to update geofence. Please try again.';
@@ -205,7 +205,7 @@ const GeofenceEditPage: React.FC = () => {
 
   // Handle cancel
   const handleCancel = () => {
-    navigate(`/alert-system/${instituteId}/geofences/${id}`);
+    navigate(`/alert-system/${instituteId}`);
   };
 
   if (loading) {

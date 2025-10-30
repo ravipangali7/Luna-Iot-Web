@@ -163,7 +163,7 @@ const ContactEditPage: React.FC = () => {
 
       await alertContactService.update(Number(id), payload);
       showSuccess('Contact updated successfully');
-      navigate(`/alert-system/${instituteId}/contacts`);
+      navigate(`/alert-system/${instituteId}`);
     } catch (err: unknown) {
       console.error('Error updating contact:', err);
       const errorMessage = (err as { response?: { data?: { message?: string } } })?.response?.data?.message || 'Failed to update contact. Please try again.';
@@ -175,7 +175,7 @@ const ContactEditPage: React.FC = () => {
 
   // Handle cancel
   const handleCancel = () => {
-    navigate(`/alert-system/${instituteId}/contacts`);
+    navigate(`/alert-system/${instituteId}`);
   };
 
   if (loading) {

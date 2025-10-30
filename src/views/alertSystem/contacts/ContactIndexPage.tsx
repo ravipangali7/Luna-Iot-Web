@@ -68,10 +68,7 @@ const ContactIndexPage: React.FC = () => {
     }
   };
 
-  // Handle view contact
-  const handleView = (contactId: number) => {
-    navigate(`/alert-system/${instituteId}/contacts/${contactId}`);
-  };
+  // View removed; keep edit and delete
 
   // Handle edit contact
   const handleEdit = (contactId: number) => {
@@ -216,13 +213,7 @@ const ContactIndexPage: React.FC = () => {
                       </TableCell>
                       <TableCell>
                         <div className="flex items-center gap-2">
-                          <Button
-                            onClick={() => handleView(contact.id)}
-                            variant="secondary"
-                            size="sm"
-                          >
-                            View
-                          </Button>
+                          
                           <Button
                             onClick={() => handleEdit(contact.id)}
                             variant="primary"

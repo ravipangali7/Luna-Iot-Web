@@ -19,12 +19,12 @@ import { InstituteServiceIndexPage, InstituteServiceCreatePage, InstituteService
 import { InstituteModuleCreatePage, InstituteModuleEditPage } from './views/institute/modules';
 import { ModuleIndexPage, ModuleCreatePage, ModuleEditPage } from './views/modules';
 import { AlertSystemIndexPage, AlertSystemShowPage } from './views/alertSystem';
-import { GeofenceCreatePage, GeofenceEditPage, GeofenceViewPage } from './views/alertSystem/geofences';
-import { RadarIndexPage, RadarCreatePage, RadarEditPage, RadarViewPage } from './views/alertSystem/radars';
+import { GeofenceCreatePage, GeofenceEditPage } from './views/alertSystem/geofences';
+import { RadarIndexPage, RadarCreatePage, RadarEditPage } from './views/alertSystem/radars';
 import RadarShowPage from './views/alertSystem/radars/RadarShowPage';
-import { BuzzerIndexPage, BuzzerCreatePage, BuzzerEditPage, BuzzerViewPage } from './views/alertSystem/buzzers';
-import { SwitchIndexPage, SwitchCreatePage, SwitchEditPage, SwitchViewPage } from './views/alertSystem/switches';
-import { ContactIndexPage, ContactCreatePage, ContactEditPage, ContactViewPage } from './views/alertSystem/contacts';
+import { BuzzerIndexPage, BuzzerCreatePage, BuzzerEditPage } from './views/alertSystem/buzzers';
+import { SwitchIndexPage, SwitchCreatePage, SwitchEditPage } from './views/alertSystem/switches';
+import { ContactIndexPage, ContactCreatePage, ContactEditPage } from './views/alertSystem/contacts';
 import { AlertTypeIndexPage, AlertTypeCreatePage, AlertTypeEditPage } from './views/alertSystem/alertTypes';
 import { AlertHistoryIndexPage, AlertHistoryViewPage } from './views/alertHistory';
 import { SubscriptionPlanIndexPage, SubscriptionPlanCreatePage, SubscriptionPlanEditPage } from './views/subscriptionPlans';
@@ -395,11 +395,6 @@ const AppRoutes: React.FC = () => {
             <GeofenceCreatePage />
           </RoleBasedRoute>
         } />
-        <Route path="alert-system/:instituteId/geofences/:id" element={
-          <RoleBasedRoute allowedRoles={[ROLES.SUPER_ADMIN]}>
-            <GeofenceViewPage />
-          </RoleBasedRoute>
-        } />
         <Route path="alert-system/:instituteId/geofences/:id/edit" element={
           <RoleBasedRoute allowedRoles={[ROLES.SUPER_ADMIN]}>
             <GeofenceEditPage />
@@ -415,11 +410,6 @@ const AppRoutes: React.FC = () => {
         <Route path="alert-system/:instituteId/radars/create" element={
           <RoleBasedRoute allowedRoles={[ROLES.SUPER_ADMIN]}>
             <RadarCreatePage />
-          </RoleBasedRoute>
-        } />
-        <Route path="alert-system/:instituteId/radars/:id" element={
-          <RoleBasedRoute allowedRoles={[ROLES.SUPER_ADMIN]}>
-            <RadarViewPage />
           </RoleBasedRoute>
         } />
         <Route path="alert-system/:instituteId/radars/:id/edit" element={
@@ -439,11 +429,6 @@ const AppRoutes: React.FC = () => {
             <BuzzerCreatePage />
           </RoleBasedRoute>
         } />
-        <Route path="alert-system/:instituteId/buzzers/:id" element={
-          <RoleBasedRoute allowedRoles={[ROLES.SUPER_ADMIN]}>
-            <BuzzerViewPage />
-          </RoleBasedRoute>
-        } />
         <Route path="alert-system/:instituteId/buzzers/:id/edit" element={
           <RoleBasedRoute allowedRoles={[ROLES.SUPER_ADMIN]}>
             <BuzzerEditPage />
@@ -461,11 +446,6 @@ const AppRoutes: React.FC = () => {
             <SwitchCreatePage />
           </RoleBasedRoute>
         } />
-        <Route path="alert-system/:instituteId/switches/:id" element={
-          <RoleBasedRoute allowedRoles={[ROLES.SUPER_ADMIN]}>
-            <SwitchViewPage />
-          </RoleBasedRoute>
-        } />
         <Route path="alert-system/:instituteId/switches/:id/edit" element={
           <RoleBasedRoute allowedRoles={[ROLES.SUPER_ADMIN]}>
             <SwitchEditPage />
@@ -481,11 +461,6 @@ const AppRoutes: React.FC = () => {
         <Route path="alert-system/:instituteId/contacts/create" element={
           <RoleBasedRoute allowedRoles={[ROLES.SUPER_ADMIN]}>
             <ContactCreatePage />
-          </RoleBasedRoute>
-        } />
-        <Route path="alert-system/:instituteId/contacts/:id" element={
-          <RoleBasedRoute allowedRoles={[ROLES.SUPER_ADMIN]}>
-            <ContactViewPage />
           </RoleBasedRoute>
         } />
         <Route path="alert-system/:instituteId/contacts/:id/edit" element={

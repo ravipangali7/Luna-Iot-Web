@@ -204,7 +204,7 @@ const SwitchEditPage: React.FC = () => {
       await alertSwitchService.update(Number(id), payload);
       
       showSuccess('Switch updated successfully!');
-      navigate(`/alert-system/${instituteId}/switches/${id}`);
+      navigate(`/alert-system/${instituteId}`);
     } catch (err: unknown) {
       console.error('Error updating switch:', err);
       showError(getErrorTitle(err), getErrorMessage(err));
@@ -215,7 +215,7 @@ const SwitchEditPage: React.FC = () => {
 
   // Handle cancel
   const handleCancel = () => {
-    navigate(`/alert-system/${instituteId}/switches/${id}`);
+    navigate(`/alert-system/${instituteId}`);
   };
 
   if (loading) {

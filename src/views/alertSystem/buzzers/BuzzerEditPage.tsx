@@ -166,7 +166,7 @@ const BuzzerEditPage: React.FC = () => {
       await alertBuzzerService.update(Number(id), payload);
       
       showSuccess('Buzzer updated successfully!');
-      navigate(`/alert-system/${instituteId}/buzzers/${id}`);
+      navigate(`/alert-system/${instituteId}`);
     } catch (err: unknown) {
       console.error('Error updating buzzer:', err);
       const errorMessage = (err as { response?: { data?: { message?: string } } })?.response?.data?.message || 'Failed to update buzzer. Please try again.';
@@ -178,7 +178,7 @@ const BuzzerEditPage: React.FC = () => {
 
   // Handle cancel
   const handleCancel = () => {
-    navigate(`/alert-system/${instituteId}/buzzers/${id}`);
+    navigate(`/alert-system/${instituteId}`);
   };
 
   if (loading) {

@@ -113,7 +113,7 @@ const RadarCreatePage: React.FC = () => {
       await alertRadarService.create(payload);
       
       showSuccess('Radar created successfully!');
-      navigate(`/alert-system/${instituteId}`);
+      navigate(`/alert-system/${instituteId}/radars`);
     } catch (err: unknown) {
       console.error('Error creating radar:', err);
       const errorMessage = (err as { response?: { data?: { message?: string } } })?.response?.data?.message || 'Failed to create radar. Please try again.';
@@ -126,7 +126,7 @@ const RadarCreatePage: React.FC = () => {
 
   // Handle cancel
   const handleCancel = () => {
-    navigate(`/alert-system/${instituteId}`);
+    navigate(`/alert-system/${instituteId}/radars`);
   };
 
   if (loading) {
