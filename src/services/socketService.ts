@@ -85,7 +85,8 @@ class SocketService {
         autoConnect: true,
         reconnection: true,
         reconnectionDelay: 1000,
-        reconnectionAttempts: 10,
+        reconnectionDelayMax: 30000,
+        reconnectionAttempts: Infinity as unknown as number,
         timeout: 20000,
         forceNew: true,
       });
@@ -385,6 +386,54 @@ class SocketService {
     if (this.socket?.connected) {
       this.socket.emit('leave_radar', token);
     }
+  }
+
+  // Join radar room with ACK and retries
+  public async joinRadarRoomWithAck(token: string, retries: number = 3, timeoutMs: number = 2000): Promise<boolean> {
+    if (!this.socket) {
+      this.connect();
+    }
+    if (!this.socket?.connected) {
+      // Wait a short moment for connection
+      await new Promise(r => setTimeout(r, 300));
+    }
+
+    for (let attempt = 1; attempt <= retries; attempt++) {
+      const ok = await new Promise<boolean>((resolve) => {
+        let settled = false;
+        const t = setTimeout(() => {
+          if (!settled) {
+            settled = true;
+            resolve(false);
+          }
+        }, timeoutMs);
+
+        try {
+          this.socket?.emit('join_radar', token, (ackOk: boolean) => {
+            if (!settled) {
+              settled = true;
+              clearTimeout(t);
+              resolve(Boolean(ackOk));
+            }
+          });
+        } catch {
+          if (!settled) {
+            settled = true;
+            clearTimeout(t);
+            resolve(false);
+          }
+        }
+      });
+
+      if (ok) {
+        return true;
+      }
+
+      // Backoff before retry
+      await new Promise(r => setTimeout(r, Math.min(1000 * attempt, 3000)));
+    }
+
+    return false;
   }
 }
 

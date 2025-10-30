@@ -31,6 +31,9 @@ const RadarShowPage: React.FC = () => {
   const [updatingAlert, setUpdatingAlert] = useState(false);
   const [alertStatus, setAlertStatus] = useState<string>('');
   const [alertRemarks, setAlertRemarks] = useState<string>('');
+  const originalTitleRef = useRef<string>(document.title);
+  const autoCloseTimerRef = useRef<number | null>(null);
+  const pageLoadTimeRef = useRef<number>(Date.now());
   
   // Audio ref for emergency siren
   const audioRef = useRef<HTMLAudioElement | null>(null);
@@ -86,6 +89,28 @@ const RadarShowPage: React.FC = () => {
           fetchAlertAddresses(historyData).catch(error => 
             console.warn('Error fetching addresses in background:', error)
           );
+        }
+
+        // Catch-up: show the most recent alert if it occurred after page load and no popup is shown
+        if (historyData && historyData.length > 0) {
+          const latest = historyData[0];
+          const latestTime = new Date(latest.datetime).getTime();
+          if (latestTime > pageLoadTimeRef.current && !showAlertPopup) {
+            setCurrentAlert({
+              id: latest.id,
+              name: latest.name,
+              primary_phone: latest.primary_phone,
+              alert_type_name: latest.alert_type_name,
+              latitude: Number(latest.latitude),
+              longitude: Number(latest.longitude),
+              datetime: latest.datetime,
+              status: latest.status,
+              remarks: latest.remarks || null,
+              source: (latest as any).source || 'app',
+              image: (latest as any).image || null,
+            });
+            setShowAlertPopup(true);
+          }
         }
       } catch (historyError) {
         console.warn('Could not fetch alert history:', historyError);
@@ -205,21 +230,12 @@ const RadarShowPage: React.FC = () => {
 
   // Socket connection and alert handling
   useEffect(() => {
-    if (!token || !radar) return;
+    if (!token) return;
 
-    // Connect to socket if not already connected
-    if (!socketService.connected) {
-      socketService.connect();
-    }
-
-    // Join radar room
-    socketService.joinRadarRoom(token);
-
-    // Set up alert notification handler
+    // Define alert handler early
     const handleNewAlert = (alertData: AlertNotificationData) => {
       console.log('New alert received:', alertData);
-      
-      // Try to enable audio if not already enabled
+
       const tryEnableAudio = async () => {
         if (!audioInitializedRef.current && audioRef.current) {
           try {
@@ -230,52 +246,85 @@ const RadarShowPage: React.FC = () => {
             audioRef.current.currentTime = 0;
             setAudioEnabled(true);
             audioInitializedRef.current = true;
-            console.log('Audio enabled on alert');
             return true;
-          } catch (err) {
-            console.log('Audio enable failed on alert:', err);
+          } catch {
             return false;
           }
         }
         return audioInitializedRef.current;
       };
-      
-      // Try to enable audio and play siren
+
       tryEnableAudio().then(audioReady => {
         if (audioReady && audioRef.current) {
           audioRef.current.currentTime = 0;
-          audioRef.current.play().catch(err => {
-            console.error('Error playing alert sound:', err);
-            // Show visual alert as fallback
+          audioRef.current.play().catch(() => {
             document.title = '🚨 NEW ALERT! - Radar';
           });
         } else {
-          // Audio not ready yet, show visual alert
-          console.log('Audio not ready yet, showing visual alert');
           document.title = '🚨 NEW ALERT! - Radar';
         }
       });
-      
-      // Show popup with alert details
+
       setCurrentAlert(alertData.alert_data);
       setShowAlertPopup(true);
-      
-      // Refresh alert history
+
       if (radar) {
         fetchAlertHistory(radar.id);
       }
     };
 
-    // Register the alert handler
+    // Ensure connection
+    if (!socketService.connected) {
+      socketService.connect();
+    }
+
+    // Register handler before joining
     socketService.onNewAlert(handleNewAlert);
 
-    // Cleanup on unmount
-    return () => {
-      socketService.leaveRadarRoom(token);
+    const joinNow = async () => {
+      await socketService.joinRadarRoomWithAck(token).catch(() => {});
     };
-  }, [token, radar, fetchAlertHistory, audioEnabled]);
+    joinNow();
 
-  // Fetch reverse geocoded address when alert is shown
+    const handleConnectionChange = (connected: boolean) => {
+      if (connected) {
+        socketService.joinRadarRoomWithAck(token, 3, 2000).catch(() => {});
+        const audio = audioRef.current;
+        if (!audioInitializedRef.current && audio) {
+          (async () => {
+            try {
+              audio.volume = 0;
+              await audio.play();
+              audio.pause();
+              audio.volume = 0.7;
+              audio.currentTime = 0;
+              setAudioEnabled(true);
+              audioInitializedRef.current = true;
+            } catch {}
+          })();
+        }
+      }
+    };
+
+    socketService.onConnectionChange(handleConnectionChange);
+
+    // 10-minute watchdog: if disconnected, force reconnect; if connected, rejoin room with ACK
+    const intervalId = window.setInterval(() => {
+      if (socketService.getConnectionStatus()) {
+        socketService.joinRadarRoomWithAck(token, 1, 1500).catch(() => {});
+      } else {
+        socketService.reconnect();
+      }
+    }, 600000);
+
+    return () => {
+      window.clearInterval(intervalId);
+      socketService.onConnectionChange(() => {});
+      // keep onNewAlert as last registered elsewhere or clear if needed
+    };
+  }, [token, radar, fetchAlertHistory]);
+
+  // Fetch alert history for a specific radar
   useEffect(() => {
     if (currentAlert) {
       setAlertStatus(currentAlert.status);
@@ -287,6 +336,30 @@ const RadarShowPage: React.FC = () => {
         .catch(() => setAlertAddress('Address unavailable'));
     }
   }, [currentAlert]);
+
+  // Auto-close popup and stop sound after 30 seconds
+  useEffect(() => {
+    if (showAlertPopup && currentAlert) {
+      if (autoCloseTimerRef.current) {
+        window.clearTimeout(autoCloseTimerRef.current);
+      }
+      autoCloseTimerRef.current = window.setTimeout(() => {
+        if (audioRef.current) {
+          audioRef.current.pause();
+          audioRef.current.currentTime = 0;
+        }
+        document.title = originalTitleRef.current;
+        setShowAlertPopup(false);
+      }, 30000);
+    }
+
+    return () => {
+      if (autoCloseTimerRef.current) {
+        window.clearTimeout(autoCloseTimerRef.current);
+        autoCloseTimerRef.current = null;
+      }
+    };
+  }, [showAlertPopup, currentAlert]);
 
   // Handle alert status/remarks update
   const handleAlertUpdate = async () => {
@@ -489,6 +562,15 @@ const RadarShowPage: React.FC = () => {
         </Card>
       </div>
 
+      {/* Audio hint banner when audio isn't enabled */}
+      {!audioEnabled && (
+        <div className="absolute top-4 right-4 z-20">
+          <span className="inline-flex items-center px-2 py-1 text-[10px] font-medium rounded-full bg-yellow-100 text-yellow-800 border border-yellow-200 shadow-sm">
+            Sound blocked: enable kiosk autoplay
+          </span>
+        </div>
+      )}
+
       {/* Floating Sidebar Card - Alert History */}
       <div 
         className="absolute left-4 bottom-4 z-20"
@@ -537,7 +619,7 @@ const RadarShowPage: React.FC = () => {
                       </p>
                       <p className="text-xs text-gray-500 flex items-center gap-1">
                         <svg className="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 5a2 2 0 012-2h3.28a1 1 0 01.948.684l1.498 4.493a1 1 0 01-.502 1.21l-2.257 1.13a11.042 11.042 0 005.516 5.516l1.13-2.257a1 1 0 011.21-.502l4.493 1.498a1 1 0 01.684.949V19a2 2 0 01-2 2h-1C9.716 21 3 14.284 3 6V5z" />
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 5a2 2 0 012-2h3.28a1 1 0 01.948.684l1.498 4.493a1 1 0 01-.502 1.21l-2.257 1.13a11.042 11.042 0 005.516 5.516l1.13-2.257a1 1 0 01.684.949V19a2 2 0 01-2 2h-1C9.716 21 3 14.284 3 6V5z" />
                         </svg>
                         {alert.primary_phone}
                       </p>
@@ -566,11 +648,11 @@ const RadarShowPage: React.FC = () => {
 
       {/* Alert Popup Modal */}
       {showAlertPopup && currentAlert && (
-        <div style={{backgroundColor: 'rgba(0,0,0,0.7)'}} className="fixed inset-0 flex items-center justify-center z-50 p-4">
-          <div className="bg-white rounded-lg shadow-xl max-w-2xl w-full mx-4 max-h-[90vh] overflow-y-auto">
-            <div className="p-6">
+        <div style={{backgroundColor: 'rgba(0,0,0,0.7)'}} className="fixed inset-0 z-50 p-0">
+          <div className="absolute inset-0 m-16">
+            <div className="bg-white rounded-lg shadow-2xl w-full h-full overflow-hidden">
               {/* Header */}
-              <div className="flex items-center justify-between mb-4">
+              <div className="flex items-center justify-between px-6 py-4 border-b border-gray-200">
                 <h3 className="text-lg font-semibold text-gray-900">Alert Details</h3>
                 <button
                   onClick={() => {
@@ -578,6 +660,7 @@ const RadarShowPage: React.FC = () => {
                       audioRef.current.pause();
                       audioRef.current.currentTime = 0;
                     }
+                    document.title = originalTitleRef.current;
                     setShowAlertPopup(false);
                   }}
                   className="text-gray-400 hover:text-gray-600 transition-colors"
@@ -587,140 +670,124 @@ const RadarShowPage: React.FC = () => {
                   </svg>
                 </button>
               </div>
-              
-              {/* Address Section */}
-              <div className="mb-4">
-                <p className="text-base text-gray-900">{alertAddress}</p>
-              </div>
-              
-              {/* Badges Row */}
-              <div className="flex gap-3 mb-4">
-                <Badge variant="danger" className="px-3 py-2 text-sm font-medium">
-                  {currentAlert.alert_type_name}
-                </Badge>
-                <Badge variant="primary" className="px-3 py-2 text-sm font-medium flex items-center gap-2">
-                  <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" />
-                  </svg>
-                  {currentAlert.name}
-                </Badge>
-                <Badge variant="primary" className="px-3 py-2 text-sm font-medium flex items-center gap-2">
-                  <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 5a2 2 0 012-2h3.28a1 1 0 01.948.684l1.498 4.493a1 1 0 01-.502 1.21l-2.257 1.13a11.042 11.042 0 005.516 5.516l1.13-2.257a1 1 0 011.21-.502l4.493 1.498a1 1 0 01.684.949V19a2 2 0 01-2 2h-1C9.716 21 3 14.284 3 6V5z" />
-                  </svg>
-                  {currentAlert.primary_phone}
-                </Badge>
-              </div>
-              
-              {/* Coordinates */}
-              <div className="mb-4 flex items-center gap-2 text-sm text-gray-600">
-                <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z" />
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 11a3 3 0 11-6 0 3 3 0 016 0z" />
-                </svg>
-                {Number(currentAlert.latitude).toFixed(6)}, {Number(currentAlert.longitude).toFixed(6)}
-              </div>
-              
-              {/* Map */}
-              <div className="mb-4">
-                <div className="border border-gray-200 rounded-md overflow-hidden">
+
+              {/* Grid: 80% map, 20% details */}
+              <div className="grid grid-cols-[4fr,1fr] gap-0 w-full h-[calc(100%-4rem)]">
+                {/* Left: Map column */}
+                <div className="w-full h-full">
                   <AlertLocationMap 
                     latitude={Number(currentAlert.latitude)} 
                     longitude={Number(currentAlert.longitude)} 
-                    height="200px" 
+                    height="100%" 
                   />
                 </div>
-              </div>
-              
-              {/* Image Section - Show for non-app sources */}
-              {currentAlert.source !== 'app' && currentAlert.image && (
-                <div className="mb-4">
-                  <img
-                    src={`${API_CONFIG.BASE_URL}${currentAlert.image}`}
-                    alt="Alert image"
-                    className="w-full h-auto rounded-md border border-gray-200"
-                  />
-                </div>
-              )}
-              
-              {/* Review SOS Request Section */}
-              <div className="space-y-4 mb-6 p-4 bg-gray-50 rounded-md">
-                <h4 className="text-sm font-medium text-gray-900">Review SOS Request</h4>
-                
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-2">
-                    Remarks
-                  </label>
-                  <textarea
-                    value={alertRemarks}
-                    onChange={(e) => setAlertRemarks(e.target.value)}
-                    rows={3}
-                    className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
-                    placeholder="Add remarks..."
-                  />
-                </div>
-                
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-2">
-                    Action
-                  </label>
-                  <div className="flex gap-4">
-                    <label className="flex items-center">
-                      <input
-                        type="radio"
-                        name="action"
-                        value="approved"
-                        checked={alertStatus === 'approved'}
-                        onChange={(e) => setAlertStatus(e.target.value)}
-                        className="mr-2"
+
+                {/* Right: Details/actions column */}
+                <div className="h-full overflow-y-auto border-l border-gray-200 p-4 flex flex-col">
+                  {/* Address */}
+                  <div className="mb-3">
+                    <p className="text-base text-gray-900">{alertAddress}</p>
+                  </div>
+
+                  {/* Badges */}
+                  <div className="flex flex-wrap gap-2 mb-3">
+                    <Badge variant="danger" className="px-3 py-1.5 text-sm font-medium">
+                      {currentAlert.alert_type_name}
+                    </Badge>
+                    <Badge variant="primary" className="px-3 py-1.5 text-sm font-medium flex items-center gap-2">
+                      <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" />
+                      </svg>
+                      {currentAlert.name}
+                    </Badge>
+                    <Badge variant="primary" className="px-3 py-1.5 text-sm font-medium flex items-center gap-2">
+                      <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 5a2 2 0 012-2h3.28a1 1 0 01.948.684l1.498 4.493a1 1 0 01-.502 1.21l-2.257 1.13a11.042 11.042 0 005.516 5.516l1.13-2.257a1 1 0 01.684.949V19a2 2 0 01-2 2h-1C9.716 21 3 14.284 3 6V5z" />
+                      </svg>
+                      {currentAlert.primary_phone}
+                    </Badge>
+                  </div>
+
+                  {/* Coordinates */}
+                  <div className="mb-4 flex items-center gap-2 text-sm text-gray-600">
+                    <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z" />
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 11a3 3 0 11-6 0 3 3 0 016 0z" />
+                    </svg>
+                    {Number(currentAlert.latitude).toFixed(6)}, {Number(currentAlert.longitude).toFixed(6)}
+                  </div>
+
+                  {/* Image for non-app */}
+                  {currentAlert.source !== 'app' && currentAlert.image && (
+                    <div className="mb-4">
+                      <img
+                        src={`${API_CONFIG.BASE_URL}${currentAlert.image}`}
+                        alt="Alert image"
+                        className="w-full h-auto rounded-md border border-gray-200"
                       />
-                      Approve
-                    </label>
-                    <label className="flex items-center">
-                      <input
-                        type="radio"
-                        name="action"
-                        value="rejected"
-                        checked={alertStatus === 'rejected'}
-                        onChange={(e) => setAlertStatus(e.target.value)}
-                        className="mr-2"
+                    </div>
+                  )}
+
+                  {/* Review Section */}
+                  <div className="space-y-3 mb-4 p-3 bg-gray-50 rounded-md">
+                    <h4 className="text-sm font-medium text-gray-900">Review SOS Request</h4>
+                    <div>
+                      <label className="block text-sm font-medium text-gray-700 mb-1">Remarks</label>
+                      <textarea
+                        value={alertRemarks}
+                        onChange={(e) => setAlertRemarks(e.target.value)}
+                        rows={3}
+                        className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                        placeholder="Add remarks..."
                       />
-                      Disapprove
-                    </label>
+                    </div>
+                    <div>
+                      <label className="block text-sm font-medium text-gray-700 mb-1">Action</label>
+                      <div className="flex gap-4">
+                        <label className="flex items-center">
+                          <input type="radio" name="action" value="approved" checked={alertStatus === 'approved'} onChange={(e) => setAlertStatus(e.target.value)} className="mr-2" />
+                          Approve
+                        </label>
+                        <label className="flex items-center">
+                          <input type="radio" name="action" value="rejected" checked={alertStatus === 'rejected'} onChange={(e) => setAlertStatus(e.target.value)} className="mr-2" />
+                          Disapprove
+                        </label>
+                      </div>
+                    </div>
+                  </div>
+
+                  {/* Actions */}
+                  <div className="mt-auto flex gap-3">
+                    <button
+                      onClick={handleAlertUpdate}
+                      disabled={updatingAlert}
+                      className="flex-1 px-4 py-2 bg-green-600 text-white rounded-md hover:bg-green-700 transition-colors disabled:opacity-50 flex items-center justify-center gap-2"
+                    >
+                      {updatingAlert ? (
+                        <>
+                          <Spinner size="sm" />
+                          <span>Updating...</span>
+                        </>
+                      ) : (
+                        <span>Submit Action</span>
+                      )}
+                    </button>
+                    <button
+                      onClick={() => {
+                        if (audioRef.current) {
+                          audioRef.current.pause();
+                          audioRef.current.currentTime = 0;
+                        }
+                        document.title = originalTitleRef.current;
+                        setShowAlertPopup(false);
+                      }}
+                      disabled={updatingAlert}
+                      className="flex-1 px-4 py-2 bg-orange-500 text-white rounded-md hover:bg-orange-600 transition-colors disabled:opacity-50"
+                    >
+                      Cancel
+                    </button>
                   </div>
                 </div>
-                
-              </div>
-              
-              {/* Action Buttons */}
-              <div className="flex gap-3">
-                <button
-                  onClick={handleAlertUpdate}
-                  disabled={updatingAlert}
-                  className="flex-1 px-4 py-2 bg-green-600 text-white rounded-md hover:bg-green-700 transition-colors disabled:opacity-50 flex items-center justify-center gap-2"
-                >
-                  {updatingAlert ? (
-                    <>
-                      <Spinner size="sm" />
-                      <span>Updating...</span>
-                    </>
-                  ) : (
-                    <span>Submit Action</span>
-                  )}
-                </button>
-                <button
-                  onClick={() => {
-                    if (audioRef.current) {
-                      audioRef.current.pause();
-                      audioRef.current.currentTime = 0;
-                    }
-                    setShowAlertPopup(false);
-                  }}
-                  disabled={updatingAlert}
-                  className="flex-1 px-4 py-2 bg-orange-500 text-white rounded-md hover:bg-orange-600 transition-colors disabled:opacity-50"
-                >
-                  Cancel
-                </button>
               </div>
             </div>
           </div>
