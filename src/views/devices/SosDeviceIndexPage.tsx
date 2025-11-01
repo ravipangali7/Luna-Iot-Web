@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useCallback } from 'react';
+import React, { useState, useEffect, useCallback, useContext } from 'react';
 import { useNavigate, useSearchParams } from 'react-router-dom';
 import { deviceService } from '../../api/services/deviceService';
 import { confirmDelete, showSuccess, showError } from '../../utils/sweetAlert';
@@ -13,6 +13,8 @@ import {
   DeleteActionButton, 
   RechargeActionButton, 
   CommandsActionButton, 
+  RelayOnActionButton,
+  RelayOffActionButton,
   ActionButtonGroup 
 } from '../../components/ui/buttons';
 import Input from '../../components/ui/forms/Input';
@@ -30,8 +32,10 @@ import Pagination from '../../components/ui/pagination/Pagination';
 import RoleBasedWidget from '../../components/role-based/RoleBasedWidget';
 import { ROLES } from '../../utils/roleUtils';
 import RefreshIcon from '@mui/icons-material/Refresh';
+import { AuthContext } from '../../contexts/AuthContext';
 
 const SosDeviceIndexPage: React.FC = () => {
+  const auth = useContext(AuthContext);
   const navigate = useNavigate();
   const [searchParams, setSearchParams] = useSearchParams();
   const { refreshKey } = useRefresh();
@@ -331,6 +335,77 @@ const SosDeviceIndexPage: React.FC = () => {
     }));
   };
 
+  const canControlRelayForDevice = useCallback((device: Device): boolean => {
+    if (auth?.isSuperAdmin && auth.isSuperAdmin()) return true;
+    // Check if device has vehicles with relay permission
+    if (device.vehicles && device.vehicles.length > 0) {
+      // Check if any vehicle has userVehicles with relay permission for current user
+      const currentUserId = auth?.user?.id;
+      if (currentUserId) {
+        for (const vehicle of device.vehicles) {
+          // Type assertion needed as Device.Vehicle doesn't have userVehicles in type but API provides it
+          const vehicleWithUserVehicles = vehicle as any;
+          if (vehicleWithUserVehicles.userVehicles) {
+            const userVehicle = vehicleWithUserVehicles.userVehicles.find((uv: any) => 
+              uv.userId === currentUserId || uv.user?.id === currentUserId
+            );
+            if (userVehicle && userVehicle.relay === true) {
+              return true;
+            }
+          }
+        }
+      }
+    }
+    return false;
+  }, [auth]);
+
+  const handleRelayOn = async (device: Device) => {
+    try {
+      if (!device.phone) {
+        showError('Device phone number not available');
+        return;
+      }
+
+      const result = await deviceService.sendRelayOn(device.phone);
+
+      if (result.success) {
+        showSuccess('Relay ON command sent successfully');
+      } else {
+        showError(result.error || 'Failed to send relay ON command');
+      }
+    } catch (error) {
+      console.error('Relay ON error:', error);
+      showError('Failed to send relay ON command');
+    }
+  };
+
+  const handleRelayOff = async (device: Device) => {
+    try {
+      if (!device.phone) {
+        showError('Device phone number not available');
+        return;
+      }
+
+      const result = await deviceService.sendRelayOff(device.phone);
+
+      if (result.success) {
+        showSuccess('Relay OFF command sent successfully');
+      } else {
+        showError(result.error || 'Failed to send relay OFF command');
+      }
+    } catch (error) {
+      console.error('Relay OFF error:', error);
+      showError('Failed to send relay OFF command');
+    }
+  };
+
+  const getRelayStatusValue = (device: Device): boolean | null => {
+    if (device.latestStatus) {
+      return device.latestStatus.relay === true;
+    }
+    return null;
+  };
+
   const handlePageChange = (page: number) => {
     setCurrentPage(page);
     if (!searchQuery) {
@@ -595,6 +670,22 @@ const SosDeviceIndexPage: React.FC = () => {
                               <RoleBasedWidget allowedRoles={[ROLES.SUPER_ADMIN]}>
                                 <RechargeActionButton onClick={() => handleRechargeDevice(device)} />
                               </RoleBasedWidget>
+                              {/* Relay: show action if user can control for this device; else show Not Available */}
+                              {canControlRelayForDevice(device) ? (
+                                (() => {
+                                  const relayStatus = getRelayStatusValue(device);
+                                  if (relayStatus === true) {
+                                    return <RelayOffActionButton onClick={() => handleRelayOff(device)} />;
+                                  } else if (relayStatus === false) {
+                                    return <RelayOnActionButton onClick={() => handleRelayOn(device)} />;
+                                  } else {
+                                    // Status unknown, show ON button as default
+                                    return <RelayOnActionButton onClick={() => handleRelayOn(device)} />;
+                                  }
+                                })()
+                              ) : (
+                                <Badge variant="secondary">Not Available</Badge>
+                              )}
                               <RoleBasedWidget allowedRoles={[ROLES.SUPER_ADMIN]}>
                                 <div className="relative">
                                   <CommandsActionButton onClick={() => toggleDropdown(device.id.toString())} />

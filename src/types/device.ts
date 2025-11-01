@@ -40,6 +40,18 @@ export interface UserVehicle {
   updatedAt: string;
 }
 
+export interface DeviceStatus {
+  id: number;
+  imei: string;
+  battery: number;
+  signal: number;
+  ignition: boolean;
+  charging: boolean;
+  relay: boolean;
+  createdAt: string;
+  updatedAt: string;
+}
+
 export interface Device {
   id: number;
   imei: string;
@@ -58,6 +70,7 @@ export interface Device {
   } | null;
   userDevices: UserDevice[];
   vehicles?: Vehicle[];
+  latestStatus?: DeviceStatus | null;
   createdAt: string;
   updatedAt: string;
 }
