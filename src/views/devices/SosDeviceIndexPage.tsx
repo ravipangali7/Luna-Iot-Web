@@ -33,6 +33,13 @@ import RoleBasedWidget from '../../components/role-based/RoleBasedWidget';
 import { ROLES } from '../../utils/roleUtils';
 import RefreshIcon from '@mui/icons-material/Refresh';
 import { AuthContext } from '../../contexts/AuthContext';
+import VehicleUtils from '../../utils/vehicleUtils';
+import PowerIcon from '@mui/icons-material/Power';
+import PowerOffIcon from '@mui/icons-material/PowerOff';
+import ElectricBoltIcon from '@mui/icons-material/ElectricBolt';
+import AccessTimeIcon from '@mui/icons-material/AccessTime';
+import ToggleOnIcon from '@mui/icons-material/ToggleOn';
+import ToggleOffIcon from '@mui/icons-material/ToggleOff';
 
 const SosDeviceIndexPage: React.FC = () => {
   const auth = useContext(AuthContext);
@@ -48,6 +55,7 @@ const SosDeviceIndexPage: React.FC = () => {
   const [isInitialized, setIsInitialized] = useState(false);
   const [isSearching, setIsSearching] = useState(false);
   const [isInSearchMode, setIsInSearchMode] = useState(false);
+  const [expandedDeviceId, setExpandedDeviceId] = useState<number | null>(null);
   
   // Pagination state
   const [currentPage, setCurrentPage] = useState(1);
@@ -518,6 +526,51 @@ const SosDeviceIndexPage: React.FC = () => {
     return '';
   };
 
+  // Helper function to convert battery (0-6) to percentage
+  const getBatteryPercentage = (rawValue: number): number => {
+    if (rawValue <= 0) return 0;
+    if (rawValue >= 6) return 100;
+    return Math.round((rawValue / 6) * 100);
+  };
+
+  // Helper function to convert signal (0-4) to percentage
+  const getSignalPercentage = (rawValue: number): number => {
+    if (rawValue <= 0) return 0;
+    if (rawValue >= 4) return 100;
+    return Math.round((rawValue / 4) * 100);
+  };
+
+  // Helper function to format time ago
+  const formatTimeAgo = (dateString: string): string => {
+    const now = new Date();
+    const date = new Date(dateString);
+
+    if (isNaN(date.getTime())) {
+      return 'Invalid date';
+    }
+
+    const diffInSeconds = Math.floor((now.getTime() - date.getTime()) / 1000);
+    if (diffInSeconds < 0) return 'Just now';
+    if (diffInSeconds < 1) return 'Just now';
+    if (diffInSeconds < 60) return `${diffInSeconds} second${diffInSeconds !== 1 ? 's' : ''} ago`;
+    
+    const minutes = Math.floor(diffInSeconds / 60);
+    const hours = Math.floor(diffInSeconds / 3600);
+    const days = Math.floor(diffInSeconds / 86400);
+
+    if (diffInSeconds < 3600) {
+      return `${minutes} minute${minutes !== 1 ? 's' : ''} ago`;
+    } else if (diffInSeconds < 86400) {
+      return `${hours} hour${hours !== 1 ? 's' : ''} ago`;
+    } else {
+      return `${days} day${days !== 1 ? 's' : ''} ago`;
+    }
+  };
+
+  const handleRowClick = (deviceId: number) => {
+    setExpandedDeviceId(expandedDeviceId === deviceId ? null : deviceId);
+  };
+
   if (loading) {
     return (
       <Container>
@@ -604,126 +657,350 @@ const SosDeviceIndexPage: React.FC = () => {
                   </TableHead>
                   <TableBody>
                     {devices.map((device, index) => (
-                      <TableRow key={device.id}>
-                        <TableCell>{index + 1}</TableCell>
-                        <TableCell>
-                          <div className="space-y-1">
-                            <div className="font-mono text-sm">{device.imei}</div>
-                            <Badge variant="secondary" size="sm">{device.phone}</Badge>
-                          </div>
-                        </TableCell>
-                        <TableCell>
-                          <div className="space-y-1">
-                            <div className="text-sm">{device.sim}</div>
-                            <Badge variant="secondary" size="sm">{device.iccid || 'N/A'}</Badge>
-                          </div>
-                        </TableCell>
-                        <TableCell>
-                          <div className="space-y-1">
-                            <div className="text-sm">{device.protocol}</div>
-                            <Badge variant="info" size="sm">{device.model}</Badge>
-                          </div>
-                        </TableCell>
-                        <TableCell>
-                          <div className="space-y-1">
-                            {device.subscription_plan ? (
-                              <>
-                                <div className="text-sm font-medium">{device.subscription_plan.title}</div>
-                                <Badge variant="success" size="sm">Rs {device.subscription_plan.price}</Badge>
-                              </>
-                            ) : (
-                              <Badge variant="secondary" size="sm">No Plan</Badge>
-                            )}
-                          </div>
-                        </TableCell>
-                        <TableCell>
-                          <div className="space-y-1">
-                            <div className="text-sm">{getDealerInfo(device)}</div>
-                            {getDealerPhone(device) && (
-                              <Badge variant="secondary" size="sm">{getDealerPhone(device)}</Badge>
-                            )}
-                          </div>
-                        </TableCell>
-                        <TableCell>
-                          <div className="space-y-1">
-                            <div className="text-sm">{getVehicleInfo(device)}</div>
-                            {getVehicleNo(device) && (
-                              <Badge variant="secondary" size="sm">{getVehicleNo(device)}</Badge>
-                            )}
-                          </div>
-                        </TableCell>
-                        <TableCell>
-                          <div className="space-y-1">
-                            <div className="text-sm">{getCustomerInfo(device)}</div>
-                            {getCustomerPhone(device) && (
-                              <Badge variant="secondary" size="sm">{getCustomerPhone(device)}</Badge>
-                            )}
-                          </div>
-                        </TableCell>
-                        <RoleBasedWidget allowedRoles={[ROLES.SUPER_ADMIN]}>
+                      <React.Fragment key={device.id}>
+                        <TableRow 
+                          onClick={() => handleRowClick(device.id)}
+                          className="cursor-pointer hover:bg-gray-50 transition-colors"
+                        >
+                          <TableCell>{index + 1}</TableCell>
                           <TableCell>
-                            <ActionButtonGroup>
-                              <RoleBasedWidget allowedRoles={[ROLES.SUPER_ADMIN]}>
-                                <EditActionButton onClick={() => handleEditDevice(device)} />
-                              </RoleBasedWidget>
-
-                              <RoleBasedWidget allowedRoles={[ROLES.SUPER_ADMIN]}>
-                                <RechargeActionButton onClick={() => handleRechargeDevice(device)} />
-                              </RoleBasedWidget>
-                              {/* Relay: show action if user can control for this device; else show Not Available */}
-                              {canControlRelayForDevice(device) ? (
-                                (() => {
-                                  const relayStatus = getRelayStatusValue(device);
-                                  if (relayStatus === true) {
-                                    return <RelayOffActionButton onClick={() => handleRelayOff(device)} />;
-                                  } else if (relayStatus === false) {
-                                    return <RelayOnActionButton onClick={() => handleRelayOn(device)} />;
-                                  } else {
-                                    // Status unknown, show ON button as default
-                                    return <RelayOnActionButton onClick={() => handleRelayOn(device)} />;
-                                  }
-                                })()
+                            <div className="space-y-1">
+                              <div className="font-mono text-sm">{device.imei}</div>
+                              <Badge variant="secondary" size="sm">{device.phone}</Badge>
+                            </div>
+                          </TableCell>
+                          <TableCell>
+                            <div className="space-y-1">
+                              <div className="text-sm">{device.sim}</div>
+                              <Badge variant="secondary" size="sm">{device.iccid || 'N/A'}</Badge>
+                            </div>
+                          </TableCell>
+                          <TableCell>
+                            <div className="space-y-1">
+                              <div className="text-sm">{device.protocol}</div>
+                              <Badge variant="info" size="sm">{device.model}</Badge>
+                            </div>
+                          </TableCell>
+                          <TableCell>
+                            <div className="space-y-1">
+                              {device.subscription_plan ? (
+                                <>
+                                  <div className="text-sm font-medium">{device.subscription_plan.title}</div>
+                                  <Badge variant="success" size="sm">Rs {device.subscription_plan.price}</Badge>
+                                </>
                               ) : (
-                                <Badge variant="secondary">Not Available</Badge>
+                                <Badge variant="secondary" size="sm">No Plan</Badge>
                               )}
-                              <RoleBasedWidget allowedRoles={[ROLES.SUPER_ADMIN]}>
-                                <div className="relative">
-                                  <CommandsActionButton onClick={() => toggleDropdown(device.id.toString())} />
-                                  {dropdownOpen[device.id.toString()] && (
-                                    <div className="absolute right-0 mt-1 w-48 bg-white rounded-lg shadow-xl z-10 border border-gray-200 backdrop-blur-sm">
-                                      <div className="py-1">
-                                        <button
-                                          className="flex items-center w-full px-4 py-2 text-sm text-gray-700 hover:bg-blue-50 hover:text-blue-700 transition-colors duration-200"
-                                          onClick={() => {
-                                            handleServerPoint(device);
-                                            setDropdownOpen(prev => ({ ...prev, [device.id.toString()]: false }));
-                                          }}
-                                        >
-                                          <SendIcon className="w-4 h-4 mr-3 text-blue-500" />
-                                          SERVER POINT
-                                        </button>
-                                        <button
-                                          className="flex items-center w-full px-4 py-2 text-sm text-gray-700 hover:bg-orange-50 hover:text-orange-700 transition-colors duration-200"
-                                          onClick={() => {
-                                            handleReset(device);
-                                            setDropdownOpen(prev => ({ ...prev, [device.id.toString()]: false }));
-                                          }}
-                                        >
-                                          <RefreshIcon className="w-4 h-4 mr-3 text-orange-500" />
-                                          RESET
-                                        </button>
+                            </div>
+                          </TableCell>
+                          <TableCell>
+                            <div className="space-y-1">
+                              <div className="text-sm">{getDealerInfo(device)}</div>
+                              {getDealerPhone(device) && (
+                                <Badge variant="secondary" size="sm">{getDealerPhone(device)}</Badge>
+                              )}
+                            </div>
+                          </TableCell>
+                          <TableCell>
+                            <div className="space-y-1">
+                              <div className="text-sm">{getVehicleInfo(device)}</div>
+                              {getVehicleNo(device) && (
+                                <Badge variant="secondary" size="sm">{getVehicleNo(device)}</Badge>
+                              )}
+                            </div>
+                          </TableCell>
+                          <TableCell>
+                            <div className="space-y-1">
+                              <div className="text-sm">{getCustomerInfo(device)}</div>
+                              {getCustomerPhone(device) && (
+                                <Badge variant="secondary" size="sm">{getCustomerPhone(device)}</Badge>
+                              )}
+                            </div>
+                          </TableCell>
+                          <RoleBasedWidget allowedRoles={[ROLES.SUPER_ADMIN]}>
+                            <TableCell>
+                              <div onClick={(e: React.MouseEvent) => e.stopPropagation()}>
+                                <ActionButtonGroup>
+                                  <RoleBasedWidget allowedRoles={[ROLES.SUPER_ADMIN]}>
+                                    <EditActionButton onClick={() => handleEditDevice(device)} />
+                                  </RoleBasedWidget>
+
+                                  <RoleBasedWidget allowedRoles={[ROLES.SUPER_ADMIN]}>
+                                    <RechargeActionButton onClick={() => handleRechargeDevice(device)} />
+                                  </RoleBasedWidget>
+                                  {/* Relay: show action if user can control for this device; else show Not Available */}
+                                  {canControlRelayForDevice(device) ? (
+                                    (() => {
+                                      const relayStatus = getRelayStatusValue(device);
+                                      if (relayStatus === true) {
+                                        return <RelayOffActionButton onClick={() => handleRelayOff(device)} />;
+                                      } else if (relayStatus === false) {
+                                        return <RelayOnActionButton onClick={() => handleRelayOn(device)} />;
+                                      } else {
+                                        // Status unknown, show ON button as default
+                                        return <RelayOnActionButton onClick={() => handleRelayOn(device)} />;
+                                      }
+                                    })()
+                                  ) : (
+                                    <Badge variant="secondary">Not Available</Badge>
+                                  )}
+                                  <RoleBasedWidget allowedRoles={[ROLES.SUPER_ADMIN]}>
+                                    <div className="relative">
+                                      <CommandsActionButton onClick={() => toggleDropdown(device.id.toString())} />
+                                      {dropdownOpen[device.id.toString()] && (
+                                        <div className="absolute right-0 mt-1 w-48 bg-white rounded-lg shadow-xl z-10 border border-gray-200 backdrop-blur-sm">
+                                          <div className="py-1">
+                                            <button
+                                              className="flex items-center w-full px-4 py-2 text-sm text-gray-700 hover:bg-blue-50 hover:text-blue-700 transition-colors duration-200"
+                                              onClick={() => {
+                                                handleServerPoint(device);
+                                                setDropdownOpen(prev => ({ ...prev, [device.id.toString()]: false }));
+                                              }}
+                                            >
+                                              <SendIcon className="w-4 h-4 mr-3 text-blue-500" />
+                                              SERVER POINT
+                                            </button>
+                                            <button
+                                              className="flex items-center w-full px-4 py-2 text-sm text-gray-700 hover:bg-orange-50 hover:text-orange-700 transition-colors duration-200"
+                                              onClick={() => {
+                                                handleReset(device);
+                                                setDropdownOpen(prev => ({ ...prev, [device.id.toString()]: false }));
+                                              }}
+                                            >
+                                              <RefreshIcon className="w-4 h-4 mr-3 text-orange-500" />
+                                              RESET
+                                            </button>
+                                          </div>
+                                        </div>
+                                      )}
+                                    </div>
+                                  </RoleBasedWidget>
+                                  <RoleBasedWidget allowedRoles={[ROLES.SUPER_ADMIN]}>
+                                    <DeleteActionButton onClick={() => handleDeleteDevice(device)} />
+                                  </RoleBasedWidget>
+                                </ActionButtonGroup>
+                              </div>
+                            </TableCell>
+                          </RoleBasedWidget>
+                        </TableRow>
+                        {expandedDeviceId === device.id && device.latestStatus && (
+                          <TableRow>
+                            <TableCell colSpan={9} className="bg-gradient-to-br from-gray-50 to-gray-100 p-0">
+                              <div className="p-6 animate-in fade-in slide-in-from-top-2 duration-300">
+                                <div className="flex items-center gap-2 mb-6">
+                                  <div className="w-1 h-6 bg-blue-500 rounded-full"></div>
+                                  <h3 className="text-xl font-bold text-gray-900">Device Status</h3>
+                                  <div className="flex-1"></div>
+                                </div>
+                                <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
+                                  {/* Battery */}
+                                  <div className="group relative bg-gradient-to-br from-white to-blue-50 p-5 rounded-xl border border-blue-100 shadow-md hover:shadow-lg transition-all duration-300 hover:scale-[1.02]">
+                                    <div className="absolute top-0 right-0 w-20 h-20 bg-blue-100 rounded-full -mr-10 -mt-10 opacity-20 group-hover:opacity-30 transition-opacity"></div>
+                                    <div className="flex items-center justify-between mb-3">
+                                      <div className="flex items-center gap-3">
+                                        <div className="p-2 bg-blue-100 rounded-lg">
+                                          {VehicleUtils.getBattery(device.latestStatus.battery, 24)}
+                                        </div>
+                                        <span className="text-sm font-semibold text-gray-700 uppercase tracking-wide">Battery</span>
                                       </div>
                                     </div>
-                                  )}
+                                    <div className="mb-3">
+                                      <div className="text-3xl font-bold text-blue-600 mb-2">
+                                        {getBatteryPercentage(device.latestStatus.battery)}%
+                                      </div>
+                                      <div className="w-full bg-gray-200 rounded-full h-2.5 overflow-hidden">
+                                        <div 
+                                          className={`h-2.5 rounded-full transition-all duration-500 ${
+                                            getBatteryPercentage(device.latestStatus.battery) > 50 
+                                              ? 'bg-gradient-to-r from-green-400 to-green-600' 
+                                              : getBatteryPercentage(device.latestStatus.battery) > 20
+                                              ? 'bg-gradient-to-r from-yellow-400 to-yellow-600'
+                                              : 'bg-gradient-to-r from-red-400 to-red-600'
+                                          }`}
+                                          style={{ width: `${getBatteryPercentage(device.latestStatus.battery)}%` }}
+                                        ></div>
+                                      </div>
+                                    </div>
+                                  </div>
+
+                                  {/* Signal */}
+                                  <div className="group relative bg-gradient-to-br from-white to-purple-50 p-5 rounded-xl border border-purple-100 shadow-md hover:shadow-lg transition-all duration-300 hover:scale-[1.02]">
+                                    <div className="absolute top-0 right-0 w-20 h-20 bg-purple-100 rounded-full -mr-10 -mt-10 opacity-20 group-hover:opacity-30 transition-opacity"></div>
+                                    <div className="flex items-center justify-between mb-3">
+                                      <div className="flex items-center gap-3">
+                                        <div className="p-2 bg-purple-100 rounded-lg">
+                                          {VehicleUtils.getSignal(device.latestStatus.signal, 24)}
+                                        </div>
+                                        <span className="text-sm font-semibold text-gray-700 uppercase tracking-wide">Signal</span>
+                                      </div>
+                                    </div>
+                                    <div className="mb-3">
+                                      <div className="text-3xl font-bold text-purple-600 mb-2">
+                                        {getSignalPercentage(device.latestStatus.signal)}%
+                                      </div>
+                                      <div className="w-full bg-gray-200 rounded-full h-2.5 overflow-hidden">
+                                        <div 
+                                          className={`h-2.5 rounded-full transition-all duration-500 ${
+                                            getSignalPercentage(device.latestStatus.signal) > 50 
+                                              ? 'bg-gradient-to-r from-green-400 to-green-600' 
+                                              : getSignalPercentage(device.latestStatus.signal) > 20
+                                              ? 'bg-gradient-to-r from-yellow-400 to-yellow-600'
+                                              : 'bg-gradient-to-r from-red-400 to-red-600'
+                                          }`}
+                                          style={{ width: `${getSignalPercentage(device.latestStatus.signal)}%` }}
+                                        ></div>
+                                      </div>
+                                    </div>
+                                  </div>
+
+                                  {/* Ignition */}
+                                  <div className={`group relative bg-gradient-to-br p-5 rounded-xl border shadow-md hover:shadow-lg transition-all duration-300 hover:scale-[1.02] ${
+                                    device.latestStatus.ignition 
+                                      ? 'from-green-50 to-white border-green-200' 
+                                      : 'from-red-50 to-white border-red-200'
+                                  }`}>
+                                    <div className={`absolute top-0 right-0 w-20 h-20 rounded-full -mr-10 -mt-10 opacity-20 group-hover:opacity-30 transition-opacity ${
+                                      device.latestStatus.ignition ? 'bg-green-100' : 'bg-red-100'
+                                    }`}></div>
+                                    <div className="flex items-center justify-between mb-3">
+                                      <div className="flex items-center gap-3">
+                                        <div className={`p-2 rounded-lg ${
+                                          device.latestStatus.ignition ? 'bg-green-100' : 'bg-red-100'
+                                        }`}>
+                                          {device.latestStatus.ignition ? (
+                                            <PowerIcon className="text-green-600" style={{ fontSize: 24 }} />
+                                          ) : (
+                                            <PowerOffIcon className="text-red-600" style={{ fontSize: 24 }} />
+                                          )}
+                                        </div>
+                                        <span className="text-sm font-semibold text-gray-700 uppercase tracking-wide">Ignition</span>
+                                      </div>
+                                    </div>
+                                    <div className="flex items-center gap-2">
+                                      <div className={`flex items-center gap-2 px-3 py-1.5 rounded-full text-sm font-bold ${
+                                        device.latestStatus.ignition 
+                                          ? 'bg-green-100 text-green-700' 
+                                          : 'bg-red-100 text-red-700'
+                                      }`}>
+                                        <div className={`w-2 h-2 rounded-full ${
+                                          device.latestStatus.ignition ? 'bg-green-500 animate-pulse' : 'bg-red-500'
+                                        }`}></div>
+                                        {device.latestStatus.ignition ? 'ON' : 'OFF'}
+                                      </div>
+                                    </div>
+                                  </div>
+
+                                  {/* Charging/Power */}
+                                  <div className={`group relative bg-gradient-to-br p-5 rounded-xl border shadow-md hover:shadow-lg transition-all duration-300 hover:scale-[1.02] ${
+                                    device.latestStatus.charging 
+                                      ? 'from-green-50 to-white border-green-200' 
+                                      : 'from-red-50 to-white border-red-200'
+                                  }`}>
+                                    <div className={`absolute top-0 right-0 w-20 h-20 rounded-full -mr-10 -mt-10 opacity-20 group-hover:opacity-30 transition-opacity ${
+                                      device.latestStatus.charging ? 'bg-green-100' : 'bg-red-100'
+                                    }`}></div>
+                                    <div className="flex items-center justify-between mb-3">
+                                      <div className="flex items-center gap-3">
+                                        <div className={`p-2 rounded-lg ${
+                                          device.latestStatus.charging ? 'bg-green-100' : 'bg-red-100'
+                                        }`}>
+                                          {device.latestStatus.charging ? (
+                                            <ElectricBoltIcon className="text-green-600" style={{ fontSize: 24 }} />
+                                          ) : (
+                                            <PowerOffIcon className="text-red-600" style={{ fontSize: 24 }} />
+                                          )}
+                                        </div>
+                                        <span className="text-sm font-semibold text-gray-700 uppercase tracking-wide">Power</span>
+                                      </div>
+                                    </div>
+                                    <div className="flex items-center gap-2">
+                                      <div className={`flex items-center gap-2 px-3 py-1.5 rounded-full text-sm font-bold ${
+                                        device.latestStatus.charging 
+                                          ? 'bg-green-100 text-green-700' 
+                                          : 'bg-red-100 text-red-700'
+                                      }`}>
+                                        <div className={`w-2 h-2 rounded-full ${
+                                          device.latestStatus.charging ? 'bg-green-500 animate-pulse' : 'bg-red-500'
+                                        }`}></div>
+                                        {device.latestStatus.charging ? 'Connected' : 'Disconnected'}
+                                      </div>
+                                    </div>
+                                  </div>
+
+                                  {/* Relay */}
+                                  <div className={`group relative bg-gradient-to-br p-5 rounded-xl border shadow-md hover:shadow-lg transition-all duration-300 hover:scale-[1.02] ${
+                                    device.latestStatus.relay 
+                                      ? 'from-orange-50 to-white border-orange-200' 
+                                      : 'from-gray-50 to-white border-gray-200'
+                                  }`}>
+                                    <div className={`absolute top-0 right-0 w-20 h-20 rounded-full -mr-10 -mt-10 opacity-20 group-hover:opacity-30 transition-opacity ${
+                                      device.latestStatus.relay ? 'bg-orange-100' : 'bg-gray-100'
+                                    }`}></div>
+                                    <div className="flex items-center justify-between mb-3">
+                                      <div className="flex items-center gap-3">
+                                        <div className={`p-2 rounded-lg ${
+                                          device.latestStatus.relay ? 'bg-orange-100' : 'bg-gray-100'
+                                        }`}>
+                                          {device.latestStatus.relay ? (
+                                            <ToggleOnIcon className="text-orange-600" style={{ fontSize: 24 }} />
+                                          ) : (
+                                            <ToggleOffIcon className="text-gray-600" style={{ fontSize: 24 }} />
+                                          )}
+                                        </div>
+                                        <span className="text-sm font-semibold text-gray-700 uppercase tracking-wide">Relay</span>
+                                      </div>
+                                    </div>
+                                    <div className="flex items-center gap-2">
+                                      <div className={`flex items-center gap-2 px-3 py-1.5 rounded-full text-sm font-bold ${
+                                        device.latestStatus.relay 
+                                          ? 'bg-orange-100 text-orange-700' 
+                                          : 'bg-gray-100 text-gray-700'
+                                      }`}>
+                                        <div className={`w-2 h-2 rounded-full ${
+                                          device.latestStatus.relay ? 'bg-orange-500 animate-pulse' : 'bg-gray-400'
+                                        }`}></div>
+                                        {device.latestStatus.relay ? 'ON' : 'OFF'}
+                                      </div>
+                                    </div>
+                                  </div>
+
+                                  {/* Last Updated */}
+                                  <div className="group relative bg-gradient-to-br from-white to-gray-50 p-5 rounded-xl border border-gray-200 shadow-md hover:shadow-lg transition-all duration-300 hover:scale-[1.02]">
+                                    <div className="absolute top-0 right-0 w-20 h-20 bg-gray-100 rounded-full -mr-10 -mt-10 opacity-20 group-hover:opacity-30 transition-opacity"></div>
+                                    <div className="flex items-center justify-between mb-3">
+                                      <div className="flex items-center gap-3">
+                                        <div className="p-2 bg-gray-100 rounded-lg">
+                                          <AccessTimeIcon className="text-gray-600" style={{ fontSize: 24 }} />
+                                        </div>
+                                        <span className="text-sm font-semibold text-gray-700 uppercase tracking-wide">Last Updated</span>
+                                      </div>
+                                    </div>
+                                    <div className="flex items-center gap-2">
+                                      <div className="px-3 py-1.5 bg-gray-100 rounded-full text-sm font-medium text-gray-700">
+                                        {formatTimeAgo(device.latestStatus.updatedAt || device.latestStatus.createdAt)}
+                                      </div>
+                                    </div>
+                                  </div>
                                 </div>
-                              </RoleBasedWidget>
-                              <RoleBasedWidget allowedRoles={[ROLES.SUPER_ADMIN]}>
-                                <DeleteActionButton onClick={() => handleDeleteDevice(device)} />
-                              </RoleBasedWidget>
-                            </ActionButtonGroup>
-                          </TableCell>
-                        </RoleBasedWidget>
-                      </TableRow>
+                              </div>
+                            </TableCell>
+                          </TableRow>
+                        )}
+                        {expandedDeviceId === device.id && !device.latestStatus && (
+                          <TableRow>
+                            <TableCell colSpan={9} className="bg-gradient-to-br from-gray-50 to-gray-100">
+                              <div className="p-8 text-center">
+                                <div className="inline-flex items-center gap-3 px-6 py-4 bg-white rounded-xl border border-gray-200 shadow-sm">
+                                  <div className="w-12 h-12 bg-gray-100 rounded-full flex items-center justify-center">
+                                    <span className="text-2xl">⚠️</span>
+                                  </div>
+                                  <span className="text-gray-600 font-medium">No status data available for this device</span>
+                                </div>
+                              </div>
+                            </TableCell>
+                          </TableRow>
+                        )}
+                      </React.Fragment>
                     ))}
                   </TableBody>
                 </Table>
