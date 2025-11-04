@@ -69,7 +69,7 @@ const BuzzerEditPage: React.FC = () => {
       const [buzzerResponse, geofencesResponse, devicesResponse] = await Promise.all([
         alertBuzzerService.getById(Number(id)),
         alertGeofenceService.getByInstitute(Number(instituteId)),
-        deviceService.getLightDevices()
+        deviceService.getBuzzerDevicesPaginated(1)
       ]);
 
       if (buzzerResponse) {
@@ -86,8 +86,8 @@ const BuzzerEditPage: React.FC = () => {
 
       setGeofences(geofencesResponse || []);
       
-      if (devicesResponse.success && devicesResponse.data) {
-        setDevices(devicesResponse.data);
+      if (devicesResponse.success && devicesResponse.data?.devices) {
+        setDevices(devicesResponse.data.devices);
       } else {
         setError(devicesResponse.error || 'Failed to load devices');
       }

@@ -11,6 +11,10 @@ export interface DashboardStats {
   totalSms: number;
   totalBalance: number;
   serverBalance: number;
+  todayAddedVehicles: number;
+  todayTransaction: number;
+  totalHitsToday: number;
+  todayKm: number;
 }
 
 export interface UserStats {

@@ -34,12 +34,7 @@ import { ROLES } from '../../utils/roleUtils';
 import RefreshIcon from '@mui/icons-material/Refresh';
 import { AuthContext } from '../../contexts/AuthContext';
 import VehicleUtils from '../../utils/vehicleUtils';
-import PowerIcon from '@mui/icons-material/Power';
-import PowerOffIcon from '@mui/icons-material/PowerOff';
-import ElectricBoltIcon from '@mui/icons-material/ElectricBolt';
-import AccessTimeIcon from '@mui/icons-material/AccessTime';
-import ToggleOnIcon from '@mui/icons-material/ToggleOn';
-import ToggleOffIcon from '@mui/icons-material/ToggleOff';
+import Tooltip from '../../components/ui/common/Tooltip';
 
 const BuzzerDeviceIndexPage: React.FC = () => {
   const auth = useContext(AuthContext);
@@ -55,7 +50,6 @@ const BuzzerDeviceIndexPage: React.FC = () => {
   const [isInitialized, setIsInitialized] = useState(false);
   const [isSearching, setIsSearching] = useState(false);
   const [isInSearchMode, setIsInSearchMode] = useState(false);
-  const [expandedDeviceId, setExpandedDeviceId] = useState<number | null>(null);
   
   // Pagination state
   const [currentPage, setCurrentPage] = useState(1);
@@ -526,20 +520,6 @@ const BuzzerDeviceIndexPage: React.FC = () => {
     return '';
   };
 
-  // Helper function to convert battery (0-6) to percentage
-  const getBatteryPercentage = (rawValue: number): number => {
-    if (rawValue <= 0) return 0;
-    if (rawValue >= 6) return 100;
-    return Math.round((rawValue / 6) * 100);
-  };
-
-  // Helper function to convert signal (0-4) to percentage
-  const getSignalPercentage = (rawValue: number): number => {
-    if (rawValue <= 0) return 0;
-    if (rawValue >= 4) return 100;
-    return Math.round((rawValue / 4) * 100);
-  };
-
   // Helper function to format time ago
   const formatTimeAgo = (dateString: string): string => {
     const now = new Date();
@@ -567,8 +547,11 @@ const BuzzerDeviceIndexPage: React.FC = () => {
     }
   };
 
-  const handleRowClick = (deviceId: number) => {
-    setExpandedDeviceId(expandedDeviceId === deviceId ? null : deviceId);
+  const getLastData = (device: Device) => {
+    if (device.latestStatus) {
+      return formatTimeAgo(device.latestStatus.updatedAt || device.latestStatus.createdAt);
+    }
+    return 'No data';
   };
 
   if (loading) {
@@ -650,6 +633,8 @@ const BuzzerDeviceIndexPage: React.FC = () => {
                       <TableHeader>Dealer Info</TableHeader>
                       <TableHeader>Vehicle Info</TableHeader>
                       <TableHeader>Customer Info</TableHeader>
+                      <TableHeader>Status</TableHeader>
+                      <TableHeader>Last Data ago</TableHeader>
                       <RoleBasedWidget allowedRoles={[ROLES.SUPER_ADMIN]}>
                         <TableHeader>Actions</TableHeader>
                       </RoleBasedWidget>
@@ -657,11 +642,7 @@ const BuzzerDeviceIndexPage: React.FC = () => {
                   </TableHead>
                   <TableBody>
                     {devices.map((device, index) => (
-                      <React.Fragment key={device.id}>
-                        <TableRow 
-                          onClick={() => handleRowClick(device.id)}
-                          className="cursor-pointer hover:bg-gray-50 transition-colors"
-                        >
+                      <TableRow key={device.id}>
                           <TableCell>{index + 1}</TableCell>
                           <TableCell>
                             <div className="space-y-1">
@@ -716,6 +697,48 @@ const BuzzerDeviceIndexPage: React.FC = () => {
                                 <Badge variant="secondary" size="sm">{getCustomerPhone(device)}</Badge>
                               )}
                             </div>
+                          </TableCell>
+                          <TableCell>
+                            <div className="flex flex-col gap-2">
+                              <div>
+                                <Badge 
+                                  variant={device.latestStatus ? 'success' : 'danger'} 
+                                  size="sm"
+                                >
+                                  {device.latestStatus ? 'Active' : 'Inactive'}
+                                </Badge>
+                              </div>
+                              {device.latestStatus && (
+                                <div className="flex items-center gap-1">
+                                  <Tooltip content={`Battery: ${device.latestStatus.battery}/6`}>
+                                    <div className="flex items-center cursor-pointer hover:opacity-80 transition-opacity">
+                                      {VehicleUtils.getBattery(device.latestStatus.battery, 18)}
+                                    </div>
+                                  </Tooltip>
+                                  <Tooltip content={`Signal: ${device.latestStatus.signal}/4`}>
+                                    <div className="flex items-center cursor-pointer hover:opacity-80 transition-opacity">
+                                      {VehicleUtils.getSignal(device.latestStatus.signal, 18)}
+                                    </div>
+                                  </Tooltip>
+                                  <Tooltip content={device.latestStatus.ignition ? 'Ignition: ON' : 'Ignition: OFF'}>
+                                    <div className="flex items-center cursor-pointer hover:opacity-80 transition-opacity">
+                                      {VehicleUtils.getIgnition(device.latestStatus.ignition, 18)}
+                                    </div>
+                                  </Tooltip>
+                                  <Tooltip content={device.latestStatus.charging ? 'Charging: ON' : 'Charging: OFF'}>
+                                    <div className="flex items-center cursor-pointer hover:opacity-80 transition-opacity">
+                                      {VehicleUtils.getCharging(device.latestStatus.charging, 18)}
+                                    </div>
+                                  </Tooltip>
+                                </div>
+                              )}
+                              {!device.latestStatus && (
+                                <span className="text-xs text-gray-400">No data</span>
+                              )}
+                            </div>
+                          </TableCell>
+                          <TableCell className="text-sm">
+                            {getLastData(device)}
                           </TableCell>
                           <RoleBasedWidget allowedRoles={[ROLES.SUPER_ADMIN]}>
                             <TableCell>
@@ -783,224 +806,6 @@ const BuzzerDeviceIndexPage: React.FC = () => {
                             </TableCell>
                           </RoleBasedWidget>
                         </TableRow>
-                        {expandedDeviceId === device.id && device.latestStatus && (
-                          <TableRow>
-                            <TableCell colSpan={9} className="bg-gradient-to-br from-gray-50 to-gray-100 p-0">
-                              <div className="p-6 animate-in fade-in slide-in-from-top-2 duration-300">
-                                <div className="flex items-center gap-2 mb-6">
-                                  <div className="w-1 h-6 bg-blue-500 rounded-full"></div>
-                                  <h3 className="text-xl font-bold text-gray-900">Device Status</h3>
-                                  <div className="flex-1"></div>
-                                </div>
-                                <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
-                                  {/* Battery */}
-                                  <div className="group relative bg-gradient-to-br from-white to-blue-50 p-5 rounded-xl border border-blue-100 shadow-md hover:shadow-lg transition-all duration-300 hover:scale-[1.02]">
-                                    <div className="absolute top-0 right-0 w-20 h-20 bg-blue-100 rounded-full -mr-10 -mt-10 opacity-20 group-hover:opacity-30 transition-opacity"></div>
-                                    <div className="flex items-center justify-between mb-3">
-                                      <div className="flex items-center gap-3">
-                                        <div className="p-2 bg-blue-100 rounded-lg">
-                                          {VehicleUtils.getBattery(device.latestStatus.battery, 24)}
-                                        </div>
-                                        <span className="text-sm font-semibold text-gray-700 uppercase tracking-wide">Battery</span>
-                                      </div>
-                                    </div>
-                                    <div className="mb-3">
-                                      <div className="text-3xl font-bold text-blue-600 mb-2">
-                                        {getBatteryPercentage(device.latestStatus.battery)}%
-                                      </div>
-                                      <div className="w-full bg-gray-200 rounded-full h-2.5 overflow-hidden">
-                                        <div 
-                                          className={`h-2.5 rounded-full transition-all duration-500 ${
-                                            getBatteryPercentage(device.latestStatus.battery) > 50 
-                                              ? 'bg-gradient-to-r from-green-400 to-green-600' 
-                                              : getBatteryPercentage(device.latestStatus.battery) > 20
-                                              ? 'bg-gradient-to-r from-yellow-400 to-yellow-600'
-                                              : 'bg-gradient-to-r from-red-400 to-red-600'
-                                          }`}
-                                          style={{ width: `${getBatteryPercentage(device.latestStatus.battery)}%` }}
-                                        ></div>
-                                      </div>
-                                    </div>
-                                  </div>
-
-                                  {/* Signal */}
-                                  <div className="group relative bg-gradient-to-br from-white to-purple-50 p-5 rounded-xl border border-purple-100 shadow-md hover:shadow-lg transition-all duration-300 hover:scale-[1.02]">
-                                    <div className="absolute top-0 right-0 w-20 h-20 bg-purple-100 rounded-full -mr-10 -mt-10 opacity-20 group-hover:opacity-30 transition-opacity"></div>
-                                    <div className="flex items-center justify-between mb-3">
-                                      <div className="flex items-center gap-3">
-                                        <div className="p-2 bg-purple-100 rounded-lg">
-                                          {VehicleUtils.getSignal(device.latestStatus.signal, 24)}
-                                        </div>
-                                        <span className="text-sm font-semibold text-gray-700 uppercase tracking-wide">Signal</span>
-                                      </div>
-                                    </div>
-                                    <div className="mb-3">
-                                      <div className="text-3xl font-bold text-purple-600 mb-2">
-                                        {getSignalPercentage(device.latestStatus.signal)}%
-                                      </div>
-                                      <div className="w-full bg-gray-200 rounded-full h-2.5 overflow-hidden">
-                                        <div 
-                                          className={`h-2.5 rounded-full transition-all duration-500 ${
-                                            getSignalPercentage(device.latestStatus.signal) > 50 
-                                              ? 'bg-gradient-to-r from-green-400 to-green-600' 
-                                              : getSignalPercentage(device.latestStatus.signal) > 20
-                                              ? 'bg-gradient-to-r from-yellow-400 to-yellow-600'
-                                              : 'bg-gradient-to-r from-red-400 to-red-600'
-                                          }`}
-                                          style={{ width: `${getSignalPercentage(device.latestStatus.signal)}%` }}
-                                        ></div>
-                                      </div>
-                                    </div>
-                                  </div>
-
-                                  {/* Ignition */}
-                                  <div className={`group relative bg-gradient-to-br p-5 rounded-xl border shadow-md hover:shadow-lg transition-all duration-300 hover:scale-[1.02] ${
-                                    device.latestStatus.ignition 
-                                      ? 'from-green-50 to-white border-green-200' 
-                                      : 'from-red-50 to-white border-red-200'
-                                  }`}>
-                                    <div className={`absolute top-0 right-0 w-20 h-20 rounded-full -mr-10 -mt-10 opacity-20 group-hover:opacity-30 transition-opacity ${
-                                      device.latestStatus.ignition ? 'bg-green-100' : 'bg-red-100'
-                                    }`}></div>
-                                    <div className="flex items-center justify-between mb-3">
-                                      <div className="flex items-center gap-3">
-                                        <div className={`p-2 rounded-lg ${
-                                          device.latestStatus.ignition ? 'bg-green-100' : 'bg-red-100'
-                                        }`}>
-                                          {device.latestStatus.ignition ? (
-                                            <PowerIcon className="text-green-600" style={{ fontSize: 24 }} />
-                                          ) : (
-                                            <PowerOffIcon className="text-red-600" style={{ fontSize: 24 }} />
-                                          )}
-                                        </div>
-                                        <span className="text-sm font-semibold text-gray-700 uppercase tracking-wide">Ignition</span>
-                                      </div>
-                                    </div>
-                                    <div className="flex items-center gap-2">
-                                      <div className={`flex items-center gap-2 px-3 py-1.5 rounded-full text-sm font-bold ${
-                                        device.latestStatus.ignition 
-                                          ? 'bg-green-100 text-green-700' 
-                                          : 'bg-red-100 text-red-700'
-                                      }`}>
-                                        <div className={`w-2 h-2 rounded-full ${
-                                          device.latestStatus.ignition ? 'bg-green-500 animate-pulse' : 'bg-red-500'
-                                        }`}></div>
-                                        {device.latestStatus.ignition ? 'ON' : 'OFF'}
-                                      </div>
-                                    </div>
-                                  </div>
-
-                                  {/* Charging/Power */}
-                                  <div className={`group relative bg-gradient-to-br p-5 rounded-xl border shadow-md hover:shadow-lg transition-all duration-300 hover:scale-[1.02] ${
-                                    device.latestStatus.charging 
-                                      ? 'from-green-50 to-white border-green-200' 
-                                      : 'from-red-50 to-white border-red-200'
-                                  }`}>
-                                    <div className={`absolute top-0 right-0 w-20 h-20 rounded-full -mr-10 -mt-10 opacity-20 group-hover:opacity-30 transition-opacity ${
-                                      device.latestStatus.charging ? 'bg-green-100' : 'bg-red-100'
-                                    }`}></div>
-                                    <div className="flex items-center justify-between mb-3">
-                                      <div className="flex items-center gap-3">
-                                        <div className={`p-2 rounded-lg ${
-                                          device.latestStatus.charging ? 'bg-green-100' : 'bg-red-100'
-                                        }`}>
-                                          {device.latestStatus.charging ? (
-                                            <ElectricBoltIcon className="text-green-600" style={{ fontSize: 24 }} />
-                                          ) : (
-                                            <PowerOffIcon className="text-red-600" style={{ fontSize: 24 }} />
-                                          )}
-                                        </div>
-                                        <span className="text-sm font-semibold text-gray-700 uppercase tracking-wide">Power</span>
-                                      </div>
-                                    </div>
-                                    <div className="flex items-center gap-2">
-                                      <div className={`flex items-center gap-2 px-3 py-1.5 rounded-full text-sm font-bold ${
-                                        device.latestStatus.charging 
-                                          ? 'bg-green-100 text-green-700' 
-                                          : 'bg-red-100 text-red-700'
-                                      }`}>
-                                        <div className={`w-2 h-2 rounded-full ${
-                                          device.latestStatus.charging ? 'bg-green-500 animate-pulse' : 'bg-red-500'
-                                        }`}></div>
-                                        {device.latestStatus.charging ? 'Connected' : 'Disconnected'}
-                                      </div>
-                                    </div>
-                                  </div>
-
-                                  {/* Relay */}
-                                  <div className={`group relative bg-gradient-to-br p-5 rounded-xl border shadow-md hover:shadow-lg transition-all duration-300 hover:scale-[1.02] ${
-                                    device.latestStatus.relay 
-                                      ? 'from-orange-50 to-white border-orange-200' 
-                                      : 'from-gray-50 to-white border-gray-200'
-                                  }`}>
-                                    <div className={`absolute top-0 right-0 w-20 h-20 rounded-full -mr-10 -mt-10 opacity-20 group-hover:opacity-30 transition-opacity ${
-                                      device.latestStatus.relay ? 'bg-orange-100' : 'bg-gray-100'
-                                    }`}></div>
-                                    <div className="flex items-center justify-between mb-3">
-                                      <div className="flex items-center gap-3">
-                                        <div className={`p-2 rounded-lg ${
-                                          device.latestStatus.relay ? 'bg-orange-100' : 'bg-gray-100'
-                                        }`}>
-                                          {device.latestStatus.relay ? (
-                                            <ToggleOnIcon className="text-orange-600" style={{ fontSize: 24 }} />
-                                          ) : (
-                                            <ToggleOffIcon className="text-gray-600" style={{ fontSize: 24 }} />
-                                          )}
-                                        </div>
-                                        <span className="text-sm font-semibold text-gray-700 uppercase tracking-wide">Relay</span>
-                                      </div>
-                                    </div>
-                                    <div className="flex items-center gap-2">
-                                      <div className={`flex items-center gap-2 px-3 py-1.5 rounded-full text-sm font-bold ${
-                                        device.latestStatus.relay 
-                                          ? 'bg-orange-100 text-orange-700' 
-                                          : 'bg-gray-100 text-gray-700'
-                                      }`}>
-                                        <div className={`w-2 h-2 rounded-full ${
-                                          device.latestStatus.relay ? 'bg-orange-500 animate-pulse' : 'bg-gray-400'
-                                        }`}></div>
-                                        {device.latestStatus.relay ? 'ON' : 'OFF'}
-                                      </div>
-                                    </div>
-                                  </div>
-
-                                  {/* Last Updated */}
-                                  <div className="group relative bg-gradient-to-br from-white to-gray-50 p-5 rounded-xl border border-gray-200 shadow-md hover:shadow-lg transition-all duration-300 hover:scale-[1.02]">
-                                    <div className="absolute top-0 right-0 w-20 h-20 bg-gray-100 rounded-full -mr-10 -mt-10 opacity-20 group-hover:opacity-30 transition-opacity"></div>
-                                    <div className="flex items-center justify-between mb-3">
-                                      <div className="flex items-center gap-3">
-                                        <div className="p-2 bg-gray-100 rounded-lg">
-                                          <AccessTimeIcon className="text-gray-600" style={{ fontSize: 24 }} />
-                                        </div>
-                                        <span className="text-sm font-semibold text-gray-700 uppercase tracking-wide">Last Updated</span>
-                                      </div>
-                                    </div>
-                                    <div className="flex items-center gap-2">
-                                      <div className="px-3 py-1.5 bg-gray-100 rounded-full text-sm font-medium text-gray-700">
-                                        {formatTimeAgo(device.latestStatus.updatedAt || device.latestStatus.createdAt)}
-                                      </div>
-                                    </div>
-                                  </div>
-                                </div>
-                              </div>
-                            </TableCell>
-                          </TableRow>
-                        )}
-                        {expandedDeviceId === device.id && !device.latestStatus && (
-                          <TableRow>
-                            <TableCell colSpan={9} className="bg-gradient-to-br from-gray-50 to-gray-100">
-                              <div className="p-8 text-center">
-                                <div className="inline-flex items-center gap-3 px-6 py-4 bg-white rounded-xl border border-gray-200 shadow-sm">
-                                  <div className="w-12 h-12 bg-gray-100 rounded-full flex items-center justify-center">
-                                    <span className="text-2xl">⚠️</span>
-                                  </div>
-                                  <span className="text-gray-600 font-medium">No status data available for this device</span>
-                                </div>
-                              </div>
-                            </TableCell>
-                          </TableRow>
-                        )}
-                      </React.Fragment>
                     ))}
                   </TableBody>
                 </Table>

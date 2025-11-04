@@ -13,6 +13,10 @@ import SignalCellularOffIcon from '@mui/icons-material/SignalCellularOff';
 import GpsFixedIcon from '@mui/icons-material/GpsFixed';
 import GpsOffIcon from '@mui/icons-material/GpsOff';
 import BatteryUnknownIcon from '@mui/icons-material/BatteryUnknown';
+import VpnKeyIcon from '@mui/icons-material/VpnKey';
+import FlashOnIcon from '@mui/icons-material/FlashOn';
+import FlashOffIcon from '@mui/icons-material/FlashOff';
+import BoltIcon from '@mui/icons-material/Bolt';
 import type { Vehicle } from '../types/vehicle';
 
 export interface VehicleStatus {
@@ -72,9 +76,9 @@ export const getState = (vehicle: Vehicle): VehicleStateType => {
   const location = vehicle.latestLocation;
   
   // Check if vehicle is inactive (no data for more than 30 minutes)
-  if (status?.createdAt) {
+  if (status?.updatedAt) {
     const now = new Date();
-    const statusTime = new Date(status.createdAt);
+    const statusTime = new Date(status.updatedAt);
     const diffMinutes = (now.getTime() - statusTime.getTime()) / (1000 * 60);
 
     if (diffMinutes > 720) {
@@ -264,6 +268,52 @@ export const getSatellite = (value: number, size = 16) => {
   }
 }
 
+// Get Ignition (Key icon)
+export const getIgnition = (isOn: boolean, size = 16) => {
+  if (isOn) {
+    return <VpnKeyIcon style={{ fontSize: size, color: "#4CAF50" }} />;
+  } else {
+    return <VpnKeyIcon style={{ fontSize: size, color: "#F44336" }} />;
+  }
+}
+
+// Get Charging (Bolt icon)
+export const getCharging = (isCharging: boolean, size = 16) => {
+  if (isCharging) {
+    return <BoltIcon style={{ fontSize: size, color: "#4CAF50" }} />;
+  } else {
+    return <BoltIcon style={{ fontSize: size, color: "#F44336" }} />;
+  }
+}
+
+// Get Relay (Bolt icon)
+export const getRelay = (isOn: boolean, size = 16) => {
+  if (isOn) {
+    return <FlashOnIcon style={{ fontSize: size, color: "#4CAF50" }} />;
+  } else {
+    return <FlashOffIcon style={{ fontSize: size, color: "#F44336" }} />;
+  }
+}
+
+// Format Joined Date
+export const formatJoinedDate = (dateString: string | null | undefined): string => {
+  if (!dateString) return 'N/A';
+  
+  try {
+    const date = new Date(dateString);
+    if (isNaN(date.getTime())) return 'Invalid date';
+    
+    // Format as "Jan 15, 2024"
+    return date.toLocaleDateString('en-US', {
+      year: 'numeric',
+      month: 'short',
+      day: 'numeric'
+    });
+  } catch (error) {
+    return 'Invalid date';
+  }
+}
+
 // Parse integer safely
 export const parseInt = (value: unknown): number | null => {
   if (value === null || value === undefined) return null;
@@ -282,6 +332,10 @@ const VehicleUtils = {
   getBattery,
   getSignal,
   getSatellite,
+  getIgnition,
+  getCharging,
+  getRelay,
+  formatJoinedDate,
   parseInt
 };
 

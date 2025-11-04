@@ -64,13 +64,13 @@ const BuzzerCreatePage: React.FC = () => {
       setLoading(true);
       const [geofencesResponse, devicesResponse] = await Promise.all([
         alertGeofenceService.getByInstitute(Number(instituteId)),
-        deviceService.getLightDevices()
+        deviceService.getBuzzerDevicesPaginated(1)
       ]);
 
       setGeofences(geofencesResponse || []);
       
-      if (devicesResponse.success && devicesResponse.data) {
-        setDevices(devicesResponse.data);
+      if (devicesResponse.success && devicesResponse.data?.devices) {
+        setDevices(devicesResponse.data.devices);
       } else {
         setError(devicesResponse.error || 'Failed to load devices');
       }

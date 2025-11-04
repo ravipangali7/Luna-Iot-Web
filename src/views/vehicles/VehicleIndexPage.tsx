@@ -4,10 +4,10 @@ import { vehicleService } from '../../api/services/vehicleService';
 import { deviceService } from '../../api/services/deviceService';
 import { confirmDelete, showSuccess, showError } from '../../utils/sweetAlert';
 import { useRefresh } from '../../contexts/RefreshContext';
-import { API_CONFIG } from '../../config/config';
 import type { Vehicle, VehicleFilters } from '../../types/vehicle';
 import { VEHICLE_TYPES } from '../../types/vehicle';
-import { getState, getStateBackgroundColor } from '../../utils/vehicleUtils';
+import { getState, getStateBackgroundColor, getBattery, getSignal, getIgnition, getCharging, getImagePath } from '../../utils/vehicleUtils';
+import { VehicleImageState } from '../../utils/vehicleUtils';
 import { handleVehicleAction, VEHICLE_ACTIONS } from '../../utils/vehicleActionUtils';
 import Container from '../../components/ui/layout/Container';
 import Card from '../../components/ui/cards/Card';
@@ -21,8 +21,7 @@ import {
   RechargeActionButton, 
   CommandsActionButton, 
   RelayOnActionButton, 
-  RelayOffActionButton, 
-  ActionButtonGroup 
+  RelayOffActionButton
 } from '../../components/ui/buttons';
 import Input from '../../components/ui/forms/Input';
 import Select from '../../components/ui/forms/Select';
@@ -36,6 +35,7 @@ import TableCell from '../../components/ui/tables/TableCell';
 import Badge from '../../components/ui/common/Badge';
 import Spinner from '../../components/ui/common/Spinner';
 import Alert from '../../components/ui/common/Alert';
+import Tooltip from '../../components/ui/common/Tooltip';
 import Pagination from '../../components/ui/pagination/Pagination';
 import RoleBasedWidget from '../../components/role-based/RoleBasedWidget';
 import { ROLES } from '../../utils/roleUtils';
@@ -523,16 +523,26 @@ const VehicleIndexPage: React.FC = () => {
     return '';
   };
 
-  const getLastRecharge = (vehicle: Vehicle) => {
-    if (vehicle.latestRecharge) {
-      return formatTimeAgo(vehicle.latestRecharge.createdAt);
+  const formatJoinedDate = (dateString: string) => {
+    try {
+      const date = new Date(dateString);
+      if (isNaN(date.getTime())) {
+        return 'Invalid date';
+      }
+      
+      const day = date.getDate();
+      const month = date.toLocaleDateString('en-US', { month: 'short' });
+      const year = date.getFullYear();
+      
+      return `${day} ${month}, ${year}`;
+    } catch {
+      return 'Invalid date';
     }
-    return 'No recharge';
   };
 
-  const getExpireDate = (vehicle: Vehicle) => {
+  const getExpireTimeRemaining = (vehicle: Vehicle) => {
     if (!vehicle.expireDate) {
-      return 'Not set';
+      return null;
     }
 
     const now = new Date();
@@ -540,7 +550,7 @@ const VehicleIndexPage: React.FC = () => {
 
     // Check if date is valid
     if (isNaN(expireDate.getTime())) {
-      return 'Invalid date';
+      return null;
     }
 
     const diffInSeconds = Math.floor((expireDate.getTime() - now.getTime()) / 1000);
@@ -550,37 +560,29 @@ const VehicleIndexPage: React.FC = () => {
       return 'Expired';
     }
 
-    const minutes = Math.floor(diffInSeconds / 60);
-    const hours = Math.floor(diffInSeconds / 3600);
+    // Calculate months and days remaining
     const days = Math.floor(diffInSeconds / 86400);
-    const months = Math.floor(diffInSeconds / 2592000);
-    const years = Math.floor(diffInSeconds / 31536000);
+    const months = Math.floor(days / 30);
+    const remainingDays = days % 30;
 
-    // Format based on time remaining
-    if (years > 0) {
-      // Show years and months
-      const remainingMonths = months % 12;
-      return remainingMonths > 0 ? `${years}y ${remainingMonths}mo` : `${years}y`;
+    if (months > 0 && remainingDays > 0) {
+      return `${months}m ${remainingDays}d`;
     } else if (months > 0) {
-      // Show months and days
-      const remainingDays = days % 30;
-      return remainingDays > 0 ? `${months}mo ${remainingDays}d` : `${months}mo`;
+      return `${months}m`;
     } else if (days > 0) {
-      // Show days and hours
-      const remainingHours = hours % 24;
-      return remainingHours > 0 ? `${days}d ${remainingHours}h` : `${days}d`;
-    } else if (hours > 0) {
-      // Show hours only
-      return `${hours}h`;
+      return `${days}d`;
     } else {
-      // Less than 1 hour - show minutes
-      return `${minutes}m`;
+      const hours = Math.floor(diffInSeconds / 3600);
+      if (hours > 0) {
+        return `${hours}h`;
+      }
+      return 'Expiring soon';
     }
   };
 
   const getLastData = (vehicle: Vehicle) => {
     if (vehicle.latestStatus) {
-      return formatTimeAgo(vehicle.latestStatus.createdAt);
+      return formatTimeAgo(vehicle.latestStatus.updatedAt);
     }
     return 'No data';
   };
@@ -639,12 +641,6 @@ const VehicleIndexPage: React.FC = () => {
   };
 
 
-  const getRelayStatus = (vehicle: Vehicle) => {
-    if (vehicle.latestStatus) {
-      return vehicle.latestStatus.relay ? 'ON' : 'OFF';
-    }
-    return 'N/A';
-  };
 
   if (loading) {
     return (
@@ -741,27 +737,19 @@ const VehicleIndexPage: React.FC = () => {
                 <Table striped hover>
                   <TableHead>
                     <TableRow>
-                      <TableHeader>S.N.</TableHeader>
                       <TableHeader>Vehicle Info</TableHeader>
                       <TableHeader>Device Info</TableHeader>
-                      <TableHeader>Vehicle Type</TableHeader>
                       <TableHeader>Status</TableHeader>
                       <TableHeader>Customer Info</TableHeader>
                       <RoleBasedWidget allowedRoles={[ROLES.SUPER_ADMIN]}>
-                        <TableHeader>Last Recharge ago</TableHeader>
-                      </RoleBasedWidget>
-                      <RoleBasedWidget allowedRoles={[ROLES.SUPER_ADMIN, ROLES.DEALER]}>
-                        <TableHeader>Expire Date</TableHeader>
+                        <TableHeader>Last Recharge</TableHeader>
                       </RoleBasedWidget>
                       <TableHeader>Last Data ago</TableHeader>
-                      <RoleBasedWidget allowedRoles={[ROLES.SUPER_ADMIN]}>
-                        <TableHeader>Relay</TableHeader>
-                      </RoleBasedWidget>
                       <TableHeader>Actions</TableHeader>
                     </TableRow>
                   </TableHead>
                   <TableBody>
-                    {filteredVehicles.map((vehicle, index) => {
+                    {filteredVehicles.map((vehicle) => {
                       const vehicleState = getState(vehicle);
                       const backgroundColor = getStateBackgroundColor(vehicleState);
                       
@@ -773,48 +761,97 @@ const VehicleIndexPage: React.FC = () => {
                           backgroundColor: backgroundColor 
                         } as React.CSSProperties}
                       >
-                        <TableCell>{index + 1}</TableCell>
                         <TableCell>
-                          <div className="space-y-1">
-                            <div className="font-semibold">{vehicle.vehicleNo}</div>
-                            <Badge variant="secondary" size="sm">{vehicle.name}</Badge>
+                          <div className="flex items-start gap-3">
+                            <div className="flex-shrink-0">
+                              <img
+                                src={getImagePath(
+                                  vehicle.vehicleType || 'car',
+                                  vehicleState,
+                                  VehicleImageState.STATUS
+                                )}
+                                alt={vehicle.vehicleType}
+                                className="w-12 h-12 object-contain"
+                                onError={(e) => {
+                                  const target = e.target as HTMLImageElement;
+                                  target.src = '/assets/icon/status/car_stop.png';
+                                  target.onerror = null;
+                                }}
+                              />
+                            </div>
+                            <div className="flex-1 min-w-0 space-y-1">
+                              <div className="font-semibold">{vehicle.vehicleNo}</div>
+                              <Badge variant="secondary" size="sm">{vehicle.name}</Badge>
+                              <div className="flex items-center gap-1.5">
+                                {vehicle.expireDate ? (
+                                  <Badge 
+                                    variant={new Date(vehicle.expireDate) < new Date() ? 'danger' : 
+                                             new Date(vehicle.expireDate) < new Date(Date.now() + 30 * 24 * 60 * 60 * 1000) ? 'warning' : 'success'}
+                                    size="sm"
+                                  >
+                                    {formatJoinedDate(vehicle.createdAt)} / Ex: {getExpireTimeRemaining(vehicle)}
+                                  </Badge>
+                                ) : (
+                                  <Badge variant="secondary" size="sm">
+                                    {formatJoinedDate(vehicle.createdAt)}
+                                  </Badge>
+                                )}
+                              </div>
+                            </div>
                           </div>
                         </TableCell>
                         <TableCell>
-                          <div className="flex items-center gap-3">
-                            <div className="w-10 h-10 rounded-lg bg-gray-100 border border-gray-200 flex items-center justify-center overflow-hidden">
-                              {vehicle.device?.image ? (
-                                <img
-                                  src={`${API_CONFIG.BASE_URL}${vehicle.device.image}`}
-                                  alt="Device"
-                                  className="w-full h-full object-cover"
-                                />
-                              ) : (
-                                <span className="text-xs font-mono text-gray-400">IMG</span>
-                              )}
+                          <div className="flex flex-col min-w-0 space-y-1">
+                            <span className="font-mono text-sm font-medium truncate">{vehicle.imei}</span>
+                            <span className="text-xs text-gray-500 truncate">{vehicle.device?.phone || 'N/A'}</span>
+                            <div className="">
+                            <button
+                              className="bg-gray-700 text-white px-2 py-1 text-xs rounded shadow-md hover:bg-gray-800 transition-colors"
+                              onClick={() => handleDeviceMonitoring(vehicle)}
+                            >
+                              {'>_'}
+                            </button>
                             </div>
-                            <div className="flex flex-col min-w-0">
-                              <span className="font-mono text-sm font-medium truncate">{vehicle.imei}</span>
-                              <span className="text-xs text-gray-500 truncate">{vehicle.device?.phone || 'N/A'}</span>
-                              <button
-                                className="mt-1 bg-gray-700 text-white px-2 py-1 text-xs rounded shadow-md hover:bg-gray-800 transition-colors"
-                                onClick={() => handleDeviceMonitoring(vehicle)}
+                          </div>
+                        </TableCell>
+                        <TableCell>
+                          <div className="flex flex-col gap-2">
+                            <div>
+                              <Badge 
+                                variant={vehicle.is_active ? 'success' : 'danger'} 
+                                size="sm"
                               >
-                                {'>_'}
-                              </button>
+                                {vehicle.is_active ? 'Active' : 'Inactive'}
+                              </Badge>
                             </div>
+                            {vehicle.latestStatus && (
+                              <div className="flex items-center gap-1">
+                                <Tooltip content={`Battery: ${vehicle.latestStatus.battery}/6`}>
+                                  <div className="flex items-center cursor-pointer hover:opacity-80 transition-opacity">
+                                    {getBattery(vehicle.latestStatus.battery, 18)}
+                                  </div>
+                                </Tooltip>
+                                <Tooltip content={`Signal: ${vehicle.latestStatus.signal}/4`}>
+                                  <div className="flex items-center cursor-pointer hover:opacity-80 transition-opacity">
+                                    {getSignal(vehicle.latestStatus.signal, 18)}
+                                  </div>
+                                </Tooltip>
+                                <Tooltip content={vehicle.latestStatus.ignition ? 'Ignition: ON' : 'Ignition: OFF'}>
+                                  <div className="flex items-center cursor-pointer hover:opacity-80 transition-opacity">
+                                    {getIgnition(vehicle.latestStatus.ignition, 18)}
+                                  </div>
+                                </Tooltip>
+                                <Tooltip content={vehicle.latestStatus.charging ? 'Charging: ON' : 'Charging: OFF'}>
+                                  <div className="flex items-center cursor-pointer hover:opacity-80 transition-opacity">
+                                    {getCharging(vehicle.latestStatus.charging, 18)}
+                                  </div>
+                                </Tooltip>
+                              </div>
+                            )}
+                            {!vehicle.latestStatus && (
+                              <span className="text-xs text-gray-400">No data</span>
+                            )}
                           </div>
-                        </TableCell>
-                        <TableCell>
-                          <Badge variant="info" size="sm">{vehicle.vehicleType}</Badge>
-                        </TableCell>
-                        <TableCell>
-                          <Badge 
-                            variant={vehicle.is_active ? 'success' : 'danger'} 
-                            size="sm"
-                          >
-                            {vehicle.is_active ? 'Active' : 'Inactive'}
-                          </Badge>
                         </TableCell>
                         <TableCell>
                           <div className="space-y-1">
@@ -826,71 +863,47 @@ const VehicleIndexPage: React.FC = () => {
                         </TableCell>
                         <RoleBasedWidget allowedRoles={[ROLES.SUPER_ADMIN]}>
                           <TableCell className="text-sm">
-                            {getLastRecharge(vehicle)}
-                          </TableCell>
-                        </RoleBasedWidget>
-                        <RoleBasedWidget allowedRoles={[ROLES.SUPER_ADMIN, ROLES.DEALER]}>
-                          <TableCell className="text-sm">
-                            <div className="text-sm">
-                              {vehicle.expireDate ? (
-                                <div className="space-y-1">
-                                  <div>{getExpireDate(vehicle)}</div>
-                                  <Badge 
-                                    variant={new Date(vehicle.expireDate) < new Date() ? 'danger' : 
-                                             new Date(vehicle.expireDate) < new Date(Date.now() + 30 * 24 * 60 * 60 * 1000) ? 'warning' : 'success'}
-                                    size="sm"
-                                  >
-                                    {new Date(vehicle.expireDate) < new Date() ? 'Expired' : 
-                                     new Date(vehicle.expireDate) < new Date(Date.now() + 30 * 24 * 60 * 60 * 1000) ? 'Expires Soon' : 'Active'}
-                                  </Badge>
-                                </div>
-                              ) : (
-                                <span className="text-gray-400">Not set</span>
-                              )}
-                            </div>
+                            {vehicle.latestRecharge ? (
+                              <div className="flex flex-col gap-1">
+                                <Badge variant="info" size="sm" className="w-fit">₹{vehicle.latestRecharge.amount}</Badge>
+                                <span className="text-xs text-gray-600">{formatTimeAgo(vehicle.latestRecharge.createdAt)}</span>
+                              </div>
+                            ) : (
+                              <span className="text-xs text-gray-400">No recharge</span>
+                            )}
                           </TableCell>
                         </RoleBasedWidget>
                         <TableCell className="text-sm">
                           {getLastData(vehicle)}
                         </TableCell>
-                        <RoleBasedWidget allowedRoles={[ROLES.SUPER_ADMIN]}>
-                          <TableCell>
-                            <Badge
-                              variant={vehicle.latestStatus?.relay ? 'success' : 'secondary'}
-                              size="sm"
-                            >
-                              {getRelayStatus(vehicle)}
-                            </Badge>
-                          </TableCell>
-                        </RoleBasedWidget>
                         <TableCell>
-                          <ActionButtonGroup>
-                            <EditActionButton onClick={() => handleEditVehicle(vehicle)} />
-                            {/* <RoleBasedWidget allowedRoles={[ROLES.SUPER_ADMIN, ROLES.DEALER]}> */}
+                          <div className="flex flex-col gap-2">
+                            <div className="flex justify-end gap-2">
+                              <EditActionButton onClick={() => handleEditVehicle(vehicle)} />
                               {vehicle.is_active ? (
                                 <DeactivateActionButton onClick={() => handleDeactivateVehicle(vehicle)} />
                               ) : (
                                 <ActivateActionButton onClick={() => handleActivateVehicle(vehicle)} />
                               )}
-                            {/* </RoleBasedWidget> */}
-                            <RoleBasedWidget allowedRoles={[ROLES.SUPER_ADMIN]}>
-                              <RechargeActionButton onClick={() => handleRechargeVehicle(vehicle)} />
-                            </RoleBasedWidget>
-                            {/* Relay: show action if user can control for this vehicle; else show Not Available */}
-                            {canControlRelayForVehicle(vehicle) ? (
-                              vehicle.latestStatus?.relay ? (
-                                <RelayOffActionButton onClick={() => handleRelayOff(vehicle)} />
+                              <RoleBasedWidget allowedRoles={[ROLES.SUPER_ADMIN]}>
+                                <RechargeActionButton onClick={() => handleRechargeVehicle(vehicle)} />
+                              </RoleBasedWidget>
+                            </div>
+                            <div className="flex justify-end gap-2">
+                              {canControlRelayForVehicle(vehicle) ? (
+                                vehicle.latestStatus?.relay ? (
+                                  <RelayOffActionButton onClick={() => handleRelayOff(vehicle)} />
+                                ) : (
+                                  <RelayOnActionButton onClick={() => handleRelayOn(vehicle)} />
+                                )
                               ) : (
-                                <RelayOnActionButton onClick={() => handleRelayOn(vehicle)} />
-                              )
-                            ) : (
-                              <Badge variant="secondary">Not Available</Badge>
-                            )}
-                            <RoleBasedWidget allowedRoles={[ROLES.SUPER_ADMIN]}>
-                              <div className="relative">
-                                <CommandsActionButton onClick={() => toggleDropdown(vehicle.id.toString())} />
-                                {dropdownOpen[vehicle.id.toString()] && (
-                                  <div className="absolute right-0 mt-1 w-48 bg-white rounded-lg shadow-xl z-10 border border-gray-200 backdrop-blur-sm">
+                                <Badge variant="secondary">Not Available</Badge>
+                              )}
+                              <RoleBasedWidget allowedRoles={[ROLES.SUPER_ADMIN]}>
+                                <div className="relative">
+                                  <CommandsActionButton onClick={() => toggleDropdown(vehicle.id.toString())} />
+                                  {dropdownOpen[vehicle.id.toString()] && (
+                                    <div className="absolute right-0 mt-1 w-48 bg-white rounded-lg shadow-xl z-10 border border-gray-200 backdrop-blur-sm">
                                     <div className="py-1">
                                       <button
                                         className="flex items-center w-full px-4 py-2 text-sm text-gray-700 hover:bg-blue-50 hover:text-blue-700 transition-colors duration-200"
@@ -917,10 +930,11 @@ const VehicleIndexPage: React.FC = () => {
                                 )}
                               </div>
                             </RoleBasedWidget>
-                            <RoleBasedWidget allowedRoles={[ROLES.SUPER_ADMIN]}>
-                              <DeleteActionButton onClick={() => handleDeleteVehicle(vehicle)} />
-                            </RoleBasedWidget>
-                          </ActionButtonGroup>
+                              <RoleBasedWidget allowedRoles={[ROLES.SUPER_ADMIN]}>
+                                <DeleteActionButton onClick={() => handleDeleteVehicle(vehicle)} />
+                              </RoleBasedWidget>
+                            </div>
+                          </div>
                         </TableCell>
                       </TableRow>
                       );

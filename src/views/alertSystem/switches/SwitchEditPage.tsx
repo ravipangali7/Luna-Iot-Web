@@ -71,7 +71,7 @@ const SwitchEditPage: React.FC = () => {
 
       const [switchResponse, devicesResponse] = await Promise.all([
         alertSwitchService.getById(Number(id)),
-        deviceService.getLightDevices()
+        deviceService.getSosDevicesPaginated(1)
       ]);
 
       if (switchResponse) {
@@ -90,8 +90,8 @@ const SwitchEditPage: React.FC = () => {
         setError('Switch not found');
       }
 
-      if (devicesResponse.success && devicesResponse.data) {
-        setDevices(devicesResponse.data);
+      if (devicesResponse.success && devicesResponse.data?.devices) {
+        setDevices(devicesResponse.data.devices);
       } else {
         setError(devicesResponse.error || 'Failed to load devices');
       }

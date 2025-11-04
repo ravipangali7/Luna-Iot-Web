@@ -65,10 +65,10 @@ const SwitchCreatePage: React.FC = () => {
   const fetchDevices = useCallback(async () => {
     try {
       setLoading(true);
-      const devicesResponse = await deviceService.getLightDevices();
+      const devicesResponse = await deviceService.getSosDevicesPaginated(1);
       
-      if (devicesResponse.success && devicesResponse.data) {
-        setDevices(devicesResponse.data);
+      if (devicesResponse.success && devicesResponse.data?.devices) {
+        setDevices(devicesResponse.data.devices);
       } else {
         setError(devicesResponse.error || 'Failed to load devices');
       }
