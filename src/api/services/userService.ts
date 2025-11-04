@@ -148,6 +148,47 @@ class UserService {
       return { success: false, error: 'Network error: ' + (error as Error).message };
     }
   }
+
+  async searchUsersByPhones(phoneNumbers: string[]): Promise<{ success: boolean; data?: User[]; error?: string }> {
+    try {
+      // Filter out empty phone numbers and trim whitespace
+      const validPhones = phoneNumbers
+        .map(phone => phone.trim())
+        .filter(phone => phone.length > 0);
+      
+      if (validPhones.length === 0) {
+        return { success: false, error: 'No valid phone numbers provided' };
+      }
+
+      // Search for each phone number in parallel
+      const searchPromises = validPhones.map(phone => 
+        this.getUserByPhone(phone).catch(() => ({ success: false, data: undefined, error: `User not found for ${phone}` }))
+      );
+
+      const results = await Promise.all(searchPromises);
+      
+      // Filter successful results and collect users
+      const users: User[] = [];
+      const errors: string[] = [];
+      
+      results.forEach((result, index) => {
+        if (result.success && result.data) {
+          users.push(result.data);
+        } else {
+          errors.push(`Phone ${validPhones[index]}: ${result.error || 'Not found'}`);
+        }
+      });
+
+      return { 
+        success: true, 
+        data: users,
+        error: errors.length > 0 ? errors.join('; ') : undefined
+      };
+    } catch (error) {
+      console.error('Search users by phones error:', error);
+      return { success: false, error: 'Network error: ' + (error as Error).message };
+    }
+  }
 }
 
 export const userService = new UserService();

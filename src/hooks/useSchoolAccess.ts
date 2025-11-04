@@ -6,10 +6,10 @@ import { apiClient } from '../api/apiClient';
 interface InstituteModuleAccess {
   institute_id: number;
   institute_name: string;
-  has_alert_system_access: boolean;
+  has_school_access: boolean;
 }
 
-interface UseAlertSystemAccessReturn {
+interface UseSchoolAccessReturn {
   hasAccess: boolean;
   loading: boolean;
   isAdmin: boolean;
@@ -17,7 +17,7 @@ interface UseAlertSystemAccessReturn {
   hasAccessToInstitute: (instituteId: number) => boolean;
 }
 
-export const useAlertSystemAccess = (instituteId?: number): UseAlertSystemAccessReturn => {
+export const useSchoolAccess = (instituteId?: number): UseSchoolAccessReturn => {
   const { user } = useAuth();
   const [hasAccess, setHasAccess] = useState(false);
   const [loading, setLoading] = useState(true);
@@ -31,8 +31,8 @@ export const useAlertSystemAccess = (instituteId?: number): UseAlertSystemAccess
         setLoading(true);
         
         // Both admin and regular users need to fetch accessible institutes
-        // Backend returns all institutes with alert-system module for admin, and only user's for others
-        const response = await apiClient.get<{ success: boolean; data: InstituteModuleAccess[] }>('/api/core/institute/modules/alert-system-institutes/');
+        // Backend returns all institutes with school module for admin, and only user's for others
+        const response = await apiClient.get<{ success: boolean; data: InstituteModuleAccess[] }>('/api/core/institute/modules/school-institutes/');
         
         if (response.data.success && response.data.data) {
           const institutes = response.data.data;
@@ -43,7 +43,7 @@ export const useAlertSystemAccess = (instituteId?: number): UseAlertSystemAccess
           setHasAccess(false);
         }
       } catch (error) {
-        console.error('Error checking alert system access:', error);
+        console.error('Error checking school access:', error);
         setHasAccess(false);
         setAccessibleInstitutes([]);
       } finally {
@@ -65,7 +65,7 @@ export const useAlertSystemAccess = (instituteId?: number): UseAlertSystemAccess
     
     // Check if user has access to this specific institute
     return accessibleInstitutes.some(inst => 
-      inst.institute_id === instituteId && inst.has_alert_system_access
+      inst.institute_id === instituteId && inst.has_school_access
     );
   }, [isAdmin, accessibleInstitutes]);
 
@@ -77,3 +77,4 @@ export const useAlertSystemAccess = (instituteId?: number): UseAlertSystemAccess
     hasAccessToInstitute
   };
 };
+

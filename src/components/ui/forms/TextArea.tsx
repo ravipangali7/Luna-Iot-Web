@@ -1,8 +1,8 @@
 import React, { forwardRef } from 'react';
-import type { InputProps } from '../../types';
+import type { TextAreaProps } from '../../types';
 import './Input.css';
 
-const TextArea = forwardRef<HTMLTextAreaElement, InputProps>(({
+const TextArea = forwardRef<HTMLTextAreaElement, TextAreaProps>(({
   placeholder,
   value,
   defaultValue,
@@ -14,6 +14,8 @@ const TextArea = forwardRef<HTMLTextAreaElement, InputProps>(({
   onBlur,
   onFocus,
   className = '',
+  rows,
+  cols,
   ...props
 }, ref) => {
   const baseClasses = 'input textarea';
@@ -46,6 +48,8 @@ const TextArea = forwardRef<HTMLTextAreaElement, InputProps>(({
         onChange={handleChange}
         onBlur={onBlur}
         onFocus={onFocus}
+        rows={rows}
+        cols={cols}
         {...props}
       />
       {error && <span className="input__error">{error}</span>}

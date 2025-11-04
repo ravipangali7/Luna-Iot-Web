@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useCallback } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { useAlertSystemAccess } from '../../hooks/useAlertSystemAccess';
+import { useSchoolAccess } from '../../hooks/useSchoolAccess';
 import { instituteService, type Institute } from '../../api/services/instituteService';
 import Container from '../../components/ui/layout/Container';
 import Card from '../../components/ui/cards/Card';
@@ -17,9 +17,9 @@ import Alert from '../../components/ui/common/Alert';
 import { confirmDelete, showSuccess, showError } from '../../utils/sweetAlert';
 
 
-const AlertSystemIndexPage: React.FC = () => {
+const SchoolIndexPage: React.FC = () => {
   const navigate = useNavigate();
-  const { hasAccess, loading: accessLoading, isAdmin, accessibleInstitutes } = useAlertSystemAccess();
+  const { hasAccess, loading: accessLoading, isAdmin, accessibleInstitutes } = useSchoolAccess();
   
   const [institutes, setInstitutes] = useState<Institute[]>([]);
   const [loading, setLoading] = useState(true);
@@ -38,17 +38,16 @@ const AlertSystemIndexPage: React.FC = () => {
       // Get all institutes first
       const response = await instituteService.getAllInstitutes();
       
-      // Handle the response correctly
       if (response.success && response.data) {
         let institutes = response.data;
         
         // Filter by module access - both admin and non-admin use accessibleInstitutes
-        const alertSystemInstituteIds = accessibleInstitutes
-          .filter(inst => inst.has_alert_system_access)
+        const schoolInstituteIds = accessibleInstitutes
+          .filter(inst => inst.has_school_access)
           .map(inst => inst.institute_id);
         
         // If no accessible institutes yet, wait for hook to load
-        if (alertSystemInstituteIds.length === 0 && accessibleInstitutes.length === 0) {
+        if (schoolInstituteIds.length === 0 && accessibleInstitutes.length === 0) {
           setInstitutes([]);
           setTotalCount(0);
           setTotalPages(0);
@@ -56,7 +55,7 @@ const AlertSystemIndexPage: React.FC = () => {
           return;
         }
         
-        institutes = institutes.filter(inst => alertSystemInstituteIds.includes(inst.id));
+        institutes = institutes.filter(inst => schoolInstituteIds.includes(inst.id));
         
         // Apply search filter if needed
         if (searchTerm) {
@@ -98,7 +97,7 @@ const AlertSystemIndexPage: React.FC = () => {
   useEffect(() => {
     if (!accessLoading) {
       if (!hasAccess) {
-        setError('You do not have access to the Alert System. Please contact your administrator.');
+        setError('You do not have access to the School module. Please contact your administrator.');
         setLoading(false);
         return;
       }
@@ -118,7 +117,7 @@ const AlertSystemIndexPage: React.FC = () => {
   };
 
   const handleView = (instituteId: number) => {
-    navigate(`/alert-system/${instituteId}`);
+    navigate(`/school/${instituteId}`);
   };
 
   const handleEdit = (instituteId: number) => {
@@ -151,7 +150,6 @@ const AlertSystemIndexPage: React.FC = () => {
     });
   };
 
-
   if (accessLoading || loading) {
     return (
       <Container>
@@ -176,7 +174,7 @@ const AlertSystemIndexPage: React.FC = () => {
     return (
       <Container>
         <Alert variant="warning" className="mb-6">
-          You do not have access to the Alert System. Please contact your administrator.
+          You do not have access to the School module. Please contact your administrator.
         </Alert>
       </Container>
     );
@@ -187,9 +185,9 @@ const AlertSystemIndexPage: React.FC = () => {
       <div className="mb-6">
         <div className="flex justify-between items-center mb-4">
           <div>
-            <h1 className="text-2xl font-bold text-gray-900">Alert System</h1>
+            <h1 className="text-2xl font-bold text-gray-900">School Management</h1>
             <p className="text-gray-600 mt-1">
-              Manage institutes with alert system access
+              Manage institutes with school bus, parents, and SMS services
             </p>
           </div>
         </div>
@@ -222,7 +220,7 @@ const AlertSystemIndexPage: React.FC = () => {
                 </svg>
                 <h3 className="mt-2 text-sm font-medium text-gray-900">No institutes found</h3>
                 <p className="mt-1 text-sm text-gray-500">
-                  {searchTerm ? 'No institutes match your search criteria.' : 'No institutes with alert system access found.'}
+                  {searchTerm ? 'No institutes match your search criteria.' : 'No institutes with school module access found.'}
                 </p>
               </div>
             ) : (
@@ -262,35 +260,31 @@ const AlertSystemIndexPage: React.FC = () => {
                               View
                             </Button>
                             
-                            {isAdmin && (
-                              <>
-                                <Button
-                                  variant="secondary"
-                                  size="sm"
-                                  onClick={() => handleEdit(institute.id)}
-                                  icon={
-                                    <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z" />
-                                    </svg>
-                                  }
-                                >
-                                  Edit
-                                </Button>
-                                
-                                <Button
-                                  variant="danger"
-                                  size="sm"
-                                  onClick={() => handleDelete(institute.id, institute.name)}
-                                  icon={
-                                    <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
-                                    </svg>
-                                  }
-                                >
-                                  Delete
-                                </Button>
-                              </>
-                            )}
+                            <Button
+                              variant="secondary"
+                              size="sm"
+                              onClick={() => handleEdit(institute.id)}
+                              icon={
+                                <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z" />
+                                </svg>
+                              }
+                            >
+                              Edit
+                            </Button>
+                            
+                            <Button
+                              variant="danger"
+                              size="sm"
+                              onClick={() => handleDelete(institute.id, institute.name)}
+                              icon={
+                                <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
+                                </svg>
+                              }
+                            >
+                              Delete
+                            </Button>
                           </div>
                         </TableCell>
                       </TableRow>
@@ -338,4 +332,5 @@ const AlertSystemIndexPage: React.FC = () => {
   );
 };
 
-export default AlertSystemIndexPage;
+export default SchoolIndexPage;
+

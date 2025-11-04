@@ -120,8 +120,9 @@ export interface AlertHistory {
   datetime: string;
   remarks: string;
   image: string | null;
-  institute: number;
+  institute: number | { id: number; name: string; logo: string | null };
   institute_name: string;
+  institute_logo?: string | null;
   latitude: number | string;
   longitude: number | string;
   created_at: string;

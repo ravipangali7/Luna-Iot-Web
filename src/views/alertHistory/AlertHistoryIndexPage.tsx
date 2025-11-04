@@ -86,9 +86,12 @@ const AlertHistoryIndexPage: React.FC = () => {
          // In a real implementation, you'd want a backend endpoint that filters by institute IDs
          const data = await alertHistoryService.getAll();
          const allData = Array.isArray(data) ? data : []; // ENSURE ARRAY
-         response = allData.filter((history: AlertHistory) => 
-           accessibleInstituteIds.includes(history.institute)
-         );
+         response = allData.filter((history: AlertHistory) => {
+           const instituteId = typeof history.institute === 'object' && history.institute !== null
+             ? history.institute.id
+             : history.institute;
+           return accessibleInstituteIds.includes(instituteId);
+         });
        }
 
       // Apply filters - response is guaranteed to be an array now
@@ -410,13 +413,11 @@ const AlertHistoryIndexPage: React.FC = () => {
                 <Table striped hover>
                   <TableHead>
                     <TableRow>
-                      <TableHeader>Source</TableHeader>
-                      <TableHeader>Name</TableHeader>
-                      <TableHeader>Primary Phone</TableHeader>
-                      <TableHeader>Alert Type</TableHeader>
-                      <TableHeader>Status</TableHeader>
-                      <TableHeader>Date & Time</TableHeader>
+                      <TableHeader>Alert Info</TableHeader>
+                      <TableHeader>Status Info</TableHeader>
                       <TableHeader>Remarks</TableHeader>
+                      <TableHeader>Date</TableHeader>
+                      <TableHeader>Institute</TableHeader>
                       <TableHeader>Actions</TableHeader>
                     </TableRow>
                   </TableHead>
@@ -427,44 +428,133 @@ const AlertHistoryIndexPage: React.FC = () => {
                         className="cursor-pointer hover:bg-gray-50"
                         onClick={() => handleOpenModal(item)}
                       >
-                        <TableCell>{getSourceBadge(item.source)}</TableCell>
-                        <TableCell className="font-medium text-gray-900">{item.name}</TableCell>
-                        <TableCell className="text-gray-600">{item.primary_phone}</TableCell>
-                        <TableCell className="text-gray-600">{item.alert_type_name}</TableCell>
-                        <TableCell>{getStatusBadge(item.status)}</TableCell>
-                        <TableCell className="text-gray-600">{formatDateTime(item.datetime)}</TableCell>
+                        {/* Column 1: Source, Name, and Phone */}
+                        <TableCell>
+                          <div className="flex flex-col gap-2">
+                            <div>{getSourceBadge(item.source)}</div>
+                            <div className="font-medium text-gray-900">{item.name}</div>
+                            <div className="text-gray-600 text-sm">{item.primary_phone}</div>
+                          </div>
+                        </TableCell>
+                        
+                        {/* Column 2: Alert Type and Status */}
+                        <TableCell>
+                          <div className="flex flex-col gap-2">
+                            <div className="text-gray-900 font-medium">{item.alert_type_name}</div>
+                            <div>{getStatusBadge(item.status)}</div>
+                          </div>
+                        </TableCell>
+                        
+                        {/* Column 3: Remarks */}
                         <TableCell className="text-gray-600 max-w-xs truncate" title={item.remarks}>
                           {item.remarks || 'N/A'}
                         </TableCell>
+                        
+                        {/* Column 4: Date */}
+                        <TableCell className="text-gray-600">
+                          {formatDateTime(item.datetime)}
+                        </TableCell>
+                        
+                        {/* Column 5: Institute Name and Logo */}
+                        <TableCell>
+                          <div className="flex items-center gap-2">
+                            {(() => {
+                              // Get logo from either nested institute object or direct field
+                              let logo: string | null | undefined = null;
+                              
+                              // Debug: Log the institute structure for first item
+                              if (alertHistory.indexOf(item) === 0) {
+                                console.log('AlertHistory item structure:', {
+                                  institute: item.institute,
+                                  institute_name: item.institute_name,
+                                  institute_logo: item.institute_logo,
+                                  fullItem: item
+                                });
+                              }
+                              
+                              if (typeof item.institute === 'object' && item.institute !== null) {
+                                logo = item.institute.logo;
+                              } else if (item.institute_logo) {
+                                logo = item.institute_logo;
+                              }
+                              
+                              // Ensure logo is a non-empty string
+                              const hasValidLogo = logo && typeof logo === 'string' && logo.trim() !== '';
+                              
+                              if (hasValidLogo && logo) {
+                                // Ensure logo path starts with / if it doesn't already
+                                const logoPath = logo.startsWith('/') ? logo : `/${logo}`;
+                                const logoUrl = `${API_CONFIG.BASE_URL}${logoPath}`;
+                                
+                                // Debug: Log logo URL for first item
+                                if (alertHistory.indexOf(item) === 0) {
+                                  console.log('Logo URL:', logoUrl);
+                                }
+                                
+                                return (
+                                  <>
+                                    <img
+                                      src={logoUrl}
+                                      alt={`${item.institute_name} logo`}
+                                      className="h-8 w-8 object-cover rounded-lg flex-shrink-0"
+                                      onError={(e) => {
+                                        const target = e.target as HTMLImageElement;
+                                        console.error('Logo image failed to load:', logoUrl, target.src);
+                                        target.style.display = 'none';
+                                        const placeholder = target.nextElementSibling as HTMLElement;
+                                        if (placeholder) placeholder.style.display = 'flex';
+                                      }}
+                                      onLoad={() => {
+                                        if (alertHistory.indexOf(item) === 0) {
+                                          console.log('Logo image loaded successfully');
+                                        }
+                                      }}
+                                    />
+                                    <div className="hidden items-center justify-center h-8 w-8 rounded-lg bg-gray-200 flex-shrink-0">
+                                      <svg className="w-5 h-5 text-gray-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 21V5a2 2 0 00-2-2H7a2 2 0 00-2 2v16m14 0h2m-2 0h-5m-9 0H3m2 0h5M9 7h1m-1 4h1m4-4h1m-1 4h1m-5 10v-5a1 1 0 011-1h2a1 1 0 011 1v5m-4 0h4" />
+                                      </svg>
+                                    </div>
+                                  </>
+                                );
+                              }
+                              
+                              return (
+                                <div className="flex items-center justify-center h-8 w-8 rounded-lg bg-gray-200 flex-shrink-0">
+                                  <svg className="w-5 h-5 text-gray-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 21V5a2 2 0 00-2-2H7a2 2 0 00-2 2v16m14 0h2m-2 0h-5m-9 0H3m2 0h5M9 7h1m-1 4h1m4-4h1m-1 4h1m-5 10v-5a1 1 0 011-1h2a1 1 0 011 1v5m-4 0h4" />
+                                  </svg>
+                                </div>
+                              );
+                            })()}
+                            <span className="text-gray-900 font-medium">{item.institute_name}</span>
+                          </div>
+                        </TableCell>
+                        
+                        {/* Column 6: Action Button (Icon Only) */}
                         <TableCell>
                           <div className="flex space-x-2" onClick={(e) => e.stopPropagation()}>
-                            <Button
-                              variant="primary"
-                              size="sm"
+                            <button
                               onClick={() => handleOpenModal(item)}
-                              icon={
-                                <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
-                                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z" />
-                                </svg>
-                              }
+                              className="p-2 text-blue-600 hover:bg-blue-50 rounded-md transition-colors"
+                              title="View"
                             >
-                              View
-                            </Button>
+                              <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
+                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z" />
+                              </svg>
+                            </button>
                             
                             {isAdmin && (
-                              <Button
-                                variant="danger"
-                                size="sm"
+                              <button
                                 onClick={() => handleDelete(item.id, item.name)}
-                                icon={
-                                  <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
-                                  </svg>
-                                }
+                                className="p-2 text-red-600 hover:bg-red-50 rounded-md transition-colors"
+                                title="Delete"
                               >
-                                Delete
-                              </Button>
+                                <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
+                                </svg>
+                              </button>
                             )}
                           </div>
                         </TableCell>

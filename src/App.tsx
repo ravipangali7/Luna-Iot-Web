@@ -29,6 +29,13 @@ import { AlertTypeIndexPage, AlertTypeCreatePage, AlertTypeEditPage } from './vi
 import { AlertHistoryIndexPage, AlertHistoryViewPage } from './views/alertHistory';
 import { SubscriptionPlanIndexPage, SubscriptionPlanCreatePage, SubscriptionPlanEditPage } from './views/subscriptionPlans';
 import { UserIndexPage, UserShowPage, UserCreatePage, UserEditPage } from './views/users';
+import SchoolIndexPage from './views/school/SchoolIndexPage';
+import SchoolShowPage from './views/school/SchoolShowPage';
+import { SchoolBusCreatePage, SchoolBusEditPage } from './views/school/schoolBuses';
+import SchoolParentCreatePage from './views/school/schoolParents/SchoolParentCreatePage';
+import SchoolParentEditPage from './views/school/schoolParents/SchoolParentEditPage';
+import SchoolSMSCreatePage from './views/school/schoolSMS/SchoolSMSCreatePage';
+import SchoolSMSEditPage from './views/school/schoolSMS/SchoolSMSEditPage';
 import { WalletIndexPage, MyWalletPage } from './views/wallet';
 import { TransactionIndexPage, WalletTransactionsPage, UserTransactionsPage } from './views/transactions';
 import RoleBasedRoute from './components/role-based/RoleBasedRoute';
@@ -495,6 +502,48 @@ const AppRoutes: React.FC = () => {
         <Route path="alert-history/:id" element={
           <RoleBasedRoute allowedRoles={[ROLES.SUPER_ADMIN]}>
             <AlertHistoryViewPage />
+          </RoleBasedRoute>
+        } />
+
+        {/* School Routes - Super Admin only */}
+        <Route path="school" element={
+          <RoleBasedRoute allowedRoles={[ROLES.SUPER_ADMIN]}>
+            <SchoolIndexPage />
+          </RoleBasedRoute>
+        } />
+        <Route path="school/:id" element={
+          <RoleBasedRoute allowedRoles={[ROLES.SUPER_ADMIN]}>
+            <SchoolShowPage />
+          </RoleBasedRoute>
+        } />
+        <Route path="school/:id/buses/create" element={
+          <RoleBasedRoute allowedRoles={[ROLES.SUPER_ADMIN]}>
+            <SchoolBusCreatePage />
+          </RoleBasedRoute>
+        } />
+        <Route path="school/:id/buses/:busId/edit" element={
+          <RoleBasedRoute allowedRoles={[ROLES.SUPER_ADMIN]}>
+            <SchoolBusEditPage />
+          </RoleBasedRoute>
+        } />
+        <Route path="school/:id/parents/create" element={
+          <RoleBasedRoute allowedRoles={[ROLES.SUPER_ADMIN]}>
+            <SchoolParentCreatePage />
+          </RoleBasedRoute>
+        } />
+        <Route path="school/:id/parents/:parentId/edit" element={
+          <RoleBasedRoute allowedRoles={[ROLES.SUPER_ADMIN]}>
+            <SchoolParentEditPage />
+          </RoleBasedRoute>
+        } />
+        <Route path="school/:id/sms/create" element={
+          <RoleBasedRoute allowedRoles={[ROLES.SUPER_ADMIN]}>
+            <SchoolSMSCreatePage />
+          </RoleBasedRoute>
+        } />
+        <Route path="school/:id/sms/:smsId/edit" element={
+          <RoleBasedRoute allowedRoles={[ROLES.SUPER_ADMIN]}>
+            <SchoolSMSEditPage />
           </RoleBasedRoute>
         } />
       </Route>
