@@ -12,10 +12,13 @@ import Input from '../../components/ui/forms/Input';
 import Select from '../../components/ui/forms/Select';
 import Alert from '../../components/ui/common/Alert';
 import Spinner from '../../components/ui/common/Spinner';
+import { useAuth } from '../../hooks/useAuth';
+import { ROLES } from '../../utils/roleUtils';
 
 const VehicleEditPage: React.FC = () => {
   const navigate = useNavigate();
   const { imei } = useParams<{ imei: string }>();
+  const { user } = useAuth();
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -32,6 +35,8 @@ const VehicleEditPage: React.FC = () => {
     expireDate: ''
   });
   const [errors, setErrors] = useState<Record<string, string>>({});
+
+  const isSuperAdmin = user?.roles?.some(role => role.name === ROLES.SUPER_ADMIN) || false;
 
   const loadVehicle = useCallback(async () => {
     if (!imei) return;
@@ -319,21 +324,23 @@ const VehicleEditPage: React.FC = () => {
                   </p>
                 </div>
 
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">
-                    Expire Date
-                  </label>
-                  <Input
-                    type="date"
-                    placeholder="Select expire date"
-                    value={formData.expireDate || ''}
-                    onChange={(value) => handleInputChange('expireDate', value)}
-                    error={errors.expireDate}
-                  />
-                  <p className="text-xs text-gray-500 mt-1">
-                    Vehicle expiration date. If not set, defaults to one year from creation date.
-                  </p>
-                </div>
+                {isSuperAdmin && (
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-1">
+                      Expire Date
+                    </label>
+                    <Input
+                      type="date"
+                      placeholder="Select expire date"
+                      value={formData.expireDate || ''}
+                      onChange={(value) => handleInputChange('expireDate', value)}
+                      error={errors.expireDate}
+                    />
+                    <p className="text-xs text-gray-500 mt-1">
+                      Vehicle expiration date. If not set, defaults to one year from creation date.
+                    </p>
+                  </div>
+                )}
               </div>
 
               <div className="flex justify-end space-x-3 mt-6">
