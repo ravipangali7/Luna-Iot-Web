@@ -382,7 +382,7 @@ const SchoolShowPage: React.FC = () => {
                       <TableCell className="text-gray-600">{item.school_buses_count}</TableCell>
                       <TableCell className="text-gray-600">
                         {item.latitude && item.longitude 
-                          ? `${item.latitude.toFixed(6)}, ${item.longitude.toFixed(6)}`
+                          ? `${Number(item.latitude).toFixed(6)}, ${Number(item.longitude).toFixed(6)}`
                           : 'N/A'}
                       </TableCell>
                       <TableCell className="text-gray-600">{formatDate(item.created_at)}</TableCell>
