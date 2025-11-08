@@ -3,7 +3,6 @@ import { useNavigate, useSearchParams } from 'react-router-dom';
 import { instituteService, type InstituteModuleCreate, type Institute } from '../../../api/services/instituteService';
 import { moduleService } from '../../../api/services/moduleService';
 import { userService } from '../../../api/services/userService';
-import type { User } from '../../../types/auth';
 import { showSuccess, showError } from '../../../utils/sweetAlert';
 import RoleBasedWidget from '../../../components/role-based/RoleBasedWidget';
 import Button from '../../../components/ui/buttons/Button';

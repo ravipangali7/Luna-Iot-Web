@@ -2,7 +2,6 @@ import React, { useState, useEffect } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
 import { instituteService, type InstituteModule, type InstituteModuleUpdate } from '../../../api/services/instituteService';
 import { userService } from '../../../api/services/userService';
-import type { User } from '../../../types/auth';
 import { showSuccess, showError } from '../../../utils/sweetAlert';
 import RoleBasedWidget from '../../../components/role-based/RoleBasedWidget';
 import Button from '../../../components/ui/buttons/Button';
