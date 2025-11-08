@@ -1,4 +1,5 @@
-import React, { useState, useRef, useMemo, useCallback } from 'react';
+import React, { useState, useRef, useMemo, useCallback, useEffect } from 'react';
+import { FixedSizeList } from 'react-window';
 import { useOutsideClick } from '../../../hooks/useOutsideClick';
 
 export interface MultiSelectOption {
@@ -17,7 +18,45 @@ export interface MultiSelectProps {
   disabled?: boolean;
   searchable?: boolean;
   className?: string;
+  loading?: boolean;
 }
+
+// Memoized option item component for virtual scrolling
+const OptionItem = React.memo<{
+  index: number;
+  style: React.CSSProperties;
+  data: {
+    options: MultiSelectOption[];
+    value: (number | string)[];
+    onToggle: (optionValue: number | string) => void;
+  };
+}>(({ index, style, data }) => {
+  const option = data.options[index];
+  const isSelected = data.value.includes(option.value);
+
+  return (
+    <div
+      style={style}
+      className={`
+        flex items-center px-3 py-2 text-sm cursor-pointer hover:bg-gray-100
+        ${isSelected ? 'bg-blue-50' : ''}
+      `}
+      onClick={() => data.onToggle(option.value)}
+    >
+      <input
+        type="checkbox"
+        checked={isSelected}
+        onChange={() => {}} // Handled by parent onClick
+        className="h-4 w-4 text-blue-600 focus:ring-blue-500 border-gray-300 rounded"
+      />
+      <span className={`ml-2 ${isSelected ? 'font-medium' : ''}`}>
+        {option.label}
+      </span>
+    </div>
+  );
+});
+
+OptionItem.displayName = 'OptionItem';
 
 const MultiSelect: React.FC<MultiSelectProps> = ({
   options,
@@ -28,18 +67,36 @@ const MultiSelect: React.FC<MultiSelectProps> = ({
   error,
   disabled = false,
   searchable = true,
-  className = ""
+  className = "",
+  loading = false
 }) => {
   const [isOpen, setIsOpen] = useState(false);
   const [searchTerm, setSearchTerm] = useState('');
+  const [listWidth, setListWidth] = useState(0);
   const dropdownRef = useRef<HTMLDivElement>(null);
   const searchInputRef = useRef<HTMLInputElement>(null);
+  const listContainerRef = useRef<HTMLDivElement>(null);
 
   // Close dropdown when clicking outside
   useOutsideClick(dropdownRef, () => {
     setIsOpen(false);
     setSearchTerm('');
   });
+
+  // Measure container width when dropdown opens
+  useEffect(() => {
+    if (isOpen && listContainerRef.current) {
+      const measureWidth = () => {
+        if (listContainerRef.current) {
+          setListWidth(listContainerRef.current.offsetWidth);
+        }
+      };
+      // Measure immediately and after a short delay to ensure DOM is ready
+      measureWidth();
+      const timeout = setTimeout(measureWidth, 0);
+      return () => clearTimeout(timeout);
+    }
+  }, [isOpen]);
 
   // Filter options based on search term
   const filteredOptions = useMemo(() => {
@@ -186,7 +243,7 @@ const MultiSelect: React.FC<MultiSelectProps> = ({
 
         {/* Dropdown menu */}
         {isOpen && (
-          <div className="absolute z-[1000] w-full mt-1 bg-white border border-gray-300 rounded-md shadow-lg overflow-visible flex flex-col max-h-80">
+          <div className="absolute z-[1000] w-full mt-1 bg-white border border-gray-300 rounded-md shadow-lg flex flex-col" style={{ maxHeight: '320px' }}>
             {/* Search input */}
             {searchable && (
               <div className="p-2 border-b border-gray-200 flex-shrink-0">
@@ -222,36 +279,34 @@ const MultiSelect: React.FC<MultiSelectProps> = ({
               )}
             </div>
 
-            {/* Options list */}
-            <div className="overflow-y-auto flex-1 min-h-0">
-              {filteredOptions.length === 0 ? (
+            {/* Options list with virtual scrolling */}
+            <div className="flex-1 min-h-0" style={{ height: '240px' }}>
+              {loading ? (
+                <div className="flex items-center justify-center h-full">
+                  <div className="text-sm text-gray-500">Loading options...</div>
+                </div>
+              ) : filteredOptions.length === 0 ? (
                 <div className="px-3 py-2 text-sm text-gray-500">
                   {searchTerm ? 'No options found' : 'No options available'}
                 </div>
               ) : (
-                filteredOptions.map((option) => {
-                  const isSelected = value.includes(option.value);
-                  return (
-                    <div
-                      key={option.value}
-                      className={`
-                        flex items-center px-3 py-2 text-sm cursor-pointer hover:bg-gray-100
-                        ${isSelected ? 'bg-blue-50' : ''}
-                      `}
-                      onClick={() => handleOptionToggle(option.value)}
+                <div ref={listContainerRef} style={{ width: '100%' }}>
+                  {listWidth > 0 && (
+                    <FixedSizeList
+                      height={240}
+                      itemCount={filteredOptions.length}
+                      itemSize={40}
+                      itemData={{
+                        options: filteredOptions,
+                        value,
+                        onToggle: handleOptionToggle
+                      }}
+                      width={listWidth}
                     >
-                      <input
-                        type="checkbox"
-                        checked={isSelected}
-                        onChange={() => {}} // Handled by parent onClick
-                        className="h-4 w-4 text-blue-600 focus:ring-blue-500 border-gray-300 rounded"
-                      />
-                      <span className={`ml-2 ${isSelected ? 'font-medium' : ''}`}>
-                        {option.label}
-                      </span>
-                    </div>
-                  );
-                })
+                      {OptionItem}
+                    </FixedSizeList>
+                  )}
+                </div>
               )}
             </div>
           </div>

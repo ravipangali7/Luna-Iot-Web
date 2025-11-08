@@ -3,6 +3,23 @@ import type { User } from '../../types/auth';
 import type { PaginatedResponse, PaginationParams } from '../../types/pagination';
 
 class UserService {
+  async getLightUsers(): Promise<{ success: boolean; data?: Array<{ id: number; name: string; phone: string; status: string }>; error?: string }> {
+    try {
+      const response = await apiClient.get('/api/core/user/users/light', {
+        timeout: 30000 // 30 seconds should be enough for optimized endpoint
+      });
+      
+      if (response.data.success) {
+        return { success: true, data: response.data.data };
+      } else {
+        return { success: false, error: response.data.message || 'Failed to fetch users' };
+      }
+    } catch (error) {
+      console.error('Get light users error:', error);
+      return { success: false, error: 'Network error: ' + (error as Error).message };
+    }
+  }
+
   async getAllUsers(): Promise<{ success: boolean; data?: User[]; error?: string }> {
     try {
       const response = await apiClient.get('/api/core/user/users', {

@@ -14,9 +14,10 @@ const InstituteModuleEditPage: React.FC = () => {
   const navigate = useNavigate();
   const { id } = useParams<{ id: string }>();
   const [loading, setLoading] = useState(true);
+  const [usersLoading, setUsersLoading] = useState(true);
   const [saving, setSaving] = useState(false);
   const [module, setModule] = useState<InstituteModule | null>(null);
-  const [users, setUsers] = useState<User[]>([]);
+  const [users, setUsers] = useState<Array<{ id: number; name: string; phone: string; status: string }>>([]);
   const [formData, setFormData] = useState<InstituteModuleUpdate>({
     user_ids: []
   });
@@ -47,12 +48,15 @@ const InstituteModuleEditPage: React.FC = () => {
 
     const fetchUsers = async () => {
       try {
-        const result = await userService.getAllUsers();
+        setUsersLoading(true);
+        const result = await userService.getLightUsers();
         if (result.success && result.data) {
           setUsers(result.data);
         }
       } catch {
         console.error('Failed to fetch users');
+      } finally {
+        setUsersLoading(false);
       }
     };
 
@@ -173,7 +177,7 @@ const InstituteModuleEditPage: React.FC = () => {
                 <MultiSelect
                   options={users.map(user => ({
                     id: user.id,
-                    label: `${user.name} (${user.phone})`,
+                    label: `${user.name || ''} (${user.phone})`,
                     value: user.id
                   }))}
                   value={formData.user_ids || []}
@@ -182,6 +186,7 @@ const InstituteModuleEditPage: React.FC = () => {
                   label="Users *"
                   searchable
                   error={errors.user_ids}
+                  loading={usersLoading}
                 />
                 <p className="mt-1 text-sm text-gray-500">
                   Select multiple users to assign to this module

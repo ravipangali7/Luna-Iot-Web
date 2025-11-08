@@ -16,8 +16,9 @@ const InstituteModuleCreatePage: React.FC = () => {
   const navigate = useNavigate();
   const [searchParams] = useSearchParams();
   const [loading, setLoading] = useState(false);
+  const [usersLoading, setUsersLoading] = useState(true);
   const [institutes, setInstitutes] = useState<Institute[]>([]);
-  const [users, setUsers] = useState<User[]>([]);
+  const [users, setUsers] = useState<Array<{ id: number; name: string; phone: string; status: string }>>([]);
   const [modules, setModules] = useState<Array<{ id: number; name: string }>>([]);
   const [formData, setFormData] = useState<InstituteModuleCreate>({
     institute: parseInt(searchParams.get('institute') || '0'),
@@ -28,6 +29,7 @@ const InstituteModuleCreatePage: React.FC = () => {
 
   useEffect(() => {
     fetchData();
+    fetchUsers(); // Load users separately in background
   }, []);
 
   const fetchData = async () => {
@@ -40,12 +42,6 @@ const InstituteModuleCreatePage: React.FC = () => {
         setInstitutes(institutesResult.data);
       }
 
-      // Fetch users
-      const usersResult = await userService.getAllUsers();
-      if (usersResult.success && usersResult.data) {
-        setUsers(usersResult.data);
-      }
-
       // Fetch modules
       const modulesResult = await moduleService.getAllModules();
       if (modulesResult.success && modulesResult.data) {
@@ -55,6 +51,22 @@ const InstituteModuleCreatePage: React.FC = () => {
       showError('Error', 'Failed to fetch required data');
     } finally {
       setLoading(false);
+    }
+  };
+
+  // Load users in background - don't block page render (using optimized light endpoint)
+  const fetchUsers = async () => {
+    try {
+      setUsersLoading(true);
+      const usersResult = await userService.getLightUsers();
+      if (usersResult.success && usersResult.data) {
+        setUsers(usersResult.data);
+      }
+    } catch {
+      console.error('Failed to fetch users');
+      // Don't show error to user - allow them to continue using form
+    } finally {
+      setUsersLoading(false);
     }
   };
 
@@ -185,7 +197,7 @@ const InstituteModuleCreatePage: React.FC = () => {
                 <MultiSelect
                   options={users.map(user => ({
                     id: user.id,
-                    label: `${user.name} (${user.phone})`,
+                    label: `${user.name || ''} (${user.phone})`,
                     value: user.id
                   }))}
                   value={formData.user_ids || []}
@@ -194,6 +206,7 @@ const InstituteModuleCreatePage: React.FC = () => {
                   label="Users"
                   searchable
                   error={errors.user_ids}
+                  loading={usersLoading}
                 />
                 <p className="mt-1 text-sm text-gray-500">
                   Select multiple users to assign to this module
