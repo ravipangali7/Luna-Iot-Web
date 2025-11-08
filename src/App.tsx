@@ -39,6 +39,7 @@ import SchoolSMSEditPage from './views/school/schoolSMS/SchoolSMSEditPage';
 import { WalletIndexPage, MyWalletPage } from './views/wallet';
 import { TransactionIndexPage, WalletTransactionsPage, UserTransactionsPage } from './views/transactions';
 import RoleBasedRoute from './components/role-based/RoleBasedRoute';
+import ModuleBasedRoute from './components/role-based/ModuleBasedRoute';
 import { ROLES } from './utils/roleUtils';
 
 import './styles/variables.css';
@@ -505,46 +506,46 @@ const AppRoutes: React.FC = () => {
           </RoleBasedRoute>
         } />
 
-        {/* School Routes - Super Admin only */}
+        {/* School Routes - Super Admin or users with school module access */}
         <Route path="school" element={
-          <RoleBasedRoute allowedRoles={[ROLES.SUPER_ADMIN]}>
+          <ModuleBasedRoute allowedRoles={[ROLES.SUPER_ADMIN]} moduleType="school">
             <SchoolIndexPage />
-          </RoleBasedRoute>
+          </ModuleBasedRoute>
         } />
         <Route path="school/:id" element={
-          <RoleBasedRoute allowedRoles={[ROLES.SUPER_ADMIN]}>
+          <ModuleBasedRoute allowedRoles={[ROLES.SUPER_ADMIN]} moduleType="school">
             <SchoolShowPage />
-          </RoleBasedRoute>
+          </ModuleBasedRoute>
         } />
         <Route path="school/:id/buses/create" element={
-          <RoleBasedRoute allowedRoles={[ROLES.SUPER_ADMIN]}>
+          <ModuleBasedRoute allowedRoles={[ROLES.SUPER_ADMIN]} moduleType="school">
             <SchoolBusCreatePage />
-          </RoleBasedRoute>
+          </ModuleBasedRoute>
         } />
         <Route path="school/:id/buses/:busId/edit" element={
-          <RoleBasedRoute allowedRoles={[ROLES.SUPER_ADMIN]}>
+          <ModuleBasedRoute allowedRoles={[ROLES.SUPER_ADMIN]} moduleType="school">
             <SchoolBusEditPage />
-          </RoleBasedRoute>
+          </ModuleBasedRoute>
         } />
         <Route path="school/:id/parents/create" element={
-          <RoleBasedRoute allowedRoles={[ROLES.SUPER_ADMIN]}>
+          <ModuleBasedRoute allowedRoles={[ROLES.SUPER_ADMIN]} moduleType="school">
             <SchoolParentCreatePage />
-          </RoleBasedRoute>
+          </ModuleBasedRoute>
         } />
         <Route path="school/:id/parents/:parentId/edit" element={
-          <RoleBasedRoute allowedRoles={[ROLES.SUPER_ADMIN]}>
+          <ModuleBasedRoute allowedRoles={[ROLES.SUPER_ADMIN]} moduleType="school">
             <SchoolParentEditPage />
-          </RoleBasedRoute>
+          </ModuleBasedRoute>
         } />
         <Route path="school/:id/sms/create" element={
-          <RoleBasedRoute allowedRoles={[ROLES.SUPER_ADMIN]}>
+          <ModuleBasedRoute allowedRoles={[ROLES.SUPER_ADMIN]} moduleType="school">
             <SchoolSMSCreatePage />
-          </RoleBasedRoute>
+          </ModuleBasedRoute>
         } />
         <Route path="school/:id/sms/:smsId/edit" element={
-          <RoleBasedRoute allowedRoles={[ROLES.SUPER_ADMIN]}>
+          <ModuleBasedRoute allowedRoles={[ROLES.SUPER_ADMIN]} moduleType="school">
             <SchoolSMSEditPage />
-          </RoleBasedRoute>
+          </ModuleBasedRoute>
         } />
       </Route>
 

@@ -1,6 +1,7 @@
 import React, { useState, useMemo } from 'react';
 import { useNavigate, useLocation } from 'react-router-dom';
 import { useAuth } from '../../hooks/useAuth';
+import { useSchoolAccess } from '../../hooks/useSchoolAccess';
 import Button from '../ui/buttons/Button';
 import Badge from '../ui/common/Badge';
 import logo from '../../assets/logo.png';
@@ -27,6 +28,7 @@ const Sidebar: React.FC<SidebarProps> = ({ isOpen, onToggle }) => {
   const navigate = useNavigate();
   const location = useLocation();
   const { user, logout, canAny, canAll } = useAuth();
+  const { hasAccess: hasSchoolAccess } = useSchoolAccess();
   const [expandedItems, setExpandedItems] = useState<Set<string>>(new Set());
 
   // Navigation configuration with dynamic permissions
@@ -436,6 +438,21 @@ const Sidebar: React.FC<SidebarProps> = ({ isOpen, onToggle }) => {
 
     const filterItems = (items: NavItem[]): NavItem[] => {
       return items.filter(item => {
+        // Special handling for School item: check both role-based and module-based access
+        if (item.id === 'school') {
+          // Check if user is Super Admin (role-based)
+          if (user.roles && user.roles.length > 0) {
+            const userRoleNames = user.roles.map(role => role.name);
+            const isSuperAdmin = userRoleNames.includes(ROLES.SUPER_ADMIN);
+            
+            // Show if Super Admin OR has school module access
+            if (isSuperAdmin || hasSchoolAccess) {
+              return true;
+            }
+          }
+          return false;
+        }
+
         // Check role-based access (backward compatibility)
         if (item.allowedRoles && item.allowedRoles.length > 0) {
           if (!user.roles || user.roles.length === 0) return false;
@@ -485,7 +502,7 @@ const Sidebar: React.FC<SidebarProps> = ({ isOpen, onToggle }) => {
     };
 
     return filterItems(navigationItems);
-  }, [user, canAny, canAll, navigationItems]);
+  }, [user, canAny, canAll, hasSchoolAccess, navigationItems]);
 
   const handleLogout = async () => {
     logout();

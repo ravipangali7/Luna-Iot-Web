@@ -1,5 +1,6 @@
 import React, { useState, useEffect, useCallback } from 'react';
 import { useNavigate } from 'react-router-dom';
+import { useAuth } from '../../../hooks/useAuth';
 import Container from '../../../components/ui/layout/Container';
 import Card from '../../../components/ui/cards/Card';
 import Table from '../../../components/ui/tables/Table';
@@ -15,9 +16,11 @@ import Alert from '../../../components/ui/common/Alert';
 import { confirmDelete, showSuccess, showError } from '../../../utils/sweetAlert';
 import { schoolService } from '../../../api/services/schoolService';
 import type { SchoolBusList } from '../../../types/school';
+import { ROLES } from '../../../utils/roleUtils';
 
 const SchoolBusIndexPage: React.FC = () => {
   const navigate = useNavigate();
+  const { user } = useAuth();
   
   const [schoolBuses, setSchoolBuses] = useState<SchoolBusList[]>([]);
   const [loading, setLoading] = useState(true);
@@ -27,6 +30,9 @@ const SchoolBusIndexPage: React.FC = () => {
   const [totalPages, setTotalPages] = useState(1);
   const [totalCount, setTotalCount] = useState(0);
   const itemsPerPage = 20;
+
+  // Check if user is Super Admin
+  const isSuperAdmin = user?.roles?.some(role => role.name === ROLES.SUPER_ADMIN) || false;
 
   const fetchSchoolBuses = useCallback(async () => {
     try {
@@ -196,13 +202,15 @@ const SchoolBusIndexPage: React.FC = () => {
                           >
                             Edit
                           </Button>
-                          <Button
-                            variant="danger"
-                            size="sm"
-                            onClick={() => handleDelete(bus.id, `${bus.institute_name} - ${bus.bus_name}`)}
-                          >
-                            Delete
-                          </Button>
+                          {isSuperAdmin && (
+                            <Button
+                              variant="danger"
+                              size="sm"
+                              onClick={() => handleDelete(bus.id, `${bus.institute_name} - ${bus.bus_name}`)}
+                            >
+                              Delete
+                            </Button>
+                          )}
                         </div>
                       </TableCell>
                     </TableRow>

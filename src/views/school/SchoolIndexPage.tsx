@@ -1,5 +1,6 @@
 import React, { useState, useEffect, useCallback } from 'react';
 import { useNavigate } from 'react-router-dom';
+import { useAuth } from '../../hooks/useAuth';
 import { useSchoolAccess } from '../../hooks/useSchoolAccess';
 import { instituteService, type Institute } from '../../api/services/instituteService';
 import Container from '../../components/ui/layout/Container';
@@ -15,10 +16,12 @@ import Input from '../../components/ui/forms/Input';
 import Spinner from '../../components/ui/common/Spinner';
 import Alert from '../../components/ui/common/Alert';
 import { confirmDelete, showSuccess, showError } from '../../utils/sweetAlert';
+import { ROLES } from '../../utils/roleUtils';
 
 
 const SchoolIndexPage: React.FC = () => {
   const navigate = useNavigate();
+  const { user } = useAuth();
   const { hasAccess, loading: accessLoading, isAdmin, accessibleInstitutes } = useSchoolAccess();
   
   const [institutes, setInstitutes] = useState<Institute[]>([]);
@@ -29,6 +32,9 @@ const SchoolIndexPage: React.FC = () => {
   const [totalPages, setTotalPages] = useState(1);
   const [totalCount, setTotalCount] = useState(0);
   const itemsPerPage = 10;
+
+  // Check if user is Super Admin
+  const isSuperAdmin = user?.roles?.some(role => role.name === ROLES.SUPER_ADMIN) || false;
 
   const fetchInstitutes = useCallback(async () => {
     try {
@@ -273,18 +279,20 @@ const SchoolIndexPage: React.FC = () => {
                               Edit
                             </Button>
                             
-                            <Button
-                              variant="danger"
-                              size="sm"
-                              onClick={() => handleDelete(institute.id, institute.name)}
-                              icon={
-                                <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
-                                </svg>
-                              }
-                            >
-                              Delete
-                            </Button>
+                            {isSuperAdmin && (
+                              <Button
+                                variant="danger"
+                                size="sm"
+                                onClick={() => handleDelete(institute.id, institute.name)}
+                                icon={
+                                  <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
+                                  </svg>
+                                }
+                              >
+                                Delete
+                              </Button>
+                            )}
                           </div>
                         </TableCell>
                       </TableRow>
