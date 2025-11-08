@@ -3,7 +3,6 @@ import { Navigate } from 'react-router-dom';
 import { useAuth } from '../../hooks/useAuth';
 import { useSchoolAccess } from '../../hooks/useSchoolAccess';
 import { hasRole } from '../../utils/roleUtils';
-import { ROLES } from '../../utils/roleUtils';
 
 interface ModuleBasedRouteProps {
   children: React.ReactNode;
