@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { lunaTagService } from '../../api/services/lunaTagService';
-import { showSuccess, showError } from '../../utils/sweetAlert';
+import { showSuccess } from '../../utils/sweetAlert';
 import type { UserLunaTagFormData } from '../../types/lunaTag';
 import Container from '../../components/ui/layout/Container';
 import Card from '../../components/ui/cards/Card';

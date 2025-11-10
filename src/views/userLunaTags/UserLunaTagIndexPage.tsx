@@ -28,7 +28,18 @@ const UserLunaTagIndexPage: React.FC = () => {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [currentPage, setCurrentPage] = useState(1);
-  const [pagination, setPagination] = useState({
+  type PaginationState = {
+    current_page: number;
+    total_pages: number;
+    total_items: number;
+    page_size: number;
+    has_next: boolean;
+    has_previous: boolean;
+    next_page: number | null;
+    previous_page: number | null;
+  };
+
+  const [pagination, setPagination] = useState<PaginationState>({
     current_page: 1,
     total_pages: 1,
     total_items: 0,
@@ -114,13 +125,13 @@ const UserLunaTagIndexPage: React.FC = () => {
           <CardBody>
 
           {error && (
-            <Alert type="error" className="mb-4">
+            <Alert variant="danger" className="mb-4">
               {error}
             </Alert>
           )}
 
           {userLunaTags.length === 0 && !loading ? (
-            <Alert type="info">
+            <Alert variant="info">
               No User Tags found. Create one to get started.
             </Alert>
           ) : (
@@ -144,7 +155,7 @@ const UserLunaTagIndexPage: React.FC = () => {
                       <TableCell>{tag.name}</TableCell>
                       <TableCell>{tag.publicKey_value || tag.publicKey}</TableCell>
                       <TableCell>
-                        <Badge type={tag.is_active ? 'success' : 'error'}>
+                        <Badge variant={tag.is_active ? 'success' : 'danger'}>
                           {tag.is_active ? 'Active' : 'Inactive'}
                         </Badge>
                       </TableCell>
@@ -177,6 +188,10 @@ const UserLunaTagIndexPage: React.FC = () => {
                     currentPage={pagination.current_page}
                     totalPages={pagination.total_pages}
                     onPageChange={handlePageChange}
+                    hasNext={pagination.has_next}
+                    hasPrevious={pagination.has_previous}
+                    totalItems={pagination.total_items}
+                    pageSize={pagination.page_size}
                   />
                 </div>
               )}

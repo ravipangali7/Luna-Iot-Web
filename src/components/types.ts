@@ -2,7 +2,7 @@ export type ButtonVariant = 'primary' | 'secondary' | 'success' | 'warning' | 'd
 export type ButtonSize = 'sm' | 'md' | 'lg';
 export type ButtonType = 'button' | 'submit' | 'reset';
 
-export type InputType = 'text' | 'email' | 'password' | 'number' | 'tel' | 'url' | 'search' | 'file' | 'date';
+export type InputType = 'text' | 'email' | 'password' | 'number' | 'tel' | 'url' | 'search' | 'file' | 'date' | 'datetime-local';
 export type InputSize = 'sm' | 'md' | 'lg';
 
 export type TableVariant = 'striped' | 'bordered' | 'hover';

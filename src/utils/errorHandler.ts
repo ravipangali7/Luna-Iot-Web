@@ -70,10 +70,12 @@ export const getErrorMessage = (err: unknown): string => {
     
     // If we have a status code but no message, provide a generic one
     const status = err.response.status;
-    if (status >= 400 && status < 500) {
-      return `Client error: Request failed with status code ${status}`;
-    } else if (status >= 500) {
-      return `Server error: Request failed with status code ${status}`;
+    if (typeof status === 'number') {
+      if (status >= 400 && status < 500) {
+        return `Client error: Request failed with status code ${status}`;
+      } else if (status >= 500) {
+        return `Server error: Request failed with status code ${status}`;
+      }
     }
   }
   

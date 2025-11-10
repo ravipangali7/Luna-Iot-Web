@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
 import { lunaTagService } from '../../api/services/lunaTagService';
-import { showSuccess, showError } from '../../utils/sweetAlert';
+import { showSuccess } from '../../utils/sweetAlert';
 import type { LunaTag, LunaTagFormData } from '../../types/lunaTag';
 import Container from '../../components/ui/layout/Container';
 import Card from '../../components/ui/cards/Card';
@@ -91,7 +91,7 @@ const LunaTagEditPage: React.FC = () => {
   if (!lunaTag) {
     return (
       <Container>
-        <Alert type="error">Luna Tag not found</Alert>
+        <Alert variant="danger">Luna Tag not found</Alert>
       </Container>
     );
   }
