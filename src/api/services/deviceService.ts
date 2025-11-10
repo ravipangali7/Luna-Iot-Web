@@ -1,4 +1,5 @@
 import { apiClient } from '../apiClient';
+import { getErrorMessage } from '../../utils/errorHandler';
 import type { Device, DeviceFormData } from '../../types/device';
 
 class DeviceService {
@@ -12,7 +13,7 @@ class DeviceService {
       }
     } catch (error) {
       console.error('Get devices error:', error);
-      return { success: false, error: 'Network error: ' + (error as Error).message };
+      return { success: false, error: getErrorMessage(error) };
     }
   }
 
@@ -26,7 +27,7 @@ class DeviceService {
       }
     } catch (error) {
       console.error('Get light devices error:', error);
-      return { success: false, error: 'Network error: ' + (error as Error).message };
+      return { success: false, error: getErrorMessage(error) };
     }
   }
 
@@ -47,7 +48,7 @@ class DeviceService {
       }
     } catch (error) {
       console.error('Get paginated devices error:', error);
-      return { success: false, error: 'Network error: ' + (error as Error).message };
+      return { success: false, error: getErrorMessage(error) };
     }
   }
 
@@ -68,7 +69,7 @@ class DeviceService {
       }
     } catch (error) {
       console.error('Search devices error:', error);
-      return { success: false, error: 'Network error: ' + (error as Error).message };
+      return { success: false, error: getErrorMessage(error) };
     }
   }
 
@@ -83,7 +84,7 @@ class DeviceService {
       }
     } catch (error) {
       console.error('Get device error:', error);
-      return { success: false, error: 'Network error: ' + (error as Error).message };
+      return { success: false, error: getErrorMessage(error) };
     }
   }
 
@@ -98,7 +99,7 @@ class DeviceService {
       }
     } catch (error) {
       console.error('Create device error:', error);
-      return { success: false, error: 'Network error: ' + (error as Error).message };
+      return { success: false, error: getErrorMessage(error) };
     }
   }
 
@@ -113,7 +114,7 @@ class DeviceService {
       }
     } catch (error) {
       console.error('Update device error:', error);
-      return { success: false, error: 'Network error: ' + (error as Error).message };
+      return { success: false, error: getErrorMessage(error) };
     }
   }
 
@@ -128,7 +129,7 @@ class DeviceService {
       }
     } catch (error) {
       console.error('Delete device error:', error);
-      return { success: false, error: 'Network error: ' + (error as Error).message };
+      return { success: false, error: getErrorMessage(error) };
     }
   }
 
@@ -146,7 +147,7 @@ class DeviceService {
       }
     } catch (error) {
       console.error('Assign device error:', error);
-      return { success: false, error: 'Network error: ' + (error as Error).message };
+      return { success: false, error: getErrorMessage(error) };
     }
   }
 
@@ -163,7 +164,7 @@ class DeviceService {
       }
     } catch (error) {
       console.error('Remove device assignment error:', error);
-      return { success: false, error: 'Network error: ' + (error as Error).message };
+      return { success: false, error: getErrorMessage(error) };
     }
   }
 
@@ -180,7 +181,7 @@ class DeviceService {
       }
     } catch (error) {
       console.error('Send server point error:', error);
-      return { success: false, error: 'Network error: ' + (error as Error).message };
+      return { success: false, error: getErrorMessage(error) };
     }
   }
 
@@ -197,7 +198,7 @@ class DeviceService {
       }
     } catch (error) {
       console.error('Send reset error:', error);
-      return { success: false, error: 'Network error: ' + (error as Error).message };
+      return { success: false, error: getErrorMessage(error) };
     }
   }
 
@@ -214,7 +215,7 @@ class DeviceService {
       }
     } catch (error) {
       console.error('Send relay on error:', error);
-      return { success: false, error: 'Network error: ' + (error as Error).message };
+      return { success: false, error: getErrorMessage(error) };
     }
   }
 
@@ -231,7 +232,7 @@ class DeviceService {
       }
     } catch (error) {
       console.error('Send relay off error:', error);
-      return { success: false, error: 'Network error: ' + (error as Error).message };
+      return { success: false, error: getErrorMessage(error) };
     }
   }
 
@@ -256,7 +257,7 @@ class DeviceService {
       }
     } catch (error) {
       console.error('Get GPS devices error:', error);
-      return { success: false, error: 'Network error: ' + (error as Error).message };
+      return { success: false, error: getErrorMessage(error) };
     }
   }
 
@@ -281,7 +282,7 @@ class DeviceService {
       }
     } catch (error) {
       console.error('Get Buzzer devices error:', error);
-      return { success: false, error: 'Network error: ' + (error as Error).message };
+      return { success: false, error: getErrorMessage(error) };
     }
   }
 
@@ -306,7 +307,7 @@ class DeviceService {
       }
     } catch (error) {
       console.error('Get SOS devices error:', error);
-      return { success: false, error: 'Network error: ' + (error as Error).message };
+      return { success: false, error: getErrorMessage(error) };
     }
   }
 

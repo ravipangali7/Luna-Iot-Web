@@ -1,4 +1,5 @@
 import { apiClient } from '../apiClient';
+import { getErrorMessage } from '../../utils/errorHandler';
 import type { User } from '../../types/auth';
 
 class AuthService {
@@ -35,7 +36,7 @@ class AuthService {
       console.error('Login error:', error);
       return {
         success: false,
-        error: 'Network error: ' + (error as Error).message,
+        error: getErrorMessage(error),
       };
     }
   }
@@ -63,7 +64,7 @@ class AuthService {
       console.error('Get current user error:', error);
       return {
         success: false,
-        error: 'Failed to get user info: ' + (error as Error).message,
+        error: getErrorMessage(error),
       };
     }
   }
@@ -79,7 +80,7 @@ class AuthService {
       // Even if logout fails, clear local storage
       localStorage.removeItem('token');
       localStorage.removeItem('phone');
-      return { success: false, error: error };
+      return { success: false, error: getErrorMessage(error) };
     }
   }
 }

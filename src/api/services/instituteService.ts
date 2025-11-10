@@ -1,4 +1,5 @@
 import { apiClient } from '../apiClient';
+import { getErrorMessage } from '../../utils/errorHandler';
 import type { PaginatedResponse, PaginationParams } from '../../types/pagination';
 
 // Types for Institute Service
@@ -104,7 +105,7 @@ class InstituteServiceAPI {
       }
     } catch (error) {
       console.error('Get institute services error:', error);
-      return { success: false, error: 'Network error: ' + (error as Error).message };
+      return { success: false, error: getErrorMessage(error) };
     }
   }
 
@@ -119,7 +120,7 @@ class InstituteServiceAPI {
       }
     } catch (error) {
       console.error('Get institute service error:', error);
-      return { success: false, error: 'Network error: ' + (error as Error).message };
+      return { success: false, error: getErrorMessage(error) };
     }
   }
 
@@ -134,7 +135,7 @@ class InstituteServiceAPI {
       }
     } catch (error) {
       console.error('Create institute service error:', error);
-      return { success: false, error: 'Network error: ' + (error as Error).message };
+      return { success: false, error: getErrorMessage(error) };
     }
   }
 
@@ -149,7 +150,7 @@ class InstituteServiceAPI {
       }
     } catch (error) {
       console.error('Update institute service error:', error);
-      return { success: false, error: 'Network error: ' + (error as Error).message };
+      return { success: false, error: getErrorMessage(error) };
     }
   }
 
@@ -164,7 +165,7 @@ class InstituteServiceAPI {
       }
     } catch (error) {
       console.error('Delete institute service error:', error);
-      return { success: false, error: 'Network error: ' + (error as Error).message };
+      return { success: false, error: getErrorMessage(error) };
     }
   }
 
@@ -180,7 +181,7 @@ class InstituteServiceAPI {
       }
     } catch (error) {
       console.error('Get institutes error:', error);
-      return { success: false, error: 'Network error: ' + (error as Error).message };
+      return { success: false, error: getErrorMessage(error) };
     }
   }
 
@@ -205,7 +206,7 @@ class InstituteServiceAPI {
       }
       return { success: false, error: response.data.message };
     } catch (error) {
-      return { success: false, error: 'Network error: ' + (error as Error).message };
+      return { success: false, error: getErrorMessage(error) };
     }
   }
 
@@ -220,7 +221,7 @@ class InstituteServiceAPI {
       }
     } catch (error) {
       console.error('Get institute error:', error);
-      return { success: false, error: 'Network error: ' + (error as Error).message };
+      return { success: false, error: getErrorMessage(error) };
     }
   }
 
@@ -251,7 +252,7 @@ class InstituteServiceAPI {
       }
     } catch (error) {
       console.error('Create institute error:', error);
-      return { success: false, error: 'Network error: ' + (error as Error).message };
+      return { success: false, error: getErrorMessage(error) };
     }
   }
 
@@ -282,7 +283,7 @@ class InstituteServiceAPI {
       }
     } catch (error) {
       console.error('Update institute error:', error);
-      return { success: false, error: 'Network error: ' + (error as Error).message };
+      return { success: false, error: getErrorMessage(error) };
     }
   }
 
@@ -297,7 +298,7 @@ class InstituteServiceAPI {
       }
     } catch (error) {
       console.error('Delete institute error:', error);
-      return { success: false, error: 'Network error: ' + (error as Error).message };
+      return { success: false, error: getErrorMessage(error) };
     }
   }
 
@@ -313,7 +314,7 @@ class InstituteServiceAPI {
       }
     } catch (error) {
       console.error('Get institute modules error:', error);
-      return { success: false, error: 'Network error: ' + (error as Error).message };
+      return { success: false, error: getErrorMessage(error) };
     }
   }
 
@@ -328,7 +329,7 @@ class InstituteServiceAPI {
       }
     } catch (error) {
       console.error('Get institute modules error:', error);
-      return { success: false, error: 'Network error: ' + (error as Error).message };
+      return { success: false, error: getErrorMessage(error) };
     }
   }
 
@@ -343,7 +344,7 @@ class InstituteServiceAPI {
       }
     } catch (error) {
       console.error('Get institute module error:', error);
-      return { success: false, error: 'Network error: ' + (error as Error).message };
+      return { success: false, error: getErrorMessage(error) };
     }
   }
 
@@ -358,7 +359,7 @@ class InstituteServiceAPI {
       }
     } catch (error) {
       console.error('Create institute module error:', error);
-      return { success: false, error: 'Network error: ' + (error as Error).message };
+      return { success: false, error: getErrorMessage(error) };
     }
   }
 
@@ -373,7 +374,7 @@ class InstituteServiceAPI {
       }
     } catch (error) {
       console.error('Update institute module error:', error);
-      return { success: false, error: 'Network error: ' + (error as Error).message };
+      return { success: false, error: getErrorMessage(error) };
     }
   }
 
@@ -388,7 +389,7 @@ class InstituteServiceAPI {
       }
     } catch (error) {
       console.error('Delete institute module error:', error);
-      return { success: false, error: 'Network error: ' + (error as Error).message };
+      return { success: false, error: getErrorMessage(error) };
     }
   }
 
@@ -405,7 +406,7 @@ class InstituteServiceAPI {
       }
     } catch (error) {
       console.error('Update institute module users error:', error);
-      return { success: false, error: 'Network error: ' + (error as Error).message };
+      return { success: false, error: getErrorMessage(error) };
     }
   }
 }

@@ -1,4 +1,5 @@
 import { apiClient } from '../apiClient';
+import { getErrorMessage } from '../../utils/errorHandler';
 import type { Wallet, WalletListItem, WalletTopUpPayload } from '../../types/wallet';
 import type { PaginatedResponse, PaginationParams } from '../../types/pagination';
 
@@ -21,7 +22,7 @@ class WalletService {
       }
     } catch (error) {
       console.error('Get wallets error:', error);
-      return { success: false, error: 'Network error: ' + (error as Error).message };
+      return { success: false, error: getErrorMessage(error) };
     }
   }
 
@@ -50,7 +51,7 @@ class WalletService {
       }
       return { success: false, error: response.data.message };
     } catch (error) {
-      return { success: false, error: 'Network error: ' + (error as Error).message };
+      return { success: false, error: getErrorMessage(error) };
     }
   }
 
@@ -67,7 +68,7 @@ class WalletService {
       }
     } catch (error) {
       console.error('Get wallet by user error:', error);
-      return { success: false, error: 'Network error: ' + (error as Error).message };
+      return { success: false, error: getErrorMessage(error) };
     }
   }
 
@@ -84,7 +85,7 @@ class WalletService {
       }
     } catch (error) {
       console.error('Get wallet by ID error:', error);
-      return { success: false, error: 'Network error: ' + (error as Error).message };
+      return { success: false, error: getErrorMessage(error) };
     }
   }
 
@@ -104,7 +105,7 @@ class WalletService {
       }
     } catch (error) {
       console.error('Create wallet error:', error);
-      return { success: false, error: 'Network error: ' + (error as Error).message };
+      return { success: false, error: getErrorMessage(error) };
     }
   }
 
@@ -124,7 +125,7 @@ class WalletService {
       }
     } catch (error) {
       console.error('Update wallet balance error:', error);
-      return { success: false, error: 'Network error: ' + (error as Error).message };
+      return { success: false, error: getErrorMessage(error) };
     }
   }
 
@@ -141,7 +142,7 @@ class WalletService {
       }
     } catch (error) {
       console.error('Delete wallet error:', error);
-      return { success: false, error: 'Network error: ' + (error as Error).message };
+      return { success: false, error: getErrorMessage(error) };
     }
   }
 
@@ -158,7 +159,7 @@ class WalletService {
       }
     } catch (error) {
       console.error('Top up wallet error:', error);
-      return { success: false, error: 'Network error: ' + (error as Error).message };
+      return { success: false, error: getErrorMessage(error) };
     }
   }
 
@@ -175,7 +176,7 @@ class WalletService {
       }
     } catch (error) {
       console.error('Get wallet summary error:', error);
-      return { success: false, error: 'Network error: ' + (error as Error).message };
+      return { success: false, error: getErrorMessage(error) };
     }
   }
 }

@@ -1,4 +1,5 @@
 import { apiClient } from '../apiClient';
+import { getErrorMessage } from '../../utils/errorHandler';
 import type { 
   SubscriptionPlan, 
   SubscriptionPlanFormData, 
@@ -17,7 +18,7 @@ class SubscriptionPlanService {
       }
     } catch (error) {
       console.error('Get subscription plans error:', error);
-      return { success: false, error: 'Network error: ' + (error as Error).message };
+      return { success: false, error: getErrorMessage(error) };
     }
   }
 
@@ -47,7 +48,7 @@ class SubscriptionPlanService {
       }
     } catch (error) {
       console.error('Get paginated subscription plans error:', error);
-      return { success: false, error: 'Network error: ' + (error as Error).message };
+      return { success: false, error: getErrorMessage(error) };
     }
   }
 
@@ -61,7 +62,7 @@ class SubscriptionPlanService {
       }
     } catch (error) {
       console.error('Get subscription plan error:', error);
-      return { success: false, error: 'Network error: ' + (error as Error).message };
+      return { success: false, error: getErrorMessage(error) };
     }
   }
 
@@ -75,7 +76,7 @@ class SubscriptionPlanService {
       }
     } catch (error) {
       console.error('Create subscription plan error:', error);
-      return { success: false, error: 'Network error: ' + (error as Error).message };
+      return { success: false, error: getErrorMessage(error) };
     }
   }
 
@@ -89,7 +90,7 @@ class SubscriptionPlanService {
       }
     } catch (error) {
       console.error('Update subscription plan error:', error);
-      return { success: false, error: 'Network error: ' + (error as Error).message };
+      return { success: false, error: getErrorMessage(error) };
     }
   }
 
@@ -103,7 +104,7 @@ class SubscriptionPlanService {
       }
     } catch (error) {
       console.error('Delete subscription plan error:', error);
-      return { success: false, error: 'Network error: ' + (error as Error).message };
+      return { success: false, error: getErrorMessage(error) };
     }
   }
 
@@ -117,7 +118,7 @@ class SubscriptionPlanService {
       }
     } catch (error) {
       console.error('Get permissions error:', error);
-      return { success: false, error: 'Network error: ' + (error as Error).message };
+      return { success: false, error: getErrorMessage(error) };
     }
   }
 }

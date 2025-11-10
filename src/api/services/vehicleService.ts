@@ -1,4 +1,5 @@
 import { apiClient } from '../apiClient';
+import { getErrorMessage } from '../../utils/errorHandler';
 import type { Vehicle, VehicleFormData,  } from '../../types/vehicle';
 
 class VehicleService {
@@ -16,7 +17,7 @@ class VehicleService {
       }
     } catch (error) {
       console.error('Get vehicles error:', error);
-      return { success: false, error: 'Network error: ' + (error as Error).message };
+      return { success: false, error: getErrorMessage(error) };
     }
   }
 
@@ -33,7 +34,7 @@ class VehicleService {
       }
     } catch (error) {
       console.error('Get detailed vehicles error:', error);
-      return { success: false, error: 'Network error: ' + (error as Error).message };
+      return { success: false, error: getErrorMessage(error) };
     }
   }
 
@@ -55,7 +56,7 @@ class VehicleService {
       }
     } catch (error) {
       console.error('Get paginated vehicles error:', error);
-      return { success: false, error: 'Network error: ' + (error as Error).message };
+      return { success: false, error: getErrorMessage(error) };
     }
   }
 
@@ -76,7 +77,7 @@ class VehicleService {
       }
     } catch (error) {
       console.error('Search vehicles error:', error);
-      return { success: false, error: 'Network error: ' + (error as Error).message };
+      return { success: false, error: getErrorMessage(error) };
     }
   }
 
@@ -93,7 +94,7 @@ class VehicleService {
       }
     } catch (error) {
       console.error('Get vehicle error:', error);
-      return { success: false, error: 'Network error: ' + (error as Error).message };
+      return { success: false, error: getErrorMessage(error) };
     }
   }
 
@@ -110,7 +111,7 @@ class VehicleService {
       }
     } catch (error) {
       console.error('Create vehicle error:', error);
-      return { success: false, error: 'Network error: ' + (error as Error).message };
+      return { success: false, error: getErrorMessage(error) };
     }
   }
 
@@ -127,7 +128,7 @@ class VehicleService {
       }
     } catch (error) {
       console.error('Update vehicle error:', error);
-      return { success: false, error: 'Network error: ' + (error as Error).message };
+      return { success: false, error: getErrorMessage(error) };
     }
   }
 
@@ -144,7 +145,7 @@ class VehicleService {
       }
     } catch (error) {
       console.error('Delete vehicle error:', error);
-      return { success: false, error: 'Network error: ' + (error as Error).message };
+      return { success: false, error: getErrorMessage(error) };
     }
   }
 
@@ -169,7 +170,7 @@ class VehicleService {
       }
     } catch (error) {
       console.error('Assign vehicle access error:', error);
-      return { success: false, error: 'Network error: ' + (error as Error).message };
+      return { success: false, error: getErrorMessage(error) };
     }
   }
 
@@ -186,7 +187,7 @@ class VehicleService {
       }
     } catch (error) {
       console.error('Get vehicles for assignment error:', error);
-      return { success: false, error: 'Network error: ' + (error as Error).message };
+      return { success: false, error: getErrorMessage(error) };
     }
   }
 
@@ -203,7 +204,7 @@ class VehicleService {
       }
     } catch (error) {
       console.error('Get vehicle access assignments error:', error);
-      return { success: false, error: 'Network error: ' + (error as Error).message };
+      return { success: false, error: getErrorMessage(error) };
     }
   }
 
@@ -228,7 +229,7 @@ class VehicleService {
       }
     } catch (error) {
       console.error('Update vehicle access error:', error);
-      return { success: false, error: 'Network error: ' + (error as Error).message };
+      return { success: false, error: getErrorMessage(error) };
     }
   }
 
@@ -246,7 +247,7 @@ class VehicleService {
       }
     } catch (error) {
       console.error('Remove vehicle access error:', error);
-      return { success: false, error: 'Network error: ' + (error as Error).message };
+      return { success: false, error: getErrorMessage(error) };
     }
   }
 
@@ -263,7 +264,7 @@ class VehicleService {
       }
     } catch (error) {
       console.error('Activate vehicle error:', error);
-      return { success: false, error: 'Network error: ' + (error as Error).message };
+      return { success: false, error: getErrorMessage(error) };
     }
   }
 
@@ -280,7 +281,7 @@ class VehicleService {
       }
     } catch (error) {
       console.error('Deactivate vehicle error:', error);
-      return { success: false, error: 'Network error: ' + (error as Error).message };
+      return { success: false, error: getErrorMessage(error) };
     }
   }
 
@@ -297,7 +298,7 @@ class VehicleService {
       }
     } catch (error) {
       console.error('Get light vehicles error:', error);
-      return { success: false, error: 'Network error: ' + (error as Error).message };
+      return { success: false, error: getErrorMessage(error) };
     }
   }
 }

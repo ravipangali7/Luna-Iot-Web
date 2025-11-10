@@ -1,4 +1,5 @@
 import { apiClient } from '../apiClient';
+import { getErrorMessage } from '../../utils/errorHandler';
 import type { History } from '../../types/history';
 
 class HistoryService {
@@ -26,7 +27,7 @@ class HistoryService {
       }
     } catch (error) {
       console.error('History fetch error:', error);
-      return { success: false, error: 'Network error: ' + (error as Error).message };
+      return { success: false, error: getErrorMessage(error) };
     }
   }
 }

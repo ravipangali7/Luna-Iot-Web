@@ -1,4 +1,5 @@
 import { apiClient } from '../apiClient';
+import { getErrorMessage } from '../../utils/errorHandler';
 
 export interface ExternalAppLink {
   id: number;
@@ -25,7 +26,7 @@ class ExternalAppLinkService {
       }
     } catch (error) {
       console.error('Get external app links error:', error);
-      return { success: false, error: 'Network error: ' + (error as Error).message };
+      return { success: false, error: getErrorMessage(error) };
     }
   }
 }

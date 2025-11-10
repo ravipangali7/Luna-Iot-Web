@@ -1,4 +1,5 @@
 import { apiClient } from '../apiClient';
+import { getErrorMessage } from '../../utils/errorHandler';
 import type { User } from '../../types/auth';
 import type { PaginatedResponse, PaginationParams } from '../../types/pagination';
 
@@ -16,7 +17,7 @@ class UserService {
       }
     } catch (error) {
       console.error('Get light users error:', error);
-      return { success: false, error: 'Network error: ' + (error as Error).message };
+      return { success: false, error: getErrorMessage(error) };
     }
   }
 
@@ -33,7 +34,7 @@ class UserService {
       }
     } catch (error) {
       console.error('Get users error:', error);
-      return { success: false, error: 'Network error: ' + (error as Error).message };
+      return { success: false, error: getErrorMessage(error) };
     }
   }
 
@@ -58,7 +59,7 @@ class UserService {
       }
       return { success: false, error: response.data.message };
     } catch (error) {
-      return { success: false, error: 'Network error: ' + (error as Error).message };
+      return { success: false, error: getErrorMessage(error) };
     }
   }
 
@@ -75,7 +76,7 @@ class UserService {
       }
     } catch (error) {
       console.error('Get user error:', error);
-      return { success: false, error: 'Network error: ' + (error as Error).message };
+      return { success: false, error: getErrorMessage(error) };
     }
   }
 
@@ -92,7 +93,7 @@ class UserService {
       }
     } catch (error) {
       console.error('Create user error:', error);
-      return { success: false, error: 'Network error: ' + (error as Error).message };
+      return { success: false, error: getErrorMessage(error) };
     }
   }
 
@@ -109,7 +110,7 @@ class UserService {
       }
     } catch (error) {
       console.error('Update user error:', error);
-      return { success: false, error: 'Network error: ' + (error as Error).message };
+      return { success: false, error: getErrorMessage(error) };
     }
   }
 
@@ -126,7 +127,7 @@ class UserService {
       }
     } catch (error) {
       console.error('Delete user error:', error);
-      return { success: false, error: 'Network error: ' + (error as Error).message };
+      return { success: false, error: getErrorMessage(error) };
     }
   }
 
@@ -145,7 +146,7 @@ class UserService {
       }
     } catch (error) {
       console.error('Update FCM token error:', error);
-      return { success: false, error: 'Network error: ' + (error as Error).message };
+      return { success: false, error: getErrorMessage(error) };
     }
   }
 
@@ -162,7 +163,7 @@ class UserService {
       }
     } catch (error) {
       console.error('Get roles error:', error);
-      return { success: false, error: 'Network error: ' + (error as Error).message };
+      return { success: false, error: getErrorMessage(error) };
     }
   }
 
@@ -203,7 +204,7 @@ class UserService {
       };
     } catch (error) {
       console.error('Search users by phones error:', error);
-      return { success: false, error: 'Network error: ' + (error as Error).message };
+      return { success: false, error: getErrorMessage(error) };
     }
   }
 }

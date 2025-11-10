@@ -1,4 +1,5 @@
 import { apiClient } from '../apiClient';
+import { getErrorMessage } from '../../utils/errorHandler';
 
 // Types for Module
 export interface Module {
@@ -30,7 +31,7 @@ class ModuleServiceAPI {
       }
     } catch (error) {
       console.error('Get modules error:', error);
-      return { success: false, error: 'Network error: ' + (error as Error).message };
+      return { success: false, error: getErrorMessage(error) };
     }
   }
 
@@ -45,7 +46,7 @@ class ModuleServiceAPI {
       }
     } catch (error) {
       console.error('Get module error:', error);
-      return { success: false, error: 'Network error: ' + (error as Error).message };
+      return { success: false, error: getErrorMessage(error) };
     }
   }
 
@@ -60,7 +61,7 @@ class ModuleServiceAPI {
       }
     } catch (error) {
       console.error('Create module error:', error);
-      return { success: false, error: 'Network error: ' + (error as Error).message };
+      return { success: false, error: getErrorMessage(error) };
     }
   }
 
@@ -75,7 +76,7 @@ class ModuleServiceAPI {
       }
     } catch (error) {
       console.error('Update module error:', error);
-      return { success: false, error: 'Network error: ' + (error as Error).message };
+      return { success: false, error: getErrorMessage(error) };
     }
   }
 
@@ -90,7 +91,7 @@ class ModuleServiceAPI {
       }
     } catch (error) {
       console.error('Delete module error:', error);
-      return { success: false, error: 'Network error: ' + (error as Error).message };
+      return { success: false, error: getErrorMessage(error) };
     }
   }
 }

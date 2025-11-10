@@ -1,4 +1,5 @@
 import { apiClient } from '../apiClient';
+import { getErrorMessage } from '../../utils/errorHandler';
 import type { Recharge, RechargeFormData, RechargeFilters, RechargeStats, RechargeResponse } from '../../types/recharge';
 
 class RechargeService {
@@ -15,7 +16,7 @@ class RechargeService {
       }
     } catch (error) {
       console.error('Get recharges error:', error);
-      return { success: false, error: 'Network error: ' + (error as Error).message };
+      return { success: false, error: getErrorMessage(error) };
     }
   }
 
@@ -46,7 +47,7 @@ class RechargeService {
       }
     } catch (error) {
       console.error('Get recharges with pagination error:', error);
-      return { success: false, error: 'Network error: ' + (error as Error).message };
+      return { success: false, error: getErrorMessage(error) };
     }
   }
 
@@ -63,7 +64,7 @@ class RechargeService {
       }
     } catch (error) {
       console.error('Get recharge error:', error);
-      return { success: false, error: 'Network error: ' + (error as Error).message };
+      return { success: false, error: getErrorMessage(error) };
     }
   }
 
@@ -80,7 +81,7 @@ class RechargeService {
       }
     } catch (error) {
       console.error('Get device recharges error:', error);
-      return { success: false, error: 'Network error: ' + (error as Error).message };
+      return { success: false, error: getErrorMessage(error) };
     }
   }
 
@@ -97,7 +98,7 @@ class RechargeService {
       }
     } catch (error) {
       console.error('Get recharge stats error:', error);
-      return { success: false, error: 'Network error: ' + (error as Error).message };
+      return { success: false, error: getErrorMessage(error) };
     }
   }
 
@@ -114,7 +115,7 @@ class RechargeService {
       }
     } catch (error) {
       console.error('Get total recharge error:', error);
-      return { success: false, error: 'Network error: ' + (error as Error).message };
+      return { success: false, error: getErrorMessage(error) };
     }
   }
 
@@ -131,32 +132,7 @@ class RechargeService {
       }
     } catch (error: unknown) {
       console.error('Create recharge error:', error);
-      
-      // Handle different types of errors
-      if (error && typeof error === 'object' && 'response' in error) {
-        // Server responded with error status
-        const axiosError = error as { response: { data?: { message?: string; error?: string }; status: number } };
-        const errorMessage = axiosError.response.data?.message || axiosError.response.data?.error || 'Server error';
-        const statusCode = axiosError.response.status;
-        
-        return { 
-          success: false, 
-          error: `Error ${statusCode}: ${errorMessage}` 
-        };
-      } else if (error && typeof error === 'object' && 'request' in error) {
-        // Network error - no response received
-        return { 
-          success: false, 
-          error: 'Network error: Unable to connect to server. Please check your internet connection.' 
-        };
-      } else {
-        // Other error
-        const errorMessage = error instanceof Error ? error.message : 'Unknown error';
-        return { 
-          success: false, 
-          error: `Error: ${errorMessage}` 
-        };
-      }
+      return { success: false, error: getErrorMessage(error) };
     }
   }
 
@@ -173,7 +149,7 @@ class RechargeService {
       }
     } catch (error) {
       console.error('Delete recharge error:', error);
-      return { success: false, error: 'Network error: ' + (error as Error).message };
+      return { success: false, error: getErrorMessage(error) };
     }
   }
 }

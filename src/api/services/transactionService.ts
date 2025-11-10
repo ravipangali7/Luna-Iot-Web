@@ -1,4 +1,5 @@
 import { apiClient } from '../apiClient';
+import { getErrorMessage } from '../../utils/errorHandler';
 import type { 
   Transaction, 
   TransactionListItem, 
@@ -29,7 +30,7 @@ class TransactionService {
       }
     } catch (error) {
       console.error('Get all transactions error:', error);
-      return { success: false, error: 'Network error: ' + (error as Error).message };
+      return { success: false, error: getErrorMessage(error) };
     }
   }
 
@@ -54,7 +55,7 @@ class TransactionService {
       }
       return { success: false, error: response.data.message };
     } catch (error) {
-      return { success: false, error: 'Network error: ' + (error as Error).message };
+      return { success: false, error: getErrorMessage(error) };
     }
   }
 
@@ -68,7 +69,7 @@ class TransactionService {
       }
     } catch (error) {
       console.error('Get transaction by ID error:', error);
-      return { success: false, error: 'Network error: ' + (error as Error).message };
+      return { success: false, error: getErrorMessage(error) };
     }
   }
 
@@ -82,7 +83,7 @@ class TransactionService {
       }
     } catch (error) {
       console.error('Get wallet transactions error:', error);
-      return { success: false, error: 'Network error: ' + (error as Error).message };
+      return { success: false, error: getErrorMessage(error) };
     }
   }
 
@@ -96,7 +97,7 @@ class TransactionService {
       }
     } catch (error) {
       console.error('Get user transactions error:', error);
-      return { success: false, error: 'Network error: ' + (error as Error).message };
+      return { success: false, error: getErrorMessage(error) };
     }
   }
 
@@ -110,7 +111,7 @@ class TransactionService {
       }
     } catch (error) {
       console.error('Create transaction error:', error);
-      return { success: false, error: 'Network error: ' + (error as Error).message };
+      return { success: false, error: getErrorMessage(error) };
     }
   }
 
@@ -124,7 +125,7 @@ class TransactionService {
       }
     } catch (error) {
       console.error('Get transaction summary error:', error);
-      return { success: false, error: 'Network error: ' + (error as Error).message };
+      return { success: false, error: getErrorMessage(error) };
     }
   }
 

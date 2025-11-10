@@ -1,4 +1,5 @@
 import { apiClient } from '../apiClient';
+import { getErrorMessage } from '../../utils/errorHandler';
 
 export interface DashboardStats {
   totalUsers: number;
@@ -57,7 +58,7 @@ class DashboardService {
       }
     } catch (error) {
       console.error('Get dashboard stats error:', error);
-      return { success: false, error: 'Network error: ' + (error as Error).message };
+      return { success: false, error: getErrorMessage(error) };
     }
   }
 
@@ -74,7 +75,7 @@ class DashboardService {
       }
     } catch (error) {
       console.error('Get user stats error:', error);
-      return { success: false, error: 'Network error: ' + (error as Error).message };
+      return { success: false, error: getErrorMessage(error) };
     }
   }
 
@@ -91,7 +92,7 @@ class DashboardService {
       }
     } catch (error) {
       console.error('Get device stats error:', error);
-      return { success: false, error: 'Network error: ' + (error as Error).message };
+      return { success: false, error: getErrorMessage(error) };
     }
   }
 
@@ -108,7 +109,7 @@ class DashboardService {
       }
     } catch (error) {
       console.error('Get vehicle stats error:', error);
-      return { success: false, error: 'Network error: ' + (error as Error).message };
+      return { success: false, error: getErrorMessage(error) };
     }
   }
 }

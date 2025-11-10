@@ -1,4 +1,5 @@
 import { apiClient } from '../apiClient';
+import { getErrorMessage } from '../../utils/errorHandler';
 import type { VehicleAccess, VehicleAccessFormData } from '../../types/vehicleAccess';
 import type { Vehicle } from '../../types/vehicle';
 
@@ -17,7 +18,7 @@ class VehicleAccessService {
       }
     } catch (error) {
       console.error('Get vehicles with access error:', error);
-      return { success: false, error: 'Network error: ' + (error as Error).message };
+      return { success: false, error: getErrorMessage(error) };
     }
   }
 
@@ -49,7 +50,7 @@ class VehicleAccessService {
       }
     } catch (error) {
       console.error('Get paginated vehicles with access error:', error);
-      return { success: false, error: 'Network error: ' + (error as Error).message };
+      return { success: false, error: getErrorMessage(error) };
     }
   }
 
@@ -81,7 +82,7 @@ class VehicleAccessService {
       }
     } catch (error) {
       console.error('Search vehicles with access error:', error);
-      return { success: false, error: 'Network error: ' + (error as Error).message };
+      return { success: false, error: getErrorMessage(error) };
     }
   }
 
@@ -99,7 +100,7 @@ class VehicleAccessService {
       }
     } catch (error) {
       console.error('Get vehicle access by vehicle error:', error);
-      return { success: false, error: 'Network error: ' + (error as Error).message };
+      return { success: false, error: getErrorMessage(error) };
     }
   }
 
@@ -121,7 +122,7 @@ class VehicleAccessService {
       }
     } catch (error) {
       console.error('Create vehicle access error:', error);
-      return { success: false, error: 'Network error: ' + (error as Error).message };
+      return { success: false, error: getErrorMessage(error) };
     }
   }
 
@@ -151,7 +152,7 @@ class VehicleAccessService {
       }
     } catch (error) {
       console.error('Update vehicle access error:', error);
-      return { success: false, error: 'Network error: ' + (error as Error).message };
+      return { success: false, error: getErrorMessage(error) };
     }
   }
 
@@ -178,7 +179,7 @@ class VehicleAccessService {
       }
     } catch (error) {
       console.error('Delete vehicle access error:', error);
-      return { success: false, error: 'Network error: ' + (error as Error).message };
+      return { success: false, error: getErrorMessage(error) };
     }
   }
 
@@ -197,7 +198,7 @@ class VehicleAccessService {
       }
     } catch (error) {
       console.error('Delete vehicle access by ID error:', error);
-      return { success: false, error: 'Network error: ' + (error as Error).message };
+      return { success: false, error: getErrorMessage(error) };
     }
   }
 
@@ -215,7 +216,7 @@ class VehicleAccessService {
       }
     } catch (error) {
       console.error('Get available users error:', error);
-      return { success: false, error: 'Network error: ' + (error as Error).message };
+      return { success: false, error: getErrorMessage(error) };
     }
   }
 
@@ -233,7 +234,7 @@ class VehicleAccessService {
       }
     } catch (error) {
       console.error('Get available vehicles error:', error);
-      return { success: false, error: 'Network error: ' + (error as Error).message };
+      return { success: false, error: getErrorMessage(error) };
     }
   }
 
@@ -252,7 +253,7 @@ class VehicleAccessService {
       }
     } catch (error) {
       console.error('Get vehicle access assignments light error:', error);
-      return { success: false, error: 'Network error: ' + (error as Error).message };
+      return { success: false, error: getErrorMessage(error) };
     }
   }
 
@@ -270,7 +271,7 @@ class VehicleAccessService {
       }
     } catch (error) {
       console.error('Get vehicle access assignments error:', error);
-      return { success: false, error: 'Network error: ' + (error as Error).message };
+      return { success: false, error: getErrorMessage(error) };
     }
   }
 }

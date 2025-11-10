@@ -1,4 +1,5 @@
 import { apiClient } from '../apiClient';
+import { getErrorMessage } from '../../utils/errorHandler';
 import type { ReportData } from '../../types/report';
 
 class ReportService {
@@ -27,11 +28,11 @@ class ReportService {
           error: response.data.message || 'Failed to generate report',
         };
       }
-    } catch (error: any) {
+    } catch (error: unknown) {
       console.error('Report generation error:', error);
       return {
         success: false,
-        error: error.response?.data?.message || 'Network error: ' + error.message,
+        error: getErrorMessage(error),
       };
     }
   }

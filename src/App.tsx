@@ -38,6 +38,8 @@ import SchoolSMSCreatePage from './views/school/schoolSMS/SchoolSMSCreatePage';
 import SchoolSMSEditPage from './views/school/schoolSMS/SchoolSMSEditPage';
 import { WalletIndexPage, MyWalletPage } from './views/wallet';
 import { TransactionIndexPage, WalletTransactionsPage, UserTransactionsPage } from './views/transactions';
+import { LunaTagIndexPage, LunaTagCreatePage, LunaTagEditPage } from './views/lunaTags';
+import { UserLunaTagIndexPage, UserLunaTagCreatePage, UserLunaTagEditPage } from './views/userLunaTags';
 import RoleBasedRoute from './components/role-based/RoleBasedRoute';
 import ModuleBasedRoute from './components/role-based/ModuleBasedRoute';
 import { ROLES } from './utils/roleUtils';
@@ -151,6 +153,34 @@ const AppRoutes: React.FC = () => {
           <RoleBasedRoute allowedRoles={[ROLES.SUPER_ADMIN]}>
             <DeviceEditPage />
           </RoleBasedRoute>
+        } />
+
+        {/* Luna Tag Routes - Super Admin only */}
+        <Route path="luna-tags" element={
+          <RoleBasedRoute allowedRoles={[ROLES.SUPER_ADMIN]}>
+            <LunaTagIndexPage />
+          </RoleBasedRoute>
+        } />
+        <Route path="luna-tags/create" element={
+          <RoleBasedRoute allowedRoles={[ROLES.SUPER_ADMIN]}>
+            <LunaTagCreatePage />
+          </RoleBasedRoute>
+        } />
+        <Route path="luna-tags/edit/:id" element={
+          <RoleBasedRoute allowedRoles={[ROLES.SUPER_ADMIN]}>
+            <LunaTagEditPage />
+          </RoleBasedRoute>
+        } />
+
+        {/* User Luna Tag Routes - All authenticated users */}
+        <Route path="user-luna-tags" element={
+          <UserLunaTagIndexPage />
+        } />
+        <Route path="user-luna-tags/create" element={
+          <UserLunaTagCreatePage />
+        } />
+        <Route path="user-luna-tags/edit/:id" element={
+          <UserLunaTagEditPage />
         } />
 
         {/* Vehicle Routes - All roles can access */}

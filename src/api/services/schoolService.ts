@@ -1,4 +1,5 @@
 import { apiClient } from '../apiClient';
+import { getErrorMessage } from '../../utils/errorHandler';
 import type { 
   SchoolBus, 
   SchoolBusFormData, 
@@ -29,7 +30,7 @@ class SchoolService {
       }
     } catch (error) {
       console.error('Get school bus vehicles error:', error);
-      return { success: false, error: 'Network error: ' + (error as Error).message };
+      return { success: false, error: getErrorMessage(error) };
     }
   }
   
@@ -52,7 +53,7 @@ class SchoolService {
       }
     } catch (error) {
       console.error('Get school buses error:', error);
-      return { success: false, error: 'Network error: ' + (error as Error).message };
+      return { success: false, error: getErrorMessage(error) };
     }
   }
 
@@ -67,7 +68,7 @@ class SchoolService {
       }
     } catch (error) {
       console.error('Get school bus error:', error);
-      return { success: false, error: 'Network error: ' + (error as Error).message };
+      return { success: false, error: getErrorMessage(error) };
     }
   }
 
@@ -82,7 +83,7 @@ class SchoolService {
       }
     } catch (error) {
       console.error('Get school buses by institute error:', error);
-      return { success: false, error: 'Network error: ' + (error as Error).message };
+      return { success: false, error: getErrorMessage(error) };
     }
   }
 
@@ -97,7 +98,7 @@ class SchoolService {
       }
     } catch (error: any) {
       console.error('Create school bus error:', error);
-      const errorMessage = error.response?.data?.message || error.response?.data?.data || 'Network error: ' + (error as Error).message;
+      const errorMessage = getErrorMessage(error);
       return { success: false, error: errorMessage };
     }
   }
@@ -113,7 +114,7 @@ class SchoolService {
       }
     } catch (error: any) {
       console.error('Update school bus error:', error);
-      const errorMessage = error.response?.data?.message || error.response?.data?.data || 'Network error: ' + (error as Error).message;
+      const errorMessage = getErrorMessage(error);
       return { success: false, error: errorMessage };
     }
   }
@@ -129,7 +130,7 @@ class SchoolService {
       }
     } catch (error) {
       console.error('Delete school bus error:', error);
-      return { success: false, error: 'Network error: ' + (error as Error).message };
+      return { success: false, error: getErrorMessage(error) };
     }
   }
 
@@ -155,7 +156,7 @@ class SchoolService {
       }
     } catch (error) {
       console.error('Get school parents error:', error);
-      return { success: false, error: 'Network error: ' + (error as Error).message };
+      return { success: false, error: getErrorMessage(error) };
     }
   }
 
@@ -170,7 +171,7 @@ class SchoolService {
       }
     } catch (error) {
       console.error('Get school parent error:', error);
-      return { success: false, error: 'Network error: ' + (error as Error).message };
+      return { success: false, error: getErrorMessage(error) };
     }
   }
 
@@ -185,7 +186,7 @@ class SchoolService {
       }
     } catch (error) {
       console.error('Get school parents by institute error:', error);
-      return { success: false, error: 'Network error: ' + (error as Error).message };
+      return { success: false, error: getErrorMessage(error) };
     }
   }
 
@@ -200,7 +201,7 @@ class SchoolService {
       }
     } catch (error) {
       console.error('Get school parents by bus error:', error);
-      return { success: false, error: 'Network error: ' + (error as Error).message };
+      return { success: false, error: getErrorMessage(error) };
     }
   }
 
@@ -215,7 +216,7 @@ class SchoolService {
       }
     } catch (error: any) {
       console.error('Create school parent error:', error);
-      const errorMessage = error.response?.data?.message || error.response?.data?.data || 'Network error: ' + (error as Error).message;
+      const errorMessage = getErrorMessage(error);
       return { success: false, error: errorMessage };
     }
   }
@@ -231,7 +232,7 @@ class SchoolService {
       }
     } catch (error: any) {
       console.error('Update school parent error:', error);
-      const errorMessage = error.response?.data?.message || error.response?.data?.data || 'Network error: ' + (error as Error).message;
+      const errorMessage = getErrorMessage(error);
       return { success: false, error: errorMessage };
     }
   }
@@ -247,7 +248,7 @@ class SchoolService {
       }
     } catch (error) {
       console.error('Delete school parent error:', error);
-      return { success: false, error: 'Network error: ' + (error as Error).message };
+      return { success: false, error: getErrorMessage(error) };
     }
   }
 
@@ -272,7 +273,7 @@ class SchoolService {
       }
     } catch (error) {
       console.error('Get school SMS error:', error);
-      return { success: false, error: 'Network error: ' + (error as Error).message };
+      return { success: false, error: getErrorMessage(error) };
     }
   }
 
@@ -287,7 +288,7 @@ class SchoolService {
       }
     } catch (error) {
       console.error('Get school SMS error:', error);
-      return { success: false, error: 'Network error: ' + (error as Error).message };
+      return { success: false, error: getErrorMessage(error) };
     }
   }
 
@@ -302,7 +303,7 @@ class SchoolService {
       }
     } catch (error) {
       console.error('Get school SMS by institute error:', error);
-      return { success: false, error: 'Network error: ' + (error as Error).message };
+      return { success: false, error: getErrorMessage(error) };
     }
   }
 
@@ -317,7 +318,7 @@ class SchoolService {
       }
     } catch (error: any) {
       console.error('Create school SMS error:', error);
-      const errorMessage = error.response?.data?.message || error.response?.data?.data || 'Network error: ' + (error as Error).message;
+      const errorMessage = getErrorMessage(error);
       return { success: false, error: errorMessage };
     }
   }
@@ -333,7 +334,7 @@ class SchoolService {
       }
     } catch (error: any) {
       console.error('Update school SMS error:', error);
-      const errorMessage = error.response?.data?.message || error.response?.data?.data || 'Network error: ' + (error as Error).message;
+      const errorMessage = getErrorMessage(error);
       return { success: false, error: errorMessage };
     }
   }
@@ -349,7 +350,7 @@ class SchoolService {
       }
     } catch (error) {
       console.error('Delete school SMS error:', error);
-      return { success: false, error: 'Network error: ' + (error as Error).message };
+      return { success: false, error: getErrorMessage(error) };
     }
   }
 }
