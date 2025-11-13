@@ -339,24 +339,9 @@ const BuzzerDeviceIndexPage: React.FC = () => {
 
   const canControlRelayForDevice = useCallback((device: Device): boolean => {
     if (auth?.isSuperAdmin && auth.isSuperAdmin()) return true;
-    // Check if device has vehicles with relay permission
+    // Check if device has vehicles with is_relay=true
     if (device.vehicles && device.vehicles.length > 0) {
-      // Check if any vehicle has userVehicles with relay permission for current user
-      const currentUserId = auth?.user?.id;
-      if (currentUserId) {
-        for (const vehicle of device.vehicles) {
-          // Type assertion needed as Device.Vehicle doesn't have userVehicles in type but API provides it
-          const vehicleWithUserVehicles = vehicle as any;
-          if (vehicleWithUserVehicles.userVehicles) {
-            const userVehicle = vehicleWithUserVehicles.userVehicles.find((uv: any) => 
-              uv.userId === currentUserId || uv.user?.id === currentUserId
-            );
-            if (userVehicle && userVehicle.relay === true) {
-              return true;
-            }
-          }
-        }
-      }
+      return device.vehicles.some((vehicle: any) => vehicle.is_relay === true);
     }
     return false;
   }, [auth]);
@@ -626,10 +611,9 @@ const BuzzerDeviceIndexPage: React.FC = () => {
                   <TableHead>
                     <TableRow>
                       <TableHeader>S.N.</TableHeader>
-                      <TableHeader>General Info</TableHeader>
-                      <TableHeader>SIM Info</TableHeader>
                       <TableHeader>Device Info</TableHeader>
                       <TableHeader>Subscription Plan</TableHeader>
+                      <TableHeader>Institute</TableHeader>
                       <TableHeader>Dealer Info</TableHeader>
                       <TableHeader>Vehicle Info</TableHeader>
                       <TableHeader>Customer Info</TableHeader>
@@ -648,17 +632,9 @@ const BuzzerDeviceIndexPage: React.FC = () => {
                             <div className="space-y-1">
                               <div className="font-mono text-sm">{device.imei}</div>
                               <Badge variant="secondary" size="sm">{device.phone}</Badge>
-                            </div>
-                          </TableCell>
-                          <TableCell>
-                            <div className="space-y-1">
-                              <div className="text-sm">{device.sim}</div>
+                              <div className="text-sm mt-1">{device.sim}</div>
                               <Badge variant="secondary" size="sm">{device.iccid || 'N/A'}</Badge>
-                            </div>
-                          </TableCell>
-                          <TableCell>
-                            <div className="space-y-1">
-                              <div className="text-sm">{device.protocol}</div>
+                              <div className="text-sm mt-1">{device.protocol}</div>
                               <Badge variant="info" size="sm">{device.model}</Badge>
                             </div>
                           </TableCell>
@@ -673,6 +649,22 @@ const BuzzerDeviceIndexPage: React.FC = () => {
                                 <Badge variant="secondary" size="sm">No Plan</Badge>
                               )}
                             </div>
+                          </TableCell>
+                          <TableCell>
+                            {device.institute ? (
+                              <div className="flex items-center gap-2">
+                                {device.institute.logo && (
+                                  <img 
+                                    src={device.institute.logo} 
+                                    alt={device.institute.name}
+                                    className="w-8 h-8 rounded object-cover"
+                                  />
+                                )}
+                                <span className="text-sm">{device.institute.name}</span>
+                              </div>
+                            ) : (
+                              <span className="text-sm text-gray-400">No Institute</span>
+                            )}
                           </TableCell>
                           <TableCell>
                             <div className="space-y-1">

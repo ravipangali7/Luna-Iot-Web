@@ -36,7 +36,6 @@ export interface UserVehicle {
   edit: boolean;
   shareTracking: boolean;
   notification: boolean;
-  relay?: boolean;
 }
 
 export interface Device {
@@ -96,6 +95,7 @@ export interface Vehicle {
   minimumFuel: number;
   expireDate?: string | null;
   is_active: boolean;
+  is_relay?: boolean;
   createdAt: string;
   updatedAt: string;
   device?: Device | null;
@@ -119,6 +119,7 @@ export interface VehicleFormData {
   speedLimit: number;
   minimumFuel: number;
   expireDate?: string;
+  mainUserId?: number;
 }
 
 export interface VehicleFilters {

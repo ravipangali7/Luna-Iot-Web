@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useRef, useCallback } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
 import { vehicleAccessService } from '../../api/services/vehicleAccessService';
 import { confirmDelete, showSuccess, showError } from '../../utils/sweetAlert';
@@ -8,9 +8,8 @@ import Container from '../../components/ui/layout/Container';
 import Card from '../../components/ui/cards/Card';
 import CardBody from '../../components/ui/cards/CardBody';
 import Button from '../../components/ui/buttons/Button';
-import Input from '../../components/ui/forms/Input';
-import Select from '../../components/ui/forms/Select';
 import Checkbox from '../../components/ui/forms/Checkbox';
+import SingleSelect from '../../components/ui/forms/SingleSelect';
 import Alert from '../../components/ui/common/Alert';
 import Spinner from '../../components/ui/common/Spinner';
 import Table from '../../components/ui/tables/Table';
@@ -35,8 +34,6 @@ const VehicleAccessManagePage: React.FC = () => {
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   const [vehicle, setVehicle] = useState<any>(null);
   const [users, setUsers] = useState<{ id: number; name: string; phone: string; email?: string; role?: string }[]>([]);
-  const [userSearchQuery, setUserSearchQuery] = useState('');
-  const [showUserSuggestions, setShowUserSuggestions] = useState(false);
   const [formData, setFormData] = useState<VehicleAccessFormData>({
     userId: 0,
     vehicleId: 0,
@@ -55,7 +52,6 @@ const VehicleAccessManagePage: React.FC = () => {
       relay: false,
     }
   });
-  const userInputRef = useRef<HTMLDivElement>(null);
 
   const loadData = useCallback(async () => {
     try {
@@ -120,7 +116,7 @@ const VehicleAccessManagePage: React.FC = () => {
       troubleshoot: checked,
       vehicleEdit: checked,
       shareTracking: checked,
-      relay: formData.permissions.relay, // Keep relay separate - not affected by "All Access"
+      relay: checked,
     };
 
     setFormData(prev => ({
@@ -169,7 +165,7 @@ const VehicleAccessManagePage: React.FC = () => {
         troubleshoot: checked,
         vehicleEdit: checked,
         shareTracking: checked,
-        relay: editFormData.relay, // Keep relay separate - not affected by "All Access"
+        relay: checked,
       };
 
       setEditFormData(newPermissions);
@@ -259,7 +255,6 @@ const VehicleAccessManagePage: React.FC = () => {
             relay: false,
           }
         }));
-        setUserSearchQuery('');
       } else {
         setError(result.error || 'Failed to assign vehicle access');
       }
@@ -304,11 +299,6 @@ const VehicleAccessManagePage: React.FC = () => {
     }
   };
 
-  // Filter users based on search query
-  const filteredUsers = users.filter(user => 
-    user.phone?.toLowerCase().includes(userSearchQuery.toLowerCase()) ||
-    user.name?.toLowerCase().includes(userSearchQuery.toLowerCase())
-  );
 
   if (initialLoading) {
     return (
@@ -398,7 +388,6 @@ const VehicleAccessManagePage: React.FC = () => {
                                 {userVehicle.troubleshoot && <Badge variant="info">Troubleshoot</Badge>}
                                 {userVehicle.vehicleEdit && <Badge variant="info">Vehicle Edit</Badge>}
                                 {userVehicle.shareTracking && <Badge variant="info">Share Tracking</Badge>}
-                                {userVehicle.relay && <Badge variant="warning">Relay Control</Badge>}
                               </>
                             )}
                           </div>
@@ -483,13 +472,13 @@ const VehicleAccessManagePage: React.FC = () => {
                     {VEHICLE_ACCESS_PERMISSIONS.filter(p => p.key !== 'allAccess').map(permission => (
                       <RoleBasedWidget 
                         key={permission.key} 
-                        allowedRoles={permission.key === 'relay' ? [ROLES.SUPER_ADMIN] : [ROLES.SUPER_ADMIN, ROLES.DEALER]}
+                        allowedRoles={[ROLES.SUPER_ADMIN, ROLES.DEALER]}
                       >
                         <div className="flex items-center">
                           <Checkbox
                             checked={editFormData[permission.key as keyof VehicleAccessPermissions]}
                             onChange={(checked) => handleEditPermissionChange(permission.key, checked)}
-                            disabled={editFormData.allAccess && permission.key !== 'relay'}
+                            disabled={editFormData.allAccess}
                           >
                             {permission.label}
                           </Checkbox>
@@ -520,93 +509,27 @@ const VehicleAccessManagePage: React.FC = () => {
             <h3 className="text-lg font-semibold mb-4">Add New Access</h3>
             <form onSubmit={handleSubmit} className="space-y-6">
               {/* User Selection */}
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                <div className="relative" ref={userInputRef}>
-                  <label className="block text-sm font-medium text-gray-700 mb-2">
-                    Search User
-                  </label>
-                  <Input
-                    placeholder="Search by name or phone number"
-                    value={userSearchQuery}
-                    onChange={(value) => {
-                      setUserSearchQuery(value);
-                      setShowUserSuggestions(value.length > 0);
-                      // Auto-select if exact match found
-                      const user = users.find(u => u.phone === value || u.name === value);
-                      if (user) {
-                        handleInputChange('userId', user.id);
-                        setShowUserSuggestions(false);
-                      } else {
-                        handleInputChange('userId', 0);
-                      }
-                    }}
-                    onFocus={() => setShowUserSuggestions(userSearchQuery.length > 0)}
-                    onBlur={() => {
-                      // Use a small delay to allow click events to register
-                      setTimeout(() => {
-                        // Check if the active element is within the suggestion dropdown
-                        const activeElement = document.activeElement;
-                        if (!activeElement || !activeElement.closest('[data-suggestion-dropdown]')) {
-                          setShowUserSuggestions(false);
-                        }
-                      }, 200);
-                    }}
-                  />
-                  
-                  {/* User Suggestions Dropdown - Fixed Position */}
-                  {showUserSuggestions && filteredUsers.length > 0 && userInputRef.current && (
-                    <div 
-                      className="fixed bg-white border border-gray-300 rounded-md shadow-xl max-h-60 overflow-auto z-[9999]"
-                      data-suggestion-dropdown
-                      style={{
-                        top: userInputRef.current.getBoundingClientRect().bottom + window.scrollY + 4,
-                        left: userInputRef.current.getBoundingClientRect().left + window.scrollX,
-                        width: userInputRef.current.getBoundingClientRect().width
-                      }}
-                    >
-                      {filteredUsers.map(user => (
-                        <div
-                          key={user.id}
-                          className="px-4 py-2 hover:bg-gray-100 cursor-pointer border-b border-gray-100 last:border-b-0"
-                          onMouseDown={(e) => {
-                            e.preventDefault(); // Prevent input blur
-                            setUserSearchQuery(user.phone || user.name);
-                            handleInputChange('userId', user.id);
-                            setShowUserSuggestions(false);
-                          }}
-                        >
-                          <div className="font-medium">{user.name}</div>
-                          <div className="text-sm text-gray-600">{user.phone}</div>
-                        </div>
-                      ))}
-                    </div>
-                  )}
-                </div>
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-2">
-                    Select User
-                  </label>
-                  <Select
-                    value={formData.userId.toString()}
-                    onChange={(value) => {
-                      const userId = parseInt(value);
-                      handleInputChange('userId', userId);
-                      if (userId > 0) {
-                        const user = users.find(u => u.id === userId);
-                        setUserSearchQuery(user?.phone || '');
-                      } else {
-                        setUserSearchQuery('');
-                      }
-                    }}
-                    options={[
-                      { value: '0', label: 'Select a user' },
-                      ...users.map(user => ({
-                        value: user.id.toString(),
-                        label: `${user.name} (${user.phone})`
-                      }))
-                    ]}
-                  />
-                </div>
+              <div>
+                <SingleSelect
+                  options={users.map(user => ({
+                    id: user.id,
+                    label: `${user.name} (${user.phone})`,
+                    value: user.id
+                  }))}
+                  value={formData.userId === 0 ? null : formData.userId}
+                  onChange={(value) => {
+                    const userId = value === null ? 0 : (typeof value === 'number' ? value : parseInt(value.toString()));
+                    handleInputChange('userId', userId);
+                    // Clear error when user is selected
+                    if (error && error.includes('Please select a user')) {
+                      setError(null);
+                    }
+                  }}
+                  placeholder="Select a user..."
+                  label="Select User *"
+                  searchable
+                  error={error && error.includes('Please select a user') ? error : undefined}
+                />
               </div>
 
               {/* Selected User Info */}
@@ -653,13 +576,13 @@ const VehicleAccessManagePage: React.FC = () => {
                     {VEHICLE_ACCESS_PERMISSIONS.filter(p => p.key !== 'allAccess').map(permission => (
                       <RoleBasedWidget 
                         key={permission.key} 
-                        allowedRoles={permission.key === 'relay' ? [ROLES.SUPER_ADMIN] : [ROLES.SUPER_ADMIN, ROLES.DEALER]}
+                        allowedRoles={[ROLES.SUPER_ADMIN, ROLES.DEALER]}
                       >
                         <div className="flex items-center">
                           <Checkbox
                             checked={formData.permissions[permission.key as keyof VehicleAccessPermissions]}
                             onChange={(checked) => handlePermissionChange(permission.key, checked)}
-                            disabled={formData.permissions.allAccess && permission.key !== 'relay'}
+                            disabled={formData.permissions.allAccess}
                           >
                             {permission.label}
                           </Checkbox>

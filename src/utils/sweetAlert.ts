@@ -17,14 +17,43 @@ const swalConfig = {
 
 // Delete confirmation dialog
 export const confirmDelete = async (title: string, text?: string): Promise<boolean> => {
+  const confirmationText = 'delete';
+  
   const result = await Swal.fire({
     title,
-    text: text || 'This action cannot be undone!',
+    html: `
+      <div style="text-align: left;">
+        <p style="margin-bottom: 1rem;">${text || 'This action cannot be undone!'}</p>
+        <p style="margin-bottom: 0.5rem; font-weight: 600;">Please type <strong>"${confirmationText}"</strong> to confirm:</p>
+      </div>
+    `,
     icon: 'warning',
-    ...swalConfig
+    input: 'text',
+    inputPlaceholder: `Type "${confirmationText}" to confirm`,
+    inputAttributes: {
+      'aria-label': 'Type delete to confirm'
+    },
+    inputValidator: (value) => {
+      if (!value) {
+        return 'You must type the confirmation text!';
+      }
+      if (value !== confirmationText) {
+        return `Text must be exactly "${confirmationText}"`;
+      }
+      return null;
+    },
+    ...swalConfig,
+    confirmButtonText: 'Submit',
+    focusConfirm: false,
+    didOpen: () => {
+      const input = Swal.getInput();
+      if (input) {
+        input.focus();
+      }
+    }
   });
   
-  return result.isConfirmed;
+  return result.isConfirmed && result.value === confirmationText;
 };
 
 // Success message

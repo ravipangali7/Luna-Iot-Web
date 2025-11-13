@@ -48,6 +48,7 @@ interface AuthContextType {
   isLoading: boolean;
   login: (phone: string, password: string) => Promise<boolean>;
   logout: () => void;
+  setUser: (user: User | null) => void;
   // Wallet methods
   updateWalletBalance: (balance: number) => void;
   refreshWalletBalance: () => Promise<void>;
@@ -210,6 +211,14 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     isLoading,
     login,
     logout,
+    setUser: (newUser: User | null) => {
+      setUser(newUser);
+      if (newUser) {
+        socketService.setCurrentUser(newUser);
+      } else {
+        socketService.setCurrentUser(null);
+      }
+    },
     // Wallet methods
     updateWalletBalance,
     refreshWalletBalance,

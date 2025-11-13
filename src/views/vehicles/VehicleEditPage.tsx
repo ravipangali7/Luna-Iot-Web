@@ -1,6 +1,7 @@
 import React, { useState, useEffect, useCallback } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
 import { vehicleService } from '../../api/services/vehicleService';
+import { vehicleAccessService } from '../../api/services/vehicleAccessService';
 import type { Vehicle, VehicleFormData } from '../../types/vehicle';
 import { VEHICLE_TYPES } from '../../types/vehicle';
 import Container from '../../components/ui/layout/Container';
@@ -10,6 +11,7 @@ import CardBody from '../../components/ui/cards/CardBody';
 import Button from '../../components/ui/buttons/Button';
 import Input from '../../components/ui/forms/Input';
 import Select from '../../components/ui/forms/Select';
+import SingleSelect from '../../components/ui/forms/SingleSelect';
 import Alert from '../../components/ui/common/Alert';
 import Spinner from '../../components/ui/common/Spinner';
 import { useAuth } from '../../hooks/useAuth';
@@ -32,9 +34,12 @@ const VehicleEditPage: React.FC = () => {
     mileage: 0,
     speedLimit: 60,
     minimumFuel: 0,
-    expireDate: ''
+    expireDate: '',
+    mainUserId: undefined
   });
   const [errors, setErrors] = useState<Record<string, string>>({});
+  const [availableUsers, setAvailableUsers] = useState<{ id: number; name: string; phone: string }[]>([]);
+  const [loadingUsers, setLoadingUsers] = useState(false);
 
   const isSuperAdmin = user?.roles?.some(role => role.name === ROLES.SUPER_ADMIN) || false;
 
@@ -48,6 +53,18 @@ const VehicleEditPage: React.FC = () => {
       
       if (result.success && result.data) {
         setVehicle(result.data);
+        
+        // Get main user ID from mainCustomer or userVehicles
+        let mainUserId: number | undefined = undefined;
+        if (result.data.mainCustomer?.userId) {
+          mainUserId = result.data.mainCustomer.userId;
+        } else if (result.data.userVehicles) {
+          const mainUserVehicle = result.data.userVehicles.find((uv: any) => uv.isMain);
+          if (mainUserVehicle?.userId) {
+            mainUserId = mainUserVehicle.userId;
+          }
+        }
+        
         setFormData({
           imei: result.data.imei,
           name: result.data.name,
@@ -57,7 +74,8 @@ const VehicleEditPage: React.FC = () => {
           mileage: result.data.mileage || 0,
           speedLimit: result.data.speedLimit || 60,
           minimumFuel: result.data.minimumFuel || 0,
-          expireDate: result.data.expireDate ? new Date(result.data.expireDate).toISOString().split('T')[0] : ''
+          expireDate: result.data.expireDate ? new Date(result.data.expireDate).toISOString().split('T')[0] : '',
+          mainUserId: mainUserId
         });
       } else {
         setError(result.error || 'Failed to load vehicle');
@@ -69,11 +87,33 @@ const VehicleEditPage: React.FC = () => {
     }
   }, [imei]);
 
+  const loadAvailableUsers = useCallback(async () => {
+    if (!isSuperAdmin) return;
+    
+    try {
+      setLoadingUsers(true);
+      const result = await vehicleAccessService.getAvailableUsers();
+      if (result.success && result.data) {
+        setAvailableUsers(result.data);
+      }
+    } catch (error) {
+      console.error('Failed to load available users:', error);
+    } finally {
+      setLoadingUsers(false);
+    }
+  }, [isSuperAdmin]);
+
   useEffect(() => {
     if (imei) {
       loadVehicle();
     }
   }, [imei, loadVehicle]);
+
+  useEffect(() => {
+    if (isSuperAdmin) {
+      loadAvailableUsers();
+    }
+  }, [isSuperAdmin, loadAvailableUsers]);
 
   const validateForm = (): boolean => {
     const newErrors: Record<string, string> = {};
@@ -108,7 +148,7 @@ const VehicleEditPage: React.FC = () => {
     return Object.keys(newErrors).length === 0;
   };
 
-  const handleInputChange = (field: keyof VehicleFormData, value: string | number) => {
+  const handleInputChange = (field: keyof VehicleFormData, value: string | number | undefined) => {
     setFormData(prev => ({ ...prev, [field]: value }));
     // Clear error when user starts typing
     if (errors[field]) {
@@ -325,21 +365,43 @@ const VehicleEditPage: React.FC = () => {
                 </div>
 
                 {isSuperAdmin && (
-                  <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-1">
-                      Expire Date
-                    </label>
-                    <Input
-                      type="date"
-                      placeholder="Select expire date"
-                      value={formData.expireDate || ''}
-                      onChange={(value) => handleInputChange('expireDate', value)}
-                      error={errors.expireDate}
-                    />
-                    <p className="text-xs text-gray-500 mt-1">
-                      Vehicle expiration date. If not set, defaults to one year from creation date.
-                    </p>
-                  </div>
+                  <>
+                    <div>
+                      <label className="block text-sm font-medium text-gray-700 mb-1">
+                        Expire Date
+                      </label>
+                      <Input
+                        type="date"
+                        placeholder="Select expire date"
+                        value={formData.expireDate || ''}
+                        onChange={(value) => handleInputChange('expireDate', value)}
+                        error={errors.expireDate}
+                      />
+                      <p className="text-xs text-gray-500 mt-1">
+                        Vehicle expiration date. If not set, defaults to one year from creation date.
+                      </p>
+                    </div>
+
+                    <div>
+                      <SingleSelect
+                        options={(availableUsers || []).map(user => ({
+                          id: user.id,
+                          label: `${user.name} - ${user.phone}`,
+                          value: user.id
+                        }))}
+                        value={formData.mainUserId || null}
+                        onChange={(value) => handleInputChange('mainUserId', value ? Number(value) : undefined)}
+                        placeholder="Select main user"
+                        label="Main User"
+                        searchable
+                        disabled={loadingUsers}
+                        error={errors.mainUserId}
+                      />
+                      <p className="text-xs text-gray-500 mt-1">
+                        The main user for this vehicle. Only visible to super admin.
+                      </p>
+                    </div>
+                  </>
                 )}
               </div>
 

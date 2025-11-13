@@ -75,7 +75,10 @@ const UserLunaTagIndexPage: React.FC = () => {
   }, [loadUserLunaTags]);
 
   const handleDelete = async (id: number, name: string) => {
-    const confirmed = await confirmDelete(`User Luna Tag: ${name}`);
+    const confirmed = await confirmDelete(
+      'Delete User Luna Tag',
+      `Are you sure you want to delete User Luna Tag "${name}"? This action cannot be undone.`
+    );
     if (!confirmed) return;
 
     try {

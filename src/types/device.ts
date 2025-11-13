@@ -71,6 +71,11 @@ export interface Device {
   userDevices: UserDevice[];
   vehicles?: Vehicle[];
   latestStatus?: DeviceStatus | null;
+  institute?: {
+    id: number;
+    name: string;
+    logo: string | null;
+  } | null;
   createdAt: string;
   updatedAt: string;
 }

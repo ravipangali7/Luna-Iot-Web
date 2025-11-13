@@ -3,6 +3,10 @@ import { AuthProvider } from './contexts/AuthContext';
 import { RefreshProvider } from './contexts/RefreshContext';
 import { useAuth } from './hooks/useAuth';
 import LoginPage from './views/auth/LoginPage';
+import RegisterPage from './views/auth/RegisterPage';
+import ForgotPasswordPage from './views/auth/ForgotPasswordPage';
+import VerifyForgotPasswordOTPPage from './views/auth/VerifyForgotPasswordOTPPage';
+import ResetPasswordPage from './views/auth/ResetPasswordPage';
 import DashboardPage from './views/DashboardPage';
 import Layout from './components/layout/Layout';
 import { DeviceCreatePage, DeviceEditPage } from './views/devices';
@@ -29,6 +33,7 @@ import { AlertTypeIndexPage, AlertTypeCreatePage, AlertTypeEditPage } from './vi
 import { AlertHistoryIndexPage, AlertHistoryViewPage } from './views/alertHistory';
 import { SubscriptionPlanIndexPage, SubscriptionPlanCreatePage, SubscriptionPlanEditPage } from './views/subscriptionPlans';
 import { UserIndexPage, UserShowPage, UserCreatePage, UserEditPage } from './views/users';
+import AddUserPage from './views/users/AddUserPage';
 import SchoolIndexPage from './views/school/SchoolIndexPage';
 import SchoolShowPage from './views/school/SchoolShowPage';
 import { SchoolBusCreatePage, SchoolBusEditPage } from './views/school/schoolBuses';
@@ -110,6 +115,26 @@ const AppRoutes: React.FC = () => {
           <LoginPage />
         </PublicRoute>
       } />
+      <Route path="/register" element={
+        <PublicRoute>
+          <RegisterPage />
+        </PublicRoute>
+      } />
+      <Route path="/forgot-password" element={
+        <PublicRoute>
+          <ForgotPasswordPage />
+        </PublicRoute>
+      } />
+      <Route path="/verify-forgot-password-otp" element={
+        <PublicRoute>
+          <VerifyForgotPasswordOTPPage />
+        </PublicRoute>
+      } />
+      <Route path="/reset-password" element={
+        <PublicRoute>
+          <ResetPasswordPage />
+        </PublicRoute>
+      } />
 
       {/* Public shared tracking route - no authentication required */}
       <Route path="/share-track/:token" element={<SharedTrackPage />} />
@@ -185,7 +210,7 @@ const AppRoutes: React.FC = () => {
 
         {/* Vehicle Routes - All roles can access */}
         <Route path="vehicles" element={
-          <RoleBasedRoute allowedRoles={[ROLES.SUPER_ADMIN, ROLES.DEALER]}>
+          <RoleBasedRoute allowedRoles={[ROLES.SUPER_ADMIN, ROLES.DEALER, ROLES.CUSTOMER]}>
             <VehicleIndexPage />
           </RoleBasedRoute>
         } />
@@ -200,24 +225,24 @@ const AppRoutes: React.FC = () => {
           </RoleBasedRoute>
         } />
 
-        {/* Vehicle Access Routes - Super Admin and Dealer only */}
+        {/* Vehicle Access Routes - All roles can access */}
         <Route path="vehicle-access" element={
-          <RoleBasedRoute allowedRoles={[ROLES.SUPER_ADMIN, ROLES.DEALER]}>
+          <RoleBasedRoute allowedRoles={[ROLES.SUPER_ADMIN, ROLES.DEALER, ROLES.CUSTOMER]}>
             <VehicleAccessIndexPage />
           </RoleBasedRoute>
         } />
         <Route path="vehicle-access/create" element={
-          <RoleBasedRoute allowedRoles={[ROLES.SUPER_ADMIN, ROLES.DEALER]}>
+          <RoleBasedRoute allowedRoles={[ROLES.SUPER_ADMIN, ROLES.DEALER, ROLES.CUSTOMER]}>
             <VehicleAccessCreatePage />
           </RoleBasedRoute>
         } />
         <Route path="vehicle-access/edit/:id" element={
-          <RoleBasedRoute allowedRoles={[ROLES.SUPER_ADMIN, ROLES.DEALER]}>
+          <RoleBasedRoute allowedRoles={[ROLES.SUPER_ADMIN, ROLES.DEALER, ROLES.CUSTOMER]}>
             <VehicleAccessEditPage />
           </RoleBasedRoute>
         } />
         <Route path="vehicle-access/manage/:imei" element={
-          <RoleBasedRoute allowedRoles={[ROLES.SUPER_ADMIN, ROLES.DEALER]}>
+          <RoleBasedRoute allowedRoles={[ROLES.SUPER_ADMIN, ROLES.DEALER, ROLES.CUSTOMER]}>
             <VehicleAccessManagePage />
           </RoleBasedRoute>
         } />
@@ -368,6 +393,7 @@ const AppRoutes: React.FC = () => {
             <UserIndexPage />
           </RoleBasedRoute>
         } />
+        <Route path="users/add" element={<AddUserPage />} />
         <Route path="users/create" element={
           <RoleBasedRoute allowedRoles={[ROLES.SUPER_ADMIN]}>
             <UserCreatePage />

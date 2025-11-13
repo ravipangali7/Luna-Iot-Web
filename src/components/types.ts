@@ -47,6 +47,7 @@ export interface InputProps extends BaseProps {
   id?: string;
   name?: string;
   icon?: React.ReactNode;
+  maxLength?: number;
 }
 
 export interface TableProps extends BaseProps {

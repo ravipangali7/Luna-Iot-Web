@@ -351,24 +351,9 @@ const DeviceIndexPage: React.FC = () => {
 
   const canControlRelayForDevice = useCallback((device: Device): boolean => {
     if (auth?.isSuperAdmin && auth.isSuperAdmin()) return true;
-    // Check if device has vehicles with relay permission
+    // Check if device has vehicles with is_relay=true
     if (device.vehicles && device.vehicles.length > 0) {
-      // Check if any vehicle has userVehicles with relay permission for current user
-      const currentUserId = auth?.user?.id;
-      if (currentUserId) {
-        for (const vehicle of device.vehicles) {
-          // Type assertion needed as Device.Vehicle doesn't have userVehicles in type but API provides it
-          const vehicleWithUserVehicles = vehicle as any;
-          if (vehicleWithUserVehicles.userVehicles) {
-            const userVehicle = vehicleWithUserVehicles.userVehicles.find((uv: any) => 
-              uv.userId === currentUserId || uv.user?.id === currentUserId
-            );
-            if (userVehicle && userVehicle.relay === true) {
-              return true;
-            }
-          }
-        }
-      }
+      return device.vehicles.some((vehicle: any) => vehicle.is_relay === true);
     }
     return false;
   }, [auth]);

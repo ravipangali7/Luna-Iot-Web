@@ -72,7 +72,7 @@ export const VEHICLE_ACCESS_PERMISSIONS = [
   { key: 'troubleshoot', label: 'Troubleshoot' },
   { key: 'vehicleEdit', label: 'Vehicle Edit' },
   { key: 'shareTracking', label: 'Share Tracking' },
-  { key: 'relay', label: 'Relay Control' },
+  { key: 'relay', label: 'Relay' },
 ] as const;
 
 export type VehicleAccessPermissionKey = typeof VEHICLE_ACCESS_PERMISSIONS[number]['key'];

@@ -40,6 +40,7 @@ import Pagination from '../../components/ui/pagination/Pagination';
 import RoleBasedWidget from '../../components/role-based/RoleBasedWidget';
 import { ROLES } from '../../utils/roleUtils';
 import RefreshIcon from '@mui/icons-material/Refresh';
+import PowerSettingsNewIcon from '@mui/icons-material/PowerSettingsNew';
 import { AuthContext } from '../../contexts/AuthContext';
 
 const VehicleIndexPage: React.FC = () => {
@@ -117,11 +118,6 @@ const VehicleIndexPage: React.FC = () => {
 
     setFilteredVehicles(filtered);
   }, [vehicles, searchQuery, filters]);
-
-  const canControlRelayForVehicle = useCallback((vehicle: Vehicle): boolean => {
-    if (auth?.isSuperAdmin && auth.isSuperAdmin()) return true;
-    return vehicle.userVehicle?.relay === true;
-  }, [auth]);
 
   useEffect(() => {
     // Only load vehicles if there's no search query in URL and we're not in search mode
@@ -376,6 +372,36 @@ const VehicleIndexPage: React.FC = () => {
         }
       }
     );
+  };
+
+  const handleToggleRelayAccess = async (vehicle: Vehicle) => {
+    try {
+      const currentIsRelay = vehicle.is_relay === true;
+      const newIsRelayValue = !currentIsRelay;
+      
+      // Update only the is_relay field - backend supports partial updates
+      const result = await vehicleService.updateVehicle(vehicle.imei, {
+        imei: vehicle.imei,
+        name: vehicle.name || '',
+        vehicleNo: vehicle.vehicleNo || '',
+        vehicleType: vehicle.vehicleType || '',
+        odometer: vehicle.odometer || 0,
+        mileage: vehicle.mileage || 0,
+        speedLimit: vehicle.speedLimit || 60,
+        minimumFuel: vehicle.minimumFuel || 0,
+        is_relay: newIsRelayValue,
+      } as any);
+
+      if (result.success) {
+        showSuccess(`Relay access ${newIsRelayValue ? 'enabled' : 'disabled'} successfully`);
+        await loadVehicles();
+      } else {
+        showError(result.error || 'Failed to update relay access');
+      }
+    } catch (error) {
+      console.error('Toggle relay access error:', error);
+      showError('Failed to update relay access');
+    }
   };
 
   const handleRelayOn = async (vehicle: Vehicle) => {
@@ -738,7 +764,9 @@ const VehicleIndexPage: React.FC = () => {
                   <TableHead>
                     <TableRow>
                       <TableHeader>Vehicle Info</TableHeader>
-                      <TableHeader>Device Info</TableHeader>
+                      <RoleBasedWidget allowedRoles={[ROLES.SUPER_ADMIN, ROLES.DEALER]}>
+                        <TableHeader>Device Info</TableHeader>
+                      </RoleBasedWidget>
                       <TableHeader>Status</TableHeader>
                       <TableHeader>Customer Info</TableHeader>
                       <RoleBasedWidget allowedRoles={[ROLES.SUPER_ADMIN]}>
@@ -800,20 +828,22 @@ const VehicleIndexPage: React.FC = () => {
                             </div>
                           </div>
                         </TableCell>
-                        <TableCell>
-                          <div className="flex flex-col min-w-0 space-y-1">
-                            <span className="font-mono text-sm font-medium truncate">{vehicle.imei}</span>
-                            <span className="text-xs text-gray-500 truncate">{vehicle.device?.phone || 'N/A'}</span>
-                            <div className="">
-                            <button
-                              className="bg-gray-700 text-white px-2 py-1 text-xs rounded shadow-md hover:bg-gray-800 transition-colors"
-                              onClick={() => handleDeviceMonitoring(vehicle)}
-                            >
-                              {'>_'}
-                            </button>
+                        <RoleBasedWidget allowedRoles={[ROLES.SUPER_ADMIN, ROLES.DEALER]}>
+                          <TableCell>
+                            <div className="flex flex-col min-w-0 space-y-1">
+                              <span className="font-mono text-sm font-medium truncate">{vehicle.imei}</span>
+                              <span className="text-xs text-gray-500 truncate">{vehicle.device?.phone || 'N/A'}</span>
+                              <div className="">
+                              <button
+                                className="bg-gray-700 text-white px-2 py-1 text-xs rounded shadow-md hover:bg-gray-800 transition-colors"
+                                onClick={() => handleDeviceMonitoring(vehicle)}
+                              >
+                                {'>_'}
+                              </button>
+                              </div>
                             </div>
-                          </div>
-                        </TableCell>
+                          </TableCell>
+                        </RoleBasedWidget>
                         <TableCell>
                           <div className="flex flex-col gap-2">
                             <div>
@@ -880,25 +910,29 @@ const VehicleIndexPage: React.FC = () => {
                           <div className="flex flex-col gap-2">
                             <div className="flex justify-end gap-2">
                               <EditActionButton onClick={() => handleEditVehicle(vehicle)} />
-                              {vehicle.is_active ? (
-                                <DeactivateActionButton onClick={() => handleDeactivateVehicle(vehicle)} />
-                              ) : (
-                                <ActivateActionButton onClick={() => handleActivateVehicle(vehicle)} />
-                              )}
+                              <RoleBasedWidget allowedRoles={[ROLES.SUPER_ADMIN, ROLES.DEALER]}>
+                                {vehicle.is_active ? (
+                                  <DeactivateActionButton onClick={() => handleDeactivateVehicle(vehicle)} />
+                                ) : (
+                                  <ActivateActionButton onClick={() => handleActivateVehicle(vehicle)} />
+                                )}
+                              </RoleBasedWidget>
                               <RoleBasedWidget allowedRoles={[ROLES.SUPER_ADMIN]}>
                                 <RechargeActionButton onClick={() => handleRechargeVehicle(vehicle)} />
                               </RoleBasedWidget>
                             </div>
                             <div className="flex justify-end gap-2">
-                              {canControlRelayForVehicle(vehicle) ? (
-                                vehicle.latestStatus?.relay ? (
-                                  <RelayOffActionButton onClick={() => handleRelayOff(vehicle)} />
-                                ) : (
-                                  <RelayOnActionButton onClick={() => handleRelayOn(vehicle)} />
-                                )
-                              ) : (
-                                <Badge variant="secondary">Not Available</Badge>
-                              )}
+                              {(() => {
+                                const isRelayEnabled = vehicle.is_relay === true;
+                                const canControl = auth?.isSuperAdmin && auth.isSuperAdmin() ? true : isRelayEnabled;
+                                const isDisabled = !canControl;
+                                
+                                if (vehicle.latestStatus?.relay) {
+                                  return <RelayOffActionButton onClick={() => handleRelayOff(vehicle)} disabled={isDisabled} />;
+                                } else {
+                                  return <RelayOnActionButton onClick={() => handleRelayOn(vehicle)} disabled={isDisabled} />;
+                                }
+                              })()}
                               <RoleBasedWidget allowedRoles={[ROLES.SUPER_ADMIN]}>
                                 <div className="relative">
                                   <CommandsActionButton onClick={() => toggleDropdown(vehicle.id.toString())} />
@@ -924,6 +958,20 @@ const VehicleIndexPage: React.FC = () => {
                                       >
                                         <RefreshIcon className="w-4 h-4 mr-3 text-orange-500" />
                                         RESET
+                                      </button>
+                                      <button
+                                        className={`flex items-center w-full px-4 py-2 text-sm transition-colors duration-200 ${
+                                          vehicle.is_relay === true
+                                            ? 'text-gray-700 hover:bg-red-50 hover:text-red-700' 
+                                            : 'text-gray-700 hover:bg-green-50 hover:text-green-700'
+                                        }`}
+                                        onClick={() => {
+                                          handleToggleRelayAccess(vehicle);
+                                          setDropdownOpen(prev => ({ ...prev, [vehicle.id.toString()]: false }));
+                                        }}
+                                      >
+                                        <PowerSettingsNewIcon className={`w-4 h-4 mr-3 ${vehicle.is_relay === true ? 'text-red-500' : 'text-green-500'}`} />
+                                        {vehicle.is_relay === true ? 'RELAY OFF ACC' : 'RELAY ON ACC'}
                                       </button>
                                     </div>
                                   </div>

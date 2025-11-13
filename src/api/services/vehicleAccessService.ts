@@ -202,15 +202,24 @@ class VehicleAccessService {
     }
   }
 
-  // Get available users for vehicle access assignment
-  async getAvailableUsers(): Promise<{ success: boolean; data?: { id: number; name: string; phone: string; email: string }[]; error?: string }> {
+  // Get available users for vehicle access assignment (using light endpoint for better performance)
+  async getAvailableUsers(): Promise<{ success: boolean; data?: { id: number; name: string; phone: string; email?: string; status: string }[]; error?: string }> {
     try {
-      const response = await apiClient.get('/api/core/user/users', {
+      const response = await apiClient.get('/api/core/user/users/light', {
         timeout: 30000
       });
       
       if (response.data.success) {
-        return { success: true, data: response.data.data };
+        // Light users API returns: id, name, phone, status
+        // Map to expected format (email is not in light users, so we'll set it as empty string)
+        const users = response.data.data.map((user: { id: number; name: string; phone: string; status: string }) => ({
+          id: user.id,
+          name: user.name,
+          phone: user.phone,
+          status: user.status,
+          email: '' // Light users API doesn't include email, set as empty string
+        }));
+        return { success: true, data: users };
       } else {
         return { success: false, error: response.data.message || 'Failed to fetch users' };
       }

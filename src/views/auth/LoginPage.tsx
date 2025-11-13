@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { useAuth } from '../../hooks/useAuth';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, Link } from 'react-router-dom';
 import Container from '../../components/ui/layout/Container';
 import Card from '../../components/ui/cards/Card';
 import CardHeader from '../../components/ui/cards/CardHeader';
@@ -171,13 +171,20 @@ export default function LoginPage() {
             </form>
 
             {/* Footer */}
-            <div className="mt-6 pt-4 border-t border-gray-200 text-center">
-              <p className="text-xs text-gray-500">
-                Don't have an account?{' '}
-                <button className="text-green-600 hover:text-green-700 font-medium">
-                  Contact Support
-                </button>
-              </p>
+            <div className="mt-6 pt-4 border-t border-gray-200 space-y-2">
+              <div className="text-center">
+                <p className="text-xs text-gray-500">
+                  Don't have an account?{' '}
+                  <Link to="/register" className="text-green-600 hover:text-green-700 font-medium">
+                    Create Account
+                  </Link>
+                </p>
+              </div>
+              <div className="text-center">
+                <Link to="/forgot-password" className="text-xs text-green-600 hover:text-green-700 font-medium">
+                  Forgot Password?
+                </Link>
+              </div>
             </div>
           </CardBody>
         </Card>

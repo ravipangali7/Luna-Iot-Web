@@ -72,7 +72,10 @@ const LunaTagIndexPage: React.FC = () => {
   }, [loadLunaTags]);
 
   const handleDelete = async (id: number, publicKey: string) => {
-    const confirmed = await confirmDelete(`Luna Tag with publicKey: ${publicKey}`);
+    const confirmed = await confirmDelete(
+      'Delete Luna Tag',
+      `Are you sure you want to delete Luna Tag with publicKey "${publicKey}"? This action cannot be undone.`
+    );
     if (!confirmed) return;
 
     try {

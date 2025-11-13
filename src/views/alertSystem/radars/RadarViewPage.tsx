@@ -8,7 +8,7 @@ import Button from '../../../components/ui/buttons/Button';
 import Badge from '../../../components/ui/common/Badge';
 import Spinner from '../../../components/ui/common/Spinner';
 import Alert from '../../../components/ui/common/Alert';
-import { showError } from '../../../utils/sweetAlert';
+import { confirmDelete, showSuccess, showError } from '../../../utils/sweetAlert';
 
 
 const RadarViewPage: React.FC = () => {
@@ -63,14 +63,20 @@ const RadarViewPage: React.FC = () => {
 
   // Handle delete
   const handleDelete = async () => {
-    if (window.confirm(`Are you sure you want to delete "${radar?.title}"? This action cannot be undone.`)) {
+    const confirmed = await confirmDelete(
+      'Delete Radar',
+      `Are you sure you want to delete "${radar?.title}"? This action cannot be undone.`
+    );
+
+    if (confirmed) {
       try {
         await alertRadarService.delete(Number(id));
+        showSuccess('Radar deleted successfully');
         navigate(`/alert-system/${instituteId}`);
       } catch (err: unknown) {
         console.error('Error deleting radar:', err);
         const errorMessage = (err as { response?: { data?: { message?: string } } })?.response?.data?.message || 'Failed to delete radar. Please try again.';
-        showError(errorMessage);
+        showError('Error', errorMessage);
       }
     }
   };
