@@ -2,7 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
 import { phoneCallService } from '../../api/services/phoneCallService';
 import { showSuccess, showError } from '../../utils/sweetAlert';
-import type { Campaign, CampaignFormData, VoiceModel, PhoneNumber } from '../../types/phoneCall';
+import type { Campaign, CampaignFormData, PhoneNumber } from '../../types/phoneCall';
 import Container from '../../components/ui/layout/Container';
 import Card from '../../components/ui/cards/Card';
 import CardHeader from '../../components/ui/cards/CardHeader';
@@ -47,14 +47,7 @@ const CampaignEditPage: React.FC = () => {
   const fetchInitialData = async () => {
     try {
       setLoadingData(true);
-      const [voicesResult, phonesResult] = await Promise.all([
-        phoneCallService.getVoiceModels(),
-        phoneCallService.getActivePhoneNumbers()
-      ]);
-
-      if (voicesResult.success && voicesResult.data) {
-        setVoiceModels(Array.isArray(voicesResult.data) ? voicesResult.data : []);
-      }
+      const phonesResult = await phoneCallService.getActivePhoneNumbers();
 
       if (phonesResult.success && phonesResult.data) {
         setPhoneNumbers(Array.isArray(phonesResult.data) ? phonesResult.data : []);

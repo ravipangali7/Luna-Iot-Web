@@ -2,7 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { phoneCallService } from '../../api/services/phoneCallService';
 import { showSuccess, showError } from '../../utils/sweetAlert';
-import type { CampaignFormData, VoiceModel, PhoneNumber } from '../../types/phoneCall';
+import type { CampaignFormData, PhoneNumber } from '../../types/phoneCall';
 import Container from '../../components/ui/layout/Container';
 import Card from '../../components/ui/cards/Card';
 import CardHeader from '../../components/ui/cards/CardHeader';
@@ -41,21 +41,14 @@ const CampaignCreatePage: React.FC = () => {
   const fetchInitialData = async () => {
     try {
       setLoadingData(true);
-      const [voicesResult, phonesResult] = await Promise.all([
-        phoneCallService.getVoiceModels(),
-        phoneCallService.getActivePhoneNumbers()
-      ]);
-
-      if (voicesResult.success && voicesResult.data) {
-        setVoiceModels(Array.isArray(voicesResult.data) ? voicesResult.data : []);
-      }
+      const phonesResult = await phoneCallService.getActivePhoneNumbers();
 
       if (phonesResult.success && phonesResult.data) {
         setPhoneNumbers(Array.isArray(phonesResult.data) ? phonesResult.data : []);
       }
     } catch (err) {
       console.error('Error fetching initial data:', err);
-      setError('Failed to load voice models or phone numbers');
+      setError('Failed to load phone numbers');
     } finally {
       setLoadingData(false);
     }
