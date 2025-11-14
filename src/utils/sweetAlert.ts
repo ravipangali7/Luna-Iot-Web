@@ -125,3 +125,25 @@ export const showLoading = (title: string = 'Loading...') => {
 export const closeLoading = () => {
   Swal.close();
 };
+
+// Simple Yes/No confirmation dialog (no typing required)
+export const confirmAction = async (title: string, text?: string, confirmText: string = 'Yes', cancelText: string = 'No'): Promise<boolean> => {
+  const result = await Swal.fire({
+    title,
+    text: text || 'Are you sure you want to proceed?',
+    icon: 'question',
+    showCancelButton: true,
+    confirmButtonText: confirmText,
+    cancelButtonText: cancelText,
+    confirmButtonColor: '#3b82f6', // blue-500
+    cancelButtonColor: '#6b7280', // gray-500
+    focusCancel: true,
+    reverseButtons: true,
+    customClass: {
+      confirmButton: 'px-4 py-2 bg-blue-500 text-white rounded-md hover:bg-blue-600 focus:outline-none focus:ring-2 focus:ring-blue-400 focus:ring-offset-2',
+      cancelButton: 'px-4 py-2 bg-gray-500 text-white rounded-md hover:bg-gray-600 focus:outline-none focus:ring-2 focus:ring-gray-400 focus:ring-offset-2 mr-3'
+    }
+  });
+  
+  return result.isConfirmed;
+};

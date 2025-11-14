@@ -45,6 +45,7 @@ import { WalletIndexPage, MyWalletPage } from './views/wallet';
 import { TransactionIndexPage, WalletTransactionsPage, UserTransactionsPage } from './views/transactions';
 import { LunaTagIndexPage, LunaTagCreatePage, LunaTagEditPage } from './views/lunaTags';
 import { UserLunaTagIndexPage, UserLunaTagCreatePage, UserLunaTagEditPage } from './views/userLunaTags';
+import { CampaignIndexPage, CampaignCreatePage, CampaignEditPage, CampaignViewPage } from './views/phoneCall';
 import RoleBasedRoute from './components/role-based/RoleBasedRoute';
 import ModuleBasedRoute from './components/role-based/ModuleBasedRoute';
 import { ROLES } from './utils/roleUtils';
@@ -559,6 +560,28 @@ const AppRoutes: React.FC = () => {
         <Route path="alert-history/:id" element={
           <RoleBasedRoute allowedRoles={[ROLES.SUPER_ADMIN]}>
             <AlertHistoryViewPage />
+          </RoleBasedRoute>
+        } />
+
+        {/* Phone Call Campaign Routes - Super Admin only */}
+        <Route path="phone-call/campaigns" element={
+          <RoleBasedRoute allowedRoles={[ROLES.SUPER_ADMIN]}>
+            <CampaignIndexPage />
+          </RoleBasedRoute>
+        } />
+        <Route path="phone-call/campaigns/create" element={
+          <RoleBasedRoute allowedRoles={[ROLES.SUPER_ADMIN]}>
+            <CampaignCreatePage />
+          </RoleBasedRoute>
+        } />
+        <Route path="phone-call/campaigns/:id" element={
+          <RoleBasedRoute allowedRoles={[ROLES.SUPER_ADMIN]}>
+            <CampaignViewPage />
+          </RoleBasedRoute>
+        } />
+        <Route path="phone-call/campaigns/:id/edit" element={
+          <RoleBasedRoute allowedRoles={[ROLES.SUPER_ADMIN]}>
+            <CampaignEditPage />
           </RoleBasedRoute>
         } />
 

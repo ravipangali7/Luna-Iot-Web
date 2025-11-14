@@ -59,6 +59,8 @@ const VehicleIndexPage: React.FC = () => {
   const [isInitialized, setIsInitialized] = useState(false);
   const [isSearching, setIsSearching] = useState(false);
   const [isInSearchMode, setIsInSearchMode] = useState(false);
+  const [expireFilter, setExpireFilter] = useState<string | null>(null);
+  const [isInExpireFilterMode, setIsInExpireFilterMode] = useState(false);
   
   // Pagination state
   const [currentPage, setCurrentPage] = useState(1);
@@ -120,12 +122,13 @@ const VehicleIndexPage: React.FC = () => {
   }, [vehicles, searchQuery, filters]);
 
   useEffect(() => {
-    // Only load vehicles if there's no search query in URL and we're not in search mode
+    // Only load vehicles if there's no search query in URL and we're not in search mode or expire filter mode
     const urlSearchQuery = searchParams.get('q');
-    if (!urlSearchQuery && !searchQuery && isInitialized && !isSearching && !isInSearchMode) {
+    const urlExpireFilter = searchParams.get('expire');
+    if (!urlSearchQuery && !urlExpireFilter && !searchQuery && !expireFilter && isInitialized && !isSearching && !isInSearchMode && !isInExpireFilterMode) {
       loadVehicles();
     }
-  }, [refreshKey, currentPage, loadVehicles, searchParams, searchQuery, isInitialized, isSearching, isInSearchMode]); // Reload when refresh is triggered or page changes
+  }, [refreshKey, currentPage, loadVehicles, searchParams, searchQuery, expireFilter, isInitialized, isSearching, isInSearchMode, isInExpireFilterMode]); // Reload when refresh is triggered or page changes
 
   const handleSearchFromUrl = useCallback(async (query: string, page: number = 1) => {
     try {
@@ -152,13 +155,40 @@ const VehicleIndexPage: React.FC = () => {
     }
   }, []);
 
+  const handleExpireFilterFromUrl = useCallback(async (expirePeriod: string, page: number = 1) => {
+    try {
+      setIsSearching(true);
+      setLoading(true);
+      setError(null);
+      const response = await vehicleService.searchVehiclesByExpire(expirePeriod, page);
+      
+      if (response.success && response.data) {
+        setVehicles(response.data.vehicles);
+        setPagination(response.data.pagination);
+        setCurrentPage(page);
+        setExpireFilter(expirePeriod);
+        setIsInExpireFilterMode(true);
+      } else {
+        console.error('Expire filter failed:', response.error);
+        setError(response.error || 'Expire filter failed');
+      }
+    } catch (error) {
+      console.error('Expire filter error:', error);
+      setError('Expire filter failed: ' + (error as Error).message);
+    } finally {
+      setLoading(false);
+      setIsSearching(false);
+    }
+  }, []);
+
   useEffect(() => {
     applyFilters();
   }, [applyFilters]);
 
-  // Handle URL parameters for search query
+  // Handle URL parameters for search query and expire filter
   useEffect(() => {
     const urlSearchQuery = searchParams.get('q');
+    const urlExpireFilter = searchParams.get('expire');
     const urlPage = searchParams.get('page');
     
     
@@ -168,20 +198,34 @@ const VehicleIndexPage: React.FC = () => {
       setSearchQuery(urlSearchQuery);
       setCurrentPage(urlPage ? parseInt(urlPage) : 1);
       handleSearchFromUrl(urlSearchQuery, urlPage ? parseInt(urlPage) : 1);
+      // Clear expire filter if search is active
+      setExpireFilter(null);
+      setIsInExpireFilterMode(false);
+    } else if (urlExpireFilter) {
+      // URL has expire filter - perform expire filter
+      setExpireFilter(urlExpireFilter);
+      setCurrentPage(urlPage ? parseInt(urlPage) : 1);
+      handleExpireFilterFromUrl(urlExpireFilter, urlPage ? parseInt(urlPage) : 1);
+      // Clear search if expire filter is active
+      setSearchInput('');
+      setSearchQuery('');
+      setIsInSearchMode(false);
     } else if (!isInitialized) {
-      // Initial load without search query
+      // Initial load without search query or expire filter
       const page = urlPage ? parseInt(urlPage) : 1;
       setCurrentPage(page);
       setIsInSearchMode(false);
+      setIsInExpireFilterMode(false);
       loadVehicles();
     }
     
     setIsInitialized(true);
-  }, [searchParams, loadVehicles, handleSearchFromUrl, isInitialized]);
+  }, [searchParams, loadVehicles, handleSearchFromUrl, handleExpireFilterFromUrl, isInitialized]);
 
-  // Handle clearing search when navigating from other pages
+  // Handle clearing search and expire filter when navigating from other pages
   useEffect(() => {
     const urlSearchQuery = searchParams.get('q');
+    const urlExpireFilter = searchParams.get('expire');
     
     // If we're on vehicles page without search query and we have an active search, clear it
     // This handles navigation from sidebar/header
@@ -198,19 +242,42 @@ const VehicleIndexPage: React.FC = () => {
       
       return () => clearTimeout(timeoutId);
     }
-  }, [searchParams, isInitialized, searchQuery, isSearching, loading, loadVehicles]);
+    
+    // If we're on vehicles page without expire filter and we have an active expire filter, clear it
+    if (isInitialized && !urlExpireFilter && expireFilter && !isSearching && !loading) {
+      // Add a small delay to ensure filter operations complete
+      const timeoutId = setTimeout(() => {
+        setExpireFilter(null);
+        setError(null);
+        setIsInExpireFilterMode(false);
+        loadVehicles();
+      }, 100);
+      
+      return () => clearTimeout(timeoutId);
+    }
+  }, [searchParams, isInitialized, searchQuery, expireFilter, isSearching, loading, loadVehicles]);
 
   const handleSearch = async () => {
     if (!searchInput.trim()) {
       setSearchQuery('');
-      // Clear URL parameters when clearing search
-      setSearchParams({});
+      // Clear URL parameters when clearing search, but preserve expire filter if active
+      const newSearchParams = new URLSearchParams(searchParams);
+      newSearchParams.delete('q');
+      if (expireFilter) {
+        newSearchParams.set('expire', expireFilter);
+        setSearchParams(newSearchParams);
+      } else {
+        setSearchParams({});
+      }
       return;
     }
     
     try {
       setIsSearching(true);
       setLoading(true);
+      // Clear expire filter when performing search
+      setExpireFilter(null);
+      setIsInExpireFilterMode(false);
       const response = await vehicleService.searchVehicles(searchInput.trim(), 1);
       
       if (response.success && response.data) {
@@ -239,10 +306,19 @@ const VehicleIndexPage: React.FC = () => {
     setSearchInput('');
     setSearchQuery('');
     setIsInSearchMode(false);
-    // Clear URL parameters when clearing search
-    setSearchParams({});
-    // Reload vehicles when clearing search
-    await loadVehicles();
+    // Clear URL parameters when clearing search, but preserve expire filter if active
+    const newSearchParams = new URLSearchParams(searchParams);
+    newSearchParams.delete('q');
+    if (expireFilter) {
+      // If expire filter is active, reload expire filter results
+      newSearchParams.set('expire', expireFilter);
+      setSearchParams(newSearchParams);
+      await handleExpireFilterChange(expireFilter);
+    } else {
+      // Otherwise, clear all and reload normal vehicles
+      setSearchParams({});
+      await loadVehicles();
+    }
   };
 
   const handleSearchPageChange = async (page: number) => {
@@ -267,6 +343,105 @@ const VehicleIndexPage: React.FC = () => {
     } catch (error) {
       console.error('Search page change error:', error);
       setError('Failed to load search results: ' + (error as Error).message);
+    } finally {
+      setLoading(false);
+      setIsSearching(false);
+    }
+  };
+
+  const handleExpireFilterChange = async (value: string) => {
+    if (!value || value === '') {
+      // Clear expire filter
+      setExpireFilter(null);
+      setIsInExpireFilterMode(false);
+      const newSearchParams = new URLSearchParams(searchParams);
+      newSearchParams.delete('expire');
+      newSearchParams.set('page', '1');
+      setSearchParams(newSearchParams);
+      setCurrentPage(1);
+      // If search is active, reload search results; otherwise load normal vehicles
+      if (searchQuery) {
+        try {
+          setIsSearching(true);
+          setLoading(true);
+          const response = await vehicleService.searchVehicles(searchQuery, 1);
+          if (response.success && response.data) {
+            setVehicles(response.data.vehicles);
+            setPagination(response.data.pagination);
+            setIsInSearchMode(true);
+          }
+        } catch (error) {
+          console.error('Error reloading search:', error);
+        } finally {
+          setLoading(false);
+          setIsSearching(false);
+        }
+      } else {
+        await loadVehicles();
+      }
+      return;
+    }
+    
+    try {
+      setIsSearching(true);
+      setLoading(true);
+      setError(null);
+      // Clear search when applying expire filter
+      setSearchInput('');
+      setSearchQuery('');
+      setIsInSearchMode(false);
+      const response = await vehicleService.searchVehiclesByExpire(value, 1);
+      
+      if (response.success && response.data) {
+        setVehicles(response.data.vehicles);
+        setPagination(response.data.pagination);
+        setExpireFilter(value);
+        setCurrentPage(1);
+        setIsInExpireFilterMode(true);
+        // Update URL with expire filter
+        const newSearchParams = new URLSearchParams(searchParams);
+        newSearchParams.set('expire', value);
+        newSearchParams.delete('q'); // Remove search query if present
+        newSearchParams.set('page', '1');
+        setSearchParams(newSearchParams);
+      } else {
+        console.error('Expire filter failed:', response.error);
+        setError(response.error || 'Failed to filter vehicles by expire');
+      }
+    } catch (error) {
+      console.error('Expire filter error:', error);
+      setError('Failed to filter vehicles by expire: ' + (error as Error).message);
+    } finally {
+      setLoading(false);
+      setIsSearching(false);
+    }
+  };
+
+  const handleExpireFilterPageChange = async (page: number) => {
+    if (!expireFilter) return;
+    
+    try {
+      setIsSearching(true);
+      setLoading(true);
+      const response = await vehicleService.searchVehiclesByExpire(expireFilter, page);
+      
+      if (response.success && response.data) {
+        setVehicles(response.data.vehicles);
+        setPagination(response.data.pagination);
+        setCurrentPage(page);
+        setIsInExpireFilterMode(true);
+        // Update URL with new page
+        const newSearchParams = new URLSearchParams(searchParams);
+        newSearchParams.set('expire', expireFilter);
+        newSearchParams.set('page', page.toString());
+        setSearchParams(newSearchParams);
+      } else {
+        console.error('Expire filter page change failed:', response.error);
+        setError(response.error || 'Failed to load expire filter results');
+      }
+    } catch (error) {
+      console.error('Expire filter page change error:', error);
+      setError('Failed to load expire filter results: ' + (error as Error).message);
     } finally {
       setLoading(false);
       setIsSearching(false);
@@ -527,8 +702,8 @@ const VehicleIndexPage: React.FC = () => {
 
   const handlePageChange = (page: number) => {
     setCurrentPage(page);
-    // Update URL with new page (only if not in search mode)
-    if (!searchQuery) {
+    // Update URL with new page (only if not in search mode or expire filter mode)
+    if (!searchQuery && !expireFilter) {
       setSearchParams({ page: page.toString() });
     }
   };
@@ -729,22 +904,24 @@ const VehicleIndexPage: React.FC = () => {
                 )}
               </div>
               <Select
+                value={expireFilter || ''}
+                onChange={handleExpireFilterChange}
+                options={[
+                  { value: '', label: 'Expire in: None' },
+                  { value: '1_day', label: 'Expire in: 1 day' },
+                  { value: '3_days', label: 'Expire in: 3 days' },
+                  { value: '1_week', label: 'Expire in: 1 week' },
+                  { value: '1_month', label: 'Expire in: 1 month' },
+                  { value: '3_months', label: 'Expire in: 3 months' },
+                  { value: '6_months', label: 'Expire in: 6 months' }
+                ]}
+              />
+              <Select
                 value={filters.vehicleType || ''}
                 onChange={(value) => setFilters({ ...filters, vehicleType: value || undefined })}
                 options={[
                   { value: '', label: 'All Types' },
                   ...VEHICLE_TYPES.map(type => ({ value: type, label: type }))
-                ]}
-              />
-              <Select
-                value={filters.status || ''}
-                onChange={(value) => setFilters({ ...filters, status: value || undefined })}
-                options={[
-                  { value: '', label: 'All Status' },
-                  { value: 'active', label: 'Active' },
-                  { value: 'inactive', label: 'Inactive' },
-                  { value: 'maintenance', label: 'Maintenance' },
-                  { value: 'error', label: 'Error' }
                 ]}
               />
             </div>
@@ -753,7 +930,7 @@ const VehicleIndexPage: React.FC = () => {
 
         {/* Vehicles Table */}
         <Card>
-          {filteredVehicles.length === 0 ? (
+          {(isInSearchMode || isInExpireFilterMode ? vehicles : filteredVehicles).length === 0 ? (
             <div className="text-center py-8">
               <p className="text-gray-500">No vehicles found</p>
             </div>
@@ -777,7 +954,7 @@ const VehicleIndexPage: React.FC = () => {
                     </TableRow>
                   </TableHead>
                   <TableBody>
-                    {filteredVehicles.map((vehicle) => {
+                    {(isInSearchMode || isInExpireFilterMode ? vehicles : filteredVehicles).map((vehicle) => {
                       const vehicleState = getState(vehicle);
                       const backgroundColor = getStateBackgroundColor(vehicleState);
                       
@@ -995,7 +1172,13 @@ const VehicleIndexPage: React.FC = () => {
               <Pagination
                 currentPage={pagination.current_page}
                 totalPages={pagination.total_pages}
-                onPageChange={searchQuery ? handleSearchPageChange : handlePageChange}
+                onPageChange={
+                  searchQuery 
+                    ? handleSearchPageChange 
+                    : expireFilter 
+                      ? handleExpireFilterPageChange 
+                      : handlePageChange
+                }
                 hasNext={pagination.has_next}
                 hasPrevious={pagination.has_previous}
                 totalItems={pagination.total_items}

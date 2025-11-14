@@ -81,6 +81,27 @@ class VehicleService {
     }
   }
 
+  async searchVehiclesByExpire(expirePeriod: string, page: number = 1): Promise<{ 
+    success: boolean; 
+    data?: { vehicles: Vehicle[]; pagination: any }; 
+    error?: string 
+  }> {
+    try {
+      const response = await apiClient.get(`/api/fleet/vehicle/expire-search?expire_period=${encodeURIComponent(expirePeriod)}&page=${page}`, {
+        timeout: 120000 // 2 minutes for large responses
+      });
+      
+      if (response.data.success) {
+        return { success: true, data: response.data.data };
+      } else {
+        return { success: false, error: response.data.message || 'Failed to search vehicles by expire' };
+      }
+    } catch (error) {
+      console.error('Search vehicles by expire error:', error);
+      return { success: false, error: getErrorMessage(error) };
+    }
+  }
+
   async getVehicleByImei(imei: string): Promise<{ success: boolean; data?: Vehicle; error?: string }> {
     try {
       const response = await apiClient.get(`/api/fleet/vehicle/${imei}`, {
