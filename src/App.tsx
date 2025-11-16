@@ -46,6 +46,9 @@ import { TransactionIndexPage, WalletTransactionsPage, UserTransactionsPage } fr
 import { LunaTagIndexPage, LunaTagCreatePage, LunaTagEditPage } from './views/lunaTags';
 import { UserLunaTagIndexPage, UserLunaTagCreatePage, UserLunaTagEditPage } from './views/userLunaTags';
 import { CampaignIndexPage, CampaignCreatePage, CampaignEditPage, CampaignViewPage } from './views/phoneCall';
+import { PopupIndexPage, PopupCreatePage, PopupEditPage, PopupShowPage } from './views/notices/popups';
+import { NotificationIndexPage, NotificationCreatePage, NotificationShowPage } from './views/notices/notifications';
+import { BannerIndexPage, BannerCreatePage, BannerEditPage, BannerShowPage } from './views/notices/banners';
 import RoleBasedRoute from './components/role-based/RoleBasedRoute';
 import ModuleBasedRoute from './components/role-based/ModuleBasedRoute';
 import { ROLES } from './utils/roleUtils';
@@ -408,6 +411,68 @@ const AppRoutes: React.FC = () => {
         <Route path="users/:id/edit" element={
           <RoleBasedRoute allowedRoles={[ROLES.SUPER_ADMIN]}>
             <UserEditPage />
+          </RoleBasedRoute>
+        } />
+
+        {/* Notice Routes - Super Admin only */}
+        {/* Popup Routes */}
+        <Route path="notices/popups" element={
+          <RoleBasedRoute allowedRoles={[ROLES.SUPER_ADMIN]}>
+            <PopupIndexPage />
+          </RoleBasedRoute>
+        } />
+        <Route path="notices/popups/create" element={
+          <RoleBasedRoute allowedRoles={[ROLES.SUPER_ADMIN]}>
+            <PopupCreatePage />
+          </RoleBasedRoute>
+        } />
+        <Route path="notices/popups/:id" element={
+          <RoleBasedRoute allowedRoles={[ROLES.SUPER_ADMIN]}>
+            <PopupShowPage />
+          </RoleBasedRoute>
+        } />
+        <Route path="notices/popups/:id/edit" element={
+          <RoleBasedRoute allowedRoles={[ROLES.SUPER_ADMIN]}>
+            <PopupEditPage />
+          </RoleBasedRoute>
+        } />
+
+        {/* Notification Routes */}
+        <Route path="notices/notifications" element={
+          <RoleBasedRoute allowedRoles={[ROLES.SUPER_ADMIN]}>
+            <NotificationIndexPage />
+          </RoleBasedRoute>
+        } />
+        <Route path="notices/notifications/create" element={
+          <RoleBasedRoute allowedRoles={[ROLES.SUPER_ADMIN]}>
+            <NotificationCreatePage />
+          </RoleBasedRoute>
+        } />
+        <Route path="notices/notifications/:id" element={
+          <RoleBasedRoute allowedRoles={[ROLES.SUPER_ADMIN]}>
+            <NotificationShowPage />
+          </RoleBasedRoute>
+        } />
+
+        {/* Banner Routes */}
+        <Route path="notices/banners" element={
+          <RoleBasedRoute allowedRoles={[ROLES.SUPER_ADMIN]}>
+            <BannerIndexPage />
+          </RoleBasedRoute>
+        } />
+        <Route path="notices/banners/create" element={
+          <RoleBasedRoute allowedRoles={[ROLES.SUPER_ADMIN]}>
+            <BannerCreatePage />
+          </RoleBasedRoute>
+        } />
+        <Route path="notices/banners/:id" element={
+          <RoleBasedRoute allowedRoles={[ROLES.SUPER_ADMIN]}>
+            <BannerShowPage />
+          </RoleBasedRoute>
+        } />
+        <Route path="notices/banners/:id/edit" element={
+          <RoleBasedRoute allowedRoles={[ROLES.SUPER_ADMIN]}>
+            <BannerEditPage />
           </RoleBasedRoute>
         } />
 
