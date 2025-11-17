@@ -18,7 +18,7 @@ interface SelectProps extends BaseProps {
 }
 
 const Select = forwardRef<HTMLSelectElement, SelectProps>(({
-  options,
+  options = [],
   value,
   defaultValue,
   size = 'md',

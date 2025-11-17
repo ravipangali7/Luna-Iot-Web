@@ -10,6 +10,8 @@ export interface Wallet {
     phone: string;
     is_active: boolean;
   };
+  call_price?: number | null;
+  sms_price?: number | null;
   recent_transactions?: Transaction[];
   created_at: string;
   updated_at: string;
@@ -20,6 +22,8 @@ export interface WalletListItem {
   balance: number;
   user_name: string;
   user_phone: string;
+  call_price?: number | null;
+  sms_price?: number | null;
   created_at: string;
 }
 

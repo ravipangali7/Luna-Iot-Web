@@ -37,18 +37,23 @@ import AddUserPage from './views/users/AddUserPage';
 import SchoolIndexPage from './views/school/SchoolIndexPage';
 import SchoolShowPage from './views/school/SchoolShowPage';
 import { SchoolBusCreatePage, SchoolBusEditPage } from './views/school/schoolBuses';
+import SchoolBusViewPage from './views/school/schoolBuses/SchoolBusViewPage';
 import SchoolParentCreatePage from './views/school/schoolParents/SchoolParentCreatePage';
 import SchoolParentEditPage from './views/school/schoolParents/SchoolParentEditPage';
+import SchoolParentViewPage from './views/school/schoolParents/SchoolParentViewPage';
 import SchoolSMSCreatePage from './views/school/schoolSMS/SchoolSMSCreatePage';
 import SchoolSMSEditPage from './views/school/schoolSMS/SchoolSMSEditPage';
 import { WalletIndexPage, MyWalletPage } from './views/wallet';
 import { TransactionIndexPage, WalletTransactionsPage, UserTransactionsPage } from './views/transactions';
+import { DueTransactionIndexPage, DueTransactionShowPage } from './views/dueTransactions';
+import DueTransactionEditPage from './views/dueTransactions/DueTransactionEditPage';
 import { LunaTagIndexPage, LunaTagCreatePage, LunaTagEditPage } from './views/lunaTags';
 import { UserLunaTagIndexPage, UserLunaTagCreatePage, UserLunaTagEditPage } from './views/userLunaTags';
 import { CampaignIndexPage, CampaignCreatePage, CampaignEditPage, CampaignViewPage } from './views/phoneCall';
 import { PopupIndexPage, PopupCreatePage, PopupEditPage, PopupShowPage } from './views/notices/popups';
 import { NotificationIndexPage, NotificationCreatePage, NotificationShowPage } from './views/notices/notifications';
 import { BannerIndexPage, BannerCreatePage, BannerEditPage, BannerShowPage } from './views/notices/banners';
+import SettingsPage from './views/settings/SettingsPage';
 import RoleBasedRoute from './components/role-based/RoleBasedRoute';
 import ModuleBasedRoute from './components/role-based/ModuleBasedRoute';
 import { ROLES } from './utils/roleUtils';
@@ -507,6 +512,17 @@ const AppRoutes: React.FC = () => {
           <UserTransactionsPage />
         } />
 
+        {/* Due Transaction Routes - All authenticated users */}
+        <Route path="due-transactions" element={
+          <DueTransactionIndexPage />
+        } />
+        <Route path="due-transactions/:id" element={
+          <DueTransactionShowPage />
+        } />
+        <Route path="due-transactions/:id/edit" element={
+          <DueTransactionEditPage />
+        } />
+
         {/* Alert System Routes - Super Admin only */}
         <Route path="alert-system" element={
           <RoleBasedRoute allowedRoles={[ROLES.SUPER_ADMIN]}>
@@ -666,6 +682,11 @@ const AppRoutes: React.FC = () => {
             <SchoolBusCreatePage />
           </ModuleBasedRoute>
         } />
+        <Route path="school/:id/buses/:busId" element={
+          <ModuleBasedRoute allowedRoles={[ROLES.SUPER_ADMIN]} moduleType="school">
+            <SchoolBusViewPage />
+          </ModuleBasedRoute>
+        } />
         <Route path="school/:id/buses/:busId/edit" element={
           <ModuleBasedRoute allowedRoles={[ROLES.SUPER_ADMIN]} moduleType="school">
             <SchoolBusEditPage />
@@ -674,6 +695,11 @@ const AppRoutes: React.FC = () => {
         <Route path="school/:id/parents/create" element={
           <ModuleBasedRoute allowedRoles={[ROLES.SUPER_ADMIN]} moduleType="school">
             <SchoolParentCreatePage />
+          </ModuleBasedRoute>
+        } />
+        <Route path="school/:id/parents/:parentId" element={
+          <ModuleBasedRoute allowedRoles={[ROLES.SUPER_ADMIN]} moduleType="school">
+            <SchoolParentViewPage />
           </ModuleBasedRoute>
         } />
         <Route path="school/:id/parents/:parentId/edit" element={
@@ -690,6 +716,13 @@ const AppRoutes: React.FC = () => {
           <ModuleBasedRoute allowedRoles={[ROLES.SUPER_ADMIN]} moduleType="school">
             <SchoolSMSEditPage />
           </ModuleBasedRoute>
+        } />
+
+        {/* Settings Route - Super Admin only */}
+        <Route path="settings" element={
+          <RoleBasedRoute allowedRoles={[ROLES.SUPER_ADMIN]}>
+            <SettingsPage />
+          </RoleBasedRoute>
         } />
       </Route>
 

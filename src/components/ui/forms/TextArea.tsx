@@ -13,6 +13,7 @@ const TextArea = forwardRef<HTMLTextAreaElement, TextAreaProps>(({
   onChange,
   onBlur,
   onFocus,
+  onKeyPress,
   className = '',
   rows,
   cols,
@@ -48,6 +49,7 @@ const TextArea = forwardRef<HTMLTextAreaElement, TextAreaProps>(({
         onChange={handleChange}
         onBlur={onBlur}
         onFocus={onFocus}
+        onKeyPress={onKeyPress}
         rows={rows}
         cols={cols}
         {...props}

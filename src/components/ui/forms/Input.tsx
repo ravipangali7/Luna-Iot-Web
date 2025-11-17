@@ -14,6 +14,8 @@ const Input = forwardRef<HTMLInputElement, InputProps>(({
     onChange,
     onBlur,
     onFocus,
+    onKeyPress,
+    readOnly,
     className = '',
     icon,
     ...props
@@ -56,9 +58,11 @@ const Input = forwardRef<HTMLInputElement, InputProps>(({
                 defaultValue={type === 'file' ? undefined : defaultValue}
                 disabled={disabled}
                 required={required}
+                readOnly={readOnly}
                 onChange={handleChange}
                 onBlur={onBlur}
                 onFocus={onFocus}
+                onKeyPress={onKeyPress}
                 {...props}
             />
             {error && <span className="input__error">{error}</span>}

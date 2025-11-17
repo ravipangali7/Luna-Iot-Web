@@ -147,3 +147,39 @@ export const confirmAction = async (title: string, text?: string, confirmText: s
   
   return result.isConfirmed;
 };
+
+// Confirmation dialog with custom icon
+export const showConfirm = async (
+  title: string, 
+  text?: string, 
+  icon: 'warning' | 'question' | 'info' | 'error' | 'success' = 'question'
+): Promise<boolean> => {
+  const iconColors: Record<string, string> = {
+    warning: '#f59e0b', // amber-500
+    question: '#3b82f6', // blue-500
+    info: '#3b82f6', // blue-500
+    error: '#dc2626', // red-600
+    success: '#10b981' // green-500
+  };
+
+  const confirmColor = iconColors[icon] || iconColors.question;
+
+  const result = await Swal.fire({
+    title,
+    text: text || 'Are you sure you want to proceed?',
+    icon,
+    showCancelButton: true,
+    confirmButtonText: 'Yes',
+    cancelButtonText: 'Cancel',
+    confirmButtonColor: confirmColor,
+    cancelButtonColor: '#6b7280', // gray-500
+    focusCancel: true,
+    reverseButtons: true,
+    customClass: {
+      confirmButton: 'px-4 py-2 text-white rounded-md hover:opacity-90 focus:outline-none focus:ring-2 focus:ring-offset-2',
+      cancelButton: 'px-4 py-2 bg-gray-500 text-white rounded-md hover:bg-gray-600 focus:outline-none focus:ring-2 focus:ring-gray-400 focus:ring-offset-2 mr-3'
+    }
+  });
+  
+  return result.isConfirmed;
+};

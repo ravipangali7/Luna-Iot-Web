@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useCallback } from 'react';
-import { useParams, useNavigate } from 'react-router-dom';
+import { useParams, useNavigate, useSearchParams } from 'react-router-dom';
 import { useAuth } from '../../hooks/useAuth';
 import { instituteService, type Institute } from '../../api/services/instituteService';
 import { schoolService } from '../../api/services/schoolService';
@@ -13,6 +13,8 @@ import TableBody from '../../components/ui/tables/TableBody';
 import TableRow from '../../components/ui/tables/TableRow';
 import TableCell from '../../components/ui/tables/TableCell';
 import Button from '../../components/ui/buttons/Button';
+import Input from '../../components/ui/forms/Input';
+import Pagination from '../../components/ui/pagination/Pagination';
 import Spinner from '../../components/ui/common/Spinner';
 import Alert from '../../components/ui/common/Alert';
 import { confirmDelete, showSuccess, showError } from '../../utils/sweetAlert';
@@ -22,6 +24,7 @@ import { ROLES } from '../../utils/roleUtils';
 const SchoolShowPage: React.FC = () => {
   const { id } = useParams<{ id: string }>();
   const navigate = useNavigate();
+  const [searchParams, setSearchParams] = useSearchParams();
   const { user } = useAuth();
   const instituteId = Number(id);
   
@@ -31,6 +34,21 @@ const SchoolShowPage: React.FC = () => {
   const [schoolSMS, setSchoolSMS] = useState<SchoolSMSList[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  
+  // Pagination and search state for parents
+  const [parentsLoading, setParentsLoading] = useState(false);
+  const [searchInput, setSearchInput] = useState('');
+  const [searchQuery, setSearchQuery] = useState('');
+  const [currentPage, setCurrentPage] = useState(1);
+  const [parentsPagination, setParentsPagination] = useState({
+    current_page: 1,
+    total_pages: 1,
+    total_items: 0,
+    page_size: 25,
+    has_next: false,
+    has_previous: false
+  });
+  const [isInitialized, setIsInitialized] = useState(false);
 
   // Check if user is Super Admin
   const isSuperAdmin = user?.roles?.some(role => role.name === ROLES.SUPER_ADMIN) || false;
@@ -48,24 +66,56 @@ const SchoolShowPage: React.FC = () => {
         address: instituteData.data.address || ''
       } : null);
 
-      // Fetch all school data for this institute
-      const [busesData, parentsData, smsData] = await Promise.all([
+      // Fetch buses and SMS (not paginated)
+      const [busesData, smsData] = await Promise.all([
         schoolService.getSchoolBusesByInstitute(instituteId),
-        schoolService.getSchoolParentsByInstitute(instituteId),
         schoolService.getSchoolSMSByInstitute(instituteId)
       ]);
 
       setSchoolBuses(busesData.success && busesData.data ? busesData.data : []);
-      setSchoolParents(parentsData.success && parentsData.data ? parentsData.data : []);
       setSchoolSMS(smsData.success && smsData.data ? smsData.data : []);
     } catch (err) {
       console.error('Error fetching data:', err);
       setError('Failed to load school data. Please try again.');
       setSchoolBuses([]);
-      setSchoolParents([]);
       setSchoolSMS([]);
     } finally {
       setLoading(false);
+    }
+  }, [instituteId]);
+
+  const loadParents = useCallback(async (page: number = 1, search?: string) => {
+    try {
+      setParentsLoading(true);
+      setError(null);
+
+      const response = await schoolService.getSchoolParentsByInstitutePaginated(
+        instituteId,
+        page,
+        25,
+        search
+      );
+
+      if (response.success && response.data) {
+        setSchoolParents(response.data.school_parents);
+        setParentsPagination({
+          current_page: response.data.pagination.current_page,
+          total_pages: response.data.pagination.total_pages,
+          total_items: response.data.pagination.total_items,
+          page_size: 25,
+          has_next: response.data.pagination.has_next,
+          has_previous: response.data.pagination.has_previous
+        });
+      } else {
+        setError(response.error || 'Failed to load school parents');
+        setSchoolParents([]);
+      }
+    } catch (err) {
+      console.error('Error fetching parents:', err);
+      setError('Failed to load school parents. Please try again.');
+      setSchoolParents([]);
+    } finally {
+      setParentsLoading(false);
     }
   }, [instituteId]);
 
@@ -74,6 +124,64 @@ const SchoolShowPage: React.FC = () => {
       fetchData();
     }
   }, [instituteId, fetchData]);
+
+  // Handle URL parameters for search and pagination
+  useEffect(() => {
+    const urlSearchQuery = searchParams.get('q');
+    const urlPage = searchParams.get('page');
+    
+    if (urlSearchQuery) {
+      setSearchInput(urlSearchQuery);
+      setSearchQuery(urlSearchQuery);
+      const page = urlPage ? parseInt(urlPage) : 1;
+      setCurrentPage(page);
+      loadParents(page, urlSearchQuery);
+    } else if (!isInitialized) {
+      const page = urlPage ? parseInt(urlPage) : 1;
+      setCurrentPage(page);
+      loadParents(page);
+    }
+    
+    setIsInitialized(true);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [searchParams, isInitialized]);
+
+  // Handle page changes
+  useEffect(() => {
+    if (isInitialized && currentPage) {
+      if (searchQuery) {
+        loadParents(currentPage, searchQuery);
+      } else {
+        loadParents(currentPage);
+      }
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [currentPage, isInitialized, searchQuery]);
+
+  const handleSearch = async () => {
+    if (!searchInput.trim()) {
+      setSearchQuery('');
+      setSearchParams({});
+      setCurrentPage(1);
+      loadParents(1);
+      return;
+    }
+    
+    setSearchQuery(searchInput.trim());
+    setCurrentPage(1);
+    setSearchParams({ q: searchInput.trim(), page: '1' });
+    loadParents(1, searchInput.trim());
+  };
+
+  const handlePageChange = (page: number) => {
+    setCurrentPage(page);
+    const newParams = new URLSearchParams(searchParams);
+    if (searchQuery) {
+      newParams.set('q', searchQuery);
+    }
+    newParams.set('page', page.toString());
+    setSearchParams(newParams);
+  };
 
   const handleAddBus = () => {
     navigate(`/school/${instituteId}/buses/create`);
@@ -143,7 +251,11 @@ const SchoolShowPage: React.FC = () => {
             break;
         }
         showSuccess(`${type.charAt(0).toUpperCase() + type.slice(1)} deleted successfully`);
-        fetchData();
+        if (type === 'parents') {
+          loadParents(currentPage, searchQuery || undefined);
+        } else {
+          fetchData();
+        }
       } catch (err) {
         console.error(`Error deleting ${type}:`, err);
         showError(`Failed to delete ${type}. Please try again.`);
@@ -329,6 +441,19 @@ const SchoolShowPage: React.FC = () => {
                       <TableCell>
                         <div className="flex space-x-2">
                           <Button
+                            variant="primary"
+                            size="sm"
+                            onClick={() => navigate(`/school/${instituteId}/buses/${item.id}`)}
+                            icon={
+                              <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
+                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z" />
+                              </svg>
+                            }
+                          >
+                            View
+                          </Button>
+                          <Button
                             variant="secondary"
                             size="sm"
                             onClick={() => handleEdit('buses', item.id)}
@@ -367,69 +492,143 @@ const SchoolShowPage: React.FC = () => {
         {/* School Parents Table */}
         <Card className="mb-6">
           <div className="p-6">
-            <h3 className="text-lg font-semibold text-gray-900 mb-4">School Parents ({schoolParents.length})</h3>
-            {schoolParents.length === 0 ? (
+            <div className="flex justify-between items-center mb-4">
+              <h3 className="text-lg font-semibold text-gray-900">
+                School Parents ({parentsPagination.total_items})
+              </h3>
+              <div className="flex items-center space-x-2">
+                <Input
+                  type="text"
+                  placeholder="Search by parent name, phone, or child name..."
+                  value={searchInput}
+                  onChange={(value) => setSearchInput(value)}
+                  onKeyPress={(e) => {
+                    if (e.key === 'Enter') {
+                      handleSearch();
+                    }
+                  }}
+                  className="w-64"
+                />
+                <Button
+                  variant="secondary"
+                  size="sm"
+                  onClick={handleSearch}
+                >
+                  Search
+                </Button>
+                {searchQuery && (
+                  <Button
+                    variant="secondary"
+                    size="sm"
+                    onClick={() => {
+                      setSearchInput('');
+                      setSearchQuery('');
+                      setSearchParams({});
+                      setCurrentPage(1);
+                      loadParents(1);
+                    }}
+                  >
+                    Clear
+                  </Button>
+                )}
+              </div>
+            </div>
+            {parentsLoading ? (
+              <div className="flex justify-center items-center py-8">
+                <Spinner size="lg" />
+              </div>
+            ) : schoolParents.length === 0 ? (
               <div className="text-center py-8 text-gray-500">
-                No school parents found. Click "Add Parents" to create one.
+                {searchQuery ? 'No school parents found matching your search.' : 'No school parents found. Click "Add Parents" to create one.'}
               </div>
             ) : (
-              <Table striped hover>
-                <TableHead>
-                  <TableRow>
-                    <TableHeader>Parent Name</TableHeader>
-                    <TableHeader>Phone</TableHeader>
-                    <TableHeader>Buses Assigned</TableHeader>
-                    <TableHeader>Location</TableHeader>
-                    <TableHeader>Created At</TableHeader>
-                    <TableHeader>Actions</TableHeader>
-                  </TableRow>
-                </TableHead>
-                <TableBody>
-                  {schoolParents.map(item => (
-                    <TableRow key={item.id}>
-                      <TableCell className="font-medium text-gray-900">{item.parent_name}</TableCell>
-                      <TableCell className="text-gray-600">{item.parent_phone}</TableCell>
-                      <TableCell className="text-gray-600">{item.school_buses_count}</TableCell>
-                      <TableCell className="text-gray-600">
-                        {item.latitude && item.longitude 
-                          ? `${Number(item.latitude).toFixed(6)}, ${Number(item.longitude).toFixed(6)}`
-                          : 'N/A'}
-                      </TableCell>
-                      <TableCell className="text-gray-600">{formatDate(item.created_at)}</TableCell>
-                      <TableCell>
-                        <div className="flex space-x-2">
-                          <Button
-                            variant="secondary"
-                            size="sm"
-                            onClick={() => handleEdit('parents', item.id)}
-                            icon={
-                              <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z" />
-                              </svg>
-                            }
-                          >
-                            Edit
-                          </Button>
-                          {isSuperAdmin && (
+              <>
+                <Table striped hover>
+                  <TableHead>
+                    <TableRow>
+                      <TableHeader>Parent Name</TableHeader>
+                      <TableHeader>Child Name</TableHeader>
+                      <TableHeader>Phone</TableHeader>
+                      <TableHeader>Buses Assigned</TableHeader>
+                      <TableHeader>Location</TableHeader>
+                      <TableHeader>Created At</TableHeader>
+                      <TableHeader>Actions</TableHeader>
+                    </TableRow>
+                  </TableHead>
+                  <TableBody>
+                    {schoolParents.map(item => (
+                      <TableRow key={item.id}>
+                        <TableCell className="font-medium text-gray-900">{item.parent_name}</TableCell>
+                        <TableCell className="text-gray-600">{item.child_name || 'N/A'}</TableCell>
+                        <TableCell className="text-gray-600">{item.parent_phone}</TableCell>
+                        <TableCell className="text-gray-600">{item.school_buses_count}</TableCell>
+                        <TableCell className="text-gray-600">
+                          {item.latitude && item.longitude 
+                            ? `${Number(item.latitude).toFixed(6)}, ${Number(item.longitude).toFixed(6)}`
+                            : 'N/A'}
+                        </TableCell>
+                        <TableCell className="text-gray-600">{formatDate(item.created_at)}</TableCell>
+                        <TableCell>
+                          <div className="flex space-x-2">
                             <Button
-                              variant="danger"
+                              variant="primary"
                               size="sm"
-                              onClick={() => handleDelete('parents', item.id, item.parent_name)}
+                              onClick={() => navigate(`/school/${instituteId}/parents/${item.id}`)}
                               icon={
                                 <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
+                                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
+                                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z" />
                                 </svg>
                               }
                             >
-                              Delete
+                              View
                             </Button>
-                          )}
-                        </div>
-                      </TableCell>
-                    </TableRow>
-                  ))}
-                </TableBody>
-              </Table>
+                            <Button
+                              variant="secondary"
+                              size="sm"
+                              onClick={() => handleEdit('parents', item.id)}
+                              icon={
+                                <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z" />
+                                </svg>
+                              }
+                            >
+                              Edit
+                            </Button>
+                            {isSuperAdmin && (
+                              <Button
+                                variant="danger"
+                                size="sm"
+                                onClick={() => handleDelete('parents', item.id, item.parent_name)}
+                                icon={
+                                  <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
+                                  </svg>
+                                }
+                              >
+                                Delete
+                              </Button>
+                            )}
+                          </div>
+                        </TableCell>
+                      </TableRow>
+                    ))}
+                  </TableBody>
+                </Table>
+                {parentsPagination.total_pages > 1 && (
+                  <div className="mt-4">
+                    <Pagination
+                      currentPage={parentsPagination.current_page}
+                      totalPages={parentsPagination.total_pages}
+                      onPageChange={handlePageChange}
+                      hasNext={parentsPagination.has_next}
+                      hasPrevious={parentsPagination.has_previous}
+                      totalItems={parentsPagination.total_items}
+                      pageSize={parentsPagination.page_size}
+                    />
+                  </div>
+                )}
+              </>
             )}
           </div>
         </Card>

@@ -190,6 +190,33 @@ class SchoolService {
     }
   }
 
+  async getSchoolParentsByInstitutePaginated(
+    instituteId: number, 
+    page: number = 1, 
+    pageSize: number = 25, 
+    search?: string
+  ): Promise<{ 
+    success: boolean; 
+    data?: { school_parents: SchoolParentList[]; pagination: any }; 
+    error?: string 
+  }> {
+    try {
+      let url = `/api/school/school-parents/by-institute/${instituteId}/?page=${page}&page_size=${pageSize}`;
+      if (search) url += `&search=${encodeURIComponent(search)}`;
+      
+      const response = await apiClient.get(url);
+      
+      if (response.data.success) {
+        return { success: true, data: response.data.data };
+      } else {
+        return { success: false, error: response.data.message || 'Failed to fetch school parents' };
+      }
+    } catch (error) {
+      console.error('Get school parents by institute paginated error:', error);
+      return { success: false, error: getErrorMessage(error) };
+    }
+  }
+
   async getSchoolParentsByBus(busId: number): Promise<{ success: boolean; data?: SchoolParentList[]; error?: string }> {
     try {
       const response = await apiClient.get(`/api/school/school-parents/by-bus/${busId}/`);

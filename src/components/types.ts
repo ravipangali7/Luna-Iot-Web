@@ -41,6 +41,7 @@ export interface InputProps extends BaseProps {
   onChange?: (value: string) => void;
   onBlur?: () => void;
   onFocus?: () => void;
+  onKeyPress?: (e: React.KeyboardEvent<HTMLInputElement>) => void;
   min?: string;
   max?: string;
   step?: string;
@@ -48,6 +49,7 @@ export interface InputProps extends BaseProps {
   name?: string;
   icon?: React.ReactNode;
   maxLength?: number;
+  readOnly?: boolean;
 }
 
 export interface TableProps extends BaseProps {
@@ -93,9 +95,10 @@ export interface SpinnerProps extends BaseProps {
   color?: 'primary' | 'secondary' | 'white';
 }
 
-export interface TextAreaProps extends InputProps {
+export interface TextAreaProps extends Omit<InputProps, 'onKeyPress'> {
   rows?: number;
   cols?: number;
+  onKeyPress?: (e: React.KeyboardEvent<HTMLTextAreaElement>) => void;
 }
 
 export interface SelectProps extends BaseProps {

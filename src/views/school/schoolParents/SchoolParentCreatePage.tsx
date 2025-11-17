@@ -156,12 +156,38 @@ const SchoolParentCreatePage: React.FC = () => {
 
       const results = await Promise.all(createPromises);
       const failed = results.filter(r => !r.success);
+      const duplicateErrors: string[] = [];
+      const otherErrors: string[] = [];
+      
+      failed.forEach((result, index) => {
+        const errorMsg = result.error || 'Unknown error';
+        if (errorMsg.includes('already associated') || errorMsg.includes('duplicate')) {
+          const userId = Array.from(selectedUsers)[index];
+          const user = searchResults.find(r => r.user.id === userId);
+          duplicateErrors.push(user ? `${user.user.name || user.user.phone}: ${errorMsg}` : errorMsg);
+        } else {
+          otherErrors.push(errorMsg);
+        }
+      });
       
       if (failed.length === 0) {
         showSuccess(`Successfully created ${selectedUsers.size} parent record(s)`);
         navigate(`/school/${instituteId}`);
       } else {
         const successCount = selectedUsers.size - failed.length;
+        let errorMessage = '';
+        
+        if (duplicateErrors.length > 0) {
+          errorMessage = `Duplicate entries detected:\n${duplicateErrors.join('\n')}`;
+          if (otherErrors.length > 0) {
+            errorMessage += `\n\nOther errors:\n${otherErrors.join('\n')}`;
+          }
+        } else {
+          errorMessage = otherErrors.join('\n');
+        }
+        
+        setError(errorMessage);
+        
         if (successCount > 0) {
           showSuccess(`Created ${successCount} parent record(s), but ${failed.length} failed`);
         } else {
@@ -170,7 +196,9 @@ const SchoolParentCreatePage: React.FC = () => {
       }
     } catch (err: any) {
       console.error('Error creating school parents:', err);
-      setError(err.response?.data?.message || 'Failed to create school parents. Please try again.');
+      const errorMsg = err.response?.data?.message || err.message || 'Failed to create school parents. Please try again.';
+      setError(errorMsg);
+      showError(errorMsg);
     } finally {
       setLoading(false);
     }

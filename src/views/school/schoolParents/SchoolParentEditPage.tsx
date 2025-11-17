@@ -19,7 +19,8 @@ const SchoolParentEditPage: React.FC = () => {
     parent: 0,
     school_buses: [],
     latitude: undefined,
-    longitude: undefined
+    longitude: undefined,
+    child_name: undefined
   });
   const [parentData, setParentData] = useState<SchoolParent | null>(null);
   const [schoolBuses, setSchoolBuses] = useState<SchoolBusList[]>([]);
@@ -42,7 +43,8 @@ const SchoolParentEditPage: React.FC = () => {
             parent: parentRes.data.parent.id,
             school_buses: parentRes.data.school_buses || [],
             latitude: parentRes.data.latitude,
-            longitude: parentRes.data.longitude
+            longitude: parentRes.data.longitude,
+            child_name: parentRes.data.child_name
           });
         } else {
           setError(parentRes.error || 'Failed to load parent data');
@@ -146,6 +148,22 @@ const SchoolParentEditPage: React.FC = () => {
               <p className="text-sm text-gray-500 mt-1">
                 Parent user cannot be changed
               </p>
+            </div>
+
+            {/* Child Name */}
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-2">
+                Child Name
+              </label>
+              <Input
+                type="text"
+                placeholder="Enter child name"
+                value={formData.child_name || ''}
+                onChange={(value) => setFormData(prev => ({
+                  ...prev,
+                  child_name: value || undefined
+                }))}
+              />
             </div>
 
             {/* School Bus Selection */}

@@ -76,6 +76,8 @@ export interface InstituteModule {
     is_active: boolean;
   }>;
   user_count: number;
+  expire_date?: string | null;
+  renewal_price?: number | null;
   created_at: string;
   updated_at: string;
 }
@@ -84,12 +86,16 @@ export interface InstituteModuleCreate {
   institute: number;
   module: number;
   user_ids?: number[];
+  expire_date?: string | null;
+  renewal_price?: number | null;
 }
 
 export interface InstituteModuleUpdate {
   institute?: number;
   module?: number;
   user_ids?: number[];
+  expire_date?: string | null;
+  renewal_price?: number | null;
 }
 
 class InstituteServiceAPI {

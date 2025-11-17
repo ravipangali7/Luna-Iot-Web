@@ -44,6 +44,7 @@ export interface SchoolParent {
   school_buses: number[];
   latitude?: number;
   longitude?: number;
+  child_name?: string;
   created_at: string;
   updated_at: string;
 }
@@ -53,6 +54,7 @@ export interface SchoolParentFormData {
   school_buses: number[];
   latitude?: number;
   longitude?: number;
+  child_name?: string;
 }
 
 export interface SchoolParentList {
@@ -62,6 +64,7 @@ export interface SchoolParentList {
   school_buses_count: number;
   latitude?: number;
   longitude?: number;
+  child_name?: string;
   created_at: string;
 }
 
