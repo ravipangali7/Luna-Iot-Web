@@ -31,6 +31,7 @@ const DueTransactionShowPage: React.FC = () => {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [processing, setProcessing] = useState(false);
+  const [processingParticularId, setProcessingParticularId] = useState<number | null>(null);
 
   useEffect(() => {
     if (id) {
@@ -141,6 +142,35 @@ const DueTransactionShowPage: React.FC = () => {
       showError('Update Error', 'An unexpected error occurred');
     } finally {
       setProcessing(false);
+    }
+  };
+
+  const handlePayParticular = async (particularId: number, total: number) => {
+    if (!dueTransaction) return;
+    
+    const totalAmount = typeof total === 'string' ? parseFloat(total) : total;
+    const confirmed = await showConfirm(
+      'Pay Particular',
+      `Are you sure you want to pay Rs. ${(isNaN(totalAmount) ? 0 : totalAmount).toFixed(2)} for this vehicle? This will create a separate paid due transaction and renew the vehicle.`,
+      'warning'
+    );
+    
+    if (!confirmed) return;
+
+    try {
+      setProcessingParticularId(particularId);
+      const result = await dueTransactionService.payParticular(particularId);
+      
+      if (result.success) {
+        showSuccess('Payment Successful', 'Particular has been paid successfully. Vehicle has been renewed.');
+        loadDueTransaction();
+      } else {
+        showError('Payment Failed', result.error || 'Failed to process payment');
+      }
+    } catch (error) {
+      showError('Payment Error', 'An unexpected error occurred during payment');
+    } finally {
+      setProcessingParticularId(null);
     }
   };
 
@@ -321,10 +351,14 @@ const DueTransactionShowPage: React.FC = () => {
                   <TableRow>
                     <TableHeader>Particular</TableHeader>
                     <TableHeader>Type</TableHeader>
+                    <TableHeader>Vehicle</TableHeader>
                     <TableHeader>Institute</TableHeader>
                     <TableHeader>Amount</TableHeader>
                     <TableHeader>Quantity</TableHeader>
                     <TableHeader>Total</TableHeader>
+                    {!dueTransaction.is_paid && (
+                      <TableHeader>Actions</TableHeader>
+                    )}
                   </TableRow>
                 </TableHead>
                 <TableBody>
@@ -345,10 +379,33 @@ const DueTransactionShowPage: React.FC = () => {
                           {particular.type}
                         </span>
                       </TableCell>
+                      <TableCell>
+                        {particular.vehicle_info ? (
+                          <div>
+                            <div>{particular.vehicle_info.name}</div>
+                            <small style={{ color: '#666' }}>{particular.vehicle_info.vehicleNo}</small>
+                          </div>
+                        ) : 'N/A'}
+                      </TableCell>
                       <TableCell>{particular.institute_name || 'N/A'}</TableCell>
                       <TableCell>{formatCurrency(particular.amount)}</TableCell>
                       <TableCell>{particular.quantity}</TableCell>
                       <TableCell><strong>{formatCurrency(particular.total)}</strong></TableCell>
+                      {!dueTransaction.is_paid && (
+                        <TableCell>
+                          {particular.type === 'vehicle' && particular.vehicle_id && (
+                            <Button
+                              variant="primary"
+                              size="sm"
+                              onClick={() => handlePayParticular(particular.id, particular.total)}
+                              disabled={processing || processingParticularId === particular.id}
+                            >
+                              <PaymentIcon style={{ marginRight: '0.25rem', fontSize: '1rem' }} />
+                              Pay
+                            </Button>
+                          )}
+                        </TableCell>
+                      )}
                     </TableRow>
                   ))}
                 </TableBody>

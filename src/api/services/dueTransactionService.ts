@@ -131,6 +131,25 @@ class DueTransactionService {
     }
   }
 
+  async payParticular(particularId: number): Promise<{ success: boolean; data?: DueTransaction; error?: string }> {
+    try {
+      const response = await apiClient.post(
+        `/api/finance/due-transaction/particular/${particularId}/pay/`,
+        {},
+        { timeout: 30000 }
+      );
+      
+      if (response.data.success) {
+        return { success: true, data: response.data.data };
+      } else {
+        return { success: false, error: response.data.message || 'Failed to pay particular' };
+      }
+    } catch (error) {
+      console.error('Pay particular error:', error);
+      return { success: false, error: getErrorMessage(error) };
+    }
+  }
+
   async markAsPaid(dueTransactionId: number): Promise<{ success: boolean; data?: DueTransaction; error?: string }> {
     try {
       const response = await apiClient.post(

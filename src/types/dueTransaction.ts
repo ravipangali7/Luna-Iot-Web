@@ -4,6 +4,14 @@ export interface DueTransactionParticular {
   type: 'vehicle' | 'parent';
   institute?: number | null;
   institute_name?: string;
+  vehicle?: number | null;
+  vehicle_id?: number | null;
+  vehicle_info?: {
+    id: number;
+    imei: string;
+    name: string;
+    vehicleNo: string;
+  } | null;
   amount: number;
   quantity: number;
   total: number;
