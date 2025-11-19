@@ -186,7 +186,7 @@ class VehicleAccessService {
   // Remove vehicle access by user ID - for backend compatibility
   async deleteVehicleAccessById(imei: string, userId: number): Promise<{ success: boolean; error?: string }> {
     try {
-      const response = await apiClient.delete('/api/fleet/vehicle/access', {
+      const response = await apiClient.delete('/api/fleet/vehicle/access/remove', {
         data: { imei, userId },
         timeout: 30000
       });
