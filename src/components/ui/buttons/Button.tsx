@@ -10,6 +10,7 @@ interface ButtonProps extends BaseProps {
   loading?: boolean;
   onClick?: () => void;
   icon?: React.ReactNode;
+  fullWidth?: boolean;
 }
 
 const Button: React.FC<ButtonProps> = ({
@@ -22,6 +23,7 @@ const Button: React.FC<ButtonProps> = ({
   onClick,
   className = '',
   icon,
+  fullWidth = false,
   ...props
 }) => {
   const baseClasses = 'btn';
@@ -29,6 +31,7 @@ const Button: React.FC<ButtonProps> = ({
   const sizeClasses = `btn--${size}`;
   const stateClasses = disabled ? 'btn--disabled' : '';
   const loadingClasses = loading ? 'btn--loading' : '';
+  const fullWidthClasses = fullWidth ? 'w-full' : '';
   
   const combinedClasses = [
     baseClasses,
@@ -36,6 +39,7 @@ const Button: React.FC<ButtonProps> = ({
     sizeClasses,
     stateClasses,
     loadingClasses,
+    fullWidthClasses,
     className
   ].filter(Boolean).join(' ');
 

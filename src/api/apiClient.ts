@@ -8,6 +8,7 @@ export const apiClient = axios.create({
     'Content-Type': 'application/json',
     'Accept': 'application/json',
   },
+  withCredentials: true, // Enable cookies/session for cart functionality
 });
 
 // Request interceptor to add auth headers

@@ -1,14 +1,13 @@
 import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { subscriptionPlanService } from '../../api/services/subscriptionPlanService';
-import { confirmDelete, showSuccess, showError } from '../../utils/sweetAlert';
-import type { SubscriptionPlan } from '../../types/subscriptionPlan';
+import { deviceOrderService } from '../../api/services/deviceOrderService';
+import type { DeviceOrder } from '../../types/deviceOrder';
 import Container from '../../components/ui/layout/Container';
 import Card from '../../components/ui/cards/Card';
 import CardBody from '../../components/ui/cards/CardBody';
 import Button from '../../components/ui/buttons/Button';
-import { EditActionButton, DeleteActionButton, ActionButtonGroup } from '../../components/ui/buttons';
 import Input from '../../components/ui/forms/Input';
+import Select from '../../components/ui/forms/Select';
 import Table from '../../components/ui/tables/Table';
 import TableHead from '../../components/ui/tables/TableHead';
 import TableHeader from '../../components/ui/tables/TableHeader';
@@ -19,21 +18,20 @@ import Badge from '../../components/ui/common/Badge';
 import Spinner from '../../components/ui/common/Spinner';
 import Alert from '../../components/ui/common/Alert';
 import Pagination from '../../components/ui/pagination/Pagination';
-import RoleBasedWidget from '../../components/role-based/RoleBasedWidget';
-import { ROLES } from '../../utils/roleUtils';
-import AddIcon from '@mui/icons-material/Add';
 import SearchIcon from '@mui/icons-material/Search';
 import RefreshIcon from '@mui/icons-material/Refresh';
+import VisibilityIcon from '@mui/icons-material/Visibility';
 
-const SubscriptionPlanIndexPage: React.FC = () => {
+const OrderIndexPage: React.FC = () => {
   const navigate = useNavigate();
-  const [subscriptionPlans, setSubscriptionPlans] = useState<SubscriptionPlan[]>([]);
+  const [orders, setOrders] = useState<DeviceOrder[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [searchQuery, setSearchQuery] = useState('');
   const [searchInput, setSearchInput] = useState('');
-  
-  // Pagination state
+  const [statusFilter, setStatusFilter] = useState<string>('');
+  const [paymentStatusFilter, setPaymentStatusFilter] = useState<string>('');
+
   const [currentPage, setCurrentPage] = useState(1);
   const [pagination, setPagination] = useState({
     current_page: 1,
@@ -43,31 +41,31 @@ const SubscriptionPlanIndexPage: React.FC = () => {
     has_previous: false,
   });
 
-  const fetchSubscriptionPlans = async (page: number = 1, search: string = '') => {
+  const fetchOrders = async (page: number = 1, search: string = '', status: string = '', paymentStatus: string = '') => {
     try {
       setLoading(true);
       setError(null);
-      
-      const response = await subscriptionPlanService.getSubscriptionPlansPaginated(page, search);
-      
+
+      const response = await deviceOrderService.getOrders(page, search, status || undefined, paymentStatus || undefined);
+
       if (response.success && response.data) {
-        setSubscriptionPlans(response.data.subscription_plans);
+        setOrders(response.data.orders);
         setPagination(response.data.pagination);
         setCurrentPage(response.data.pagination.current_page);
       } else {
-        setError(response.error || 'Failed to fetch subscription plans');
+        setError(response.error || 'Failed to fetch orders');
       }
     } catch (err) {
       setError('An unexpected error occurred');
-      console.error('Error fetching subscription plans:', err);
+      console.error('Error fetching orders:', err);
     } finally {
       setLoading(false);
     }
   };
 
   useEffect(() => {
-    fetchSubscriptionPlans(currentPage, searchQuery);
-  }, [currentPage, searchQuery]);
+    fetchOrders(currentPage, searchQuery, statusFilter, paymentStatusFilter);
+  }, [currentPage, searchQuery, statusFilter, paymentStatusFilter]);
 
   const handleSearch = (e: React.FormEvent) => {
     e.preventDefault();
@@ -79,37 +77,14 @@ const SubscriptionPlanIndexPage: React.FC = () => {
     setCurrentPage(page);
   };
 
-  const handleDelete = async (id: number, title: string) => {
-    const confirmed = await confirmDelete(
-      'Delete Subscription Plan',
-      `Are you sure you want to delete "${title}"? This action cannot be undone.`
-    );
-
-    if (confirmed) {
-      try {
-        const response = await subscriptionPlanService.deleteSubscriptionPlan(id);
-        
-        if (response.success) {
-          showSuccess('Subscription plan deleted successfully');
-          fetchSubscriptionPlans(currentPage, searchQuery);
-        } else {
-          showError(response.error || 'Failed to delete subscription plan');
-        }
-      } catch (err) {
-        showError('An unexpected error occurred');
-        console.error('Error deleting subscription plan:', err);
-      }
-    }
-  };
-
   const handleRefresh = () => {
-    fetchSubscriptionPlans(currentPage, searchQuery);
+    fetchOrders(currentPage, searchQuery, statusFilter, paymentStatusFilter);
   };
 
   const formatPrice = (price: number | string | null | undefined) => {
-    if (price === null || price === undefined) return 'N/A';
+    if (price === null || price === undefined) return 'Rs 0.00';
     const numPrice = typeof price === 'string' ? parseFloat(price) : price;
-    if (isNaN(numPrice)) return 'N/A';
+    if (isNaN(numPrice)) return 'Rs 0.00';
     return `Rs ${numPrice.toFixed(2)}`;
   };
 
@@ -121,7 +96,25 @@ const SubscriptionPlanIndexPage: React.FC = () => {
     });
   };
 
-  if (loading && subscriptionPlans.length === 0) {
+  const getStatusBadge = (status: string) => {
+    const variants: { [key: string]: 'info' | 'warning' | 'success' } = {
+      accepted: 'info',
+      preparing: 'warning',
+      dispatch: 'success',
+    };
+    return <Badge variant={variants[status] || 'info'} size="sm">{status}</Badge>;
+  };
+
+  const getPaymentStatusBadge = (status: string) => {
+    const variants: { [key: string]: 'warning' | 'danger' | 'success' } = {
+      pending: 'warning',
+      failed: 'danger',
+      completed: 'success',
+    };
+    return <Badge variant={variants[status] || 'warning'} size="sm">{status}</Badge>;
+  };
+
+  if (loading && orders.length === 0) {
     return (
       <Container>
         <div className="flex justify-center items-center min-h-96">
@@ -137,10 +130,8 @@ const SubscriptionPlanIndexPage: React.FC = () => {
         {/* Header */}
         <div className="flex justify-between items-center">
           <div>
-            <h1 className="text-2xl font-bold text-gray-900">Subscription Plans</h1>
-            <p className="text-gray-600">
-              Manage subscription plans and their permissions
-            </p>
+            <h1 className="text-2xl font-bold text-gray-900">Device Orders</h1>
+            <p className="text-gray-600">View and track your device orders</p>
           </div>
           <div className="flex gap-2">
             <Button
@@ -150,28 +141,25 @@ const SubscriptionPlanIndexPage: React.FC = () => {
             >
               Refresh
             </Button>
-            <RoleBasedWidget allowedRoles={[ROLES.SUPER_ADMIN]}>
-              <Button
-                variant="primary"
-                onClick={() => navigate('/subscription-plans/create')}
-                icon={<AddIcon className="w-4 h-4" />}
-              >
-                Add Subscription Plan
-              </Button>
-            </RoleBasedWidget>
+            <Button
+              variant="primary"
+              onClick={() => navigate('/device-orders/catalog')}
+            >
+              New Order
+            </Button>
           </div>
         </div>
 
         {/* Search and Filters */}
         <Card>
           <CardBody>
-            <div className="flex flex-col sm:flex-row gap-4">
-              <form onSubmit={handleSearch} className="flex-1 flex gap-2">
+            <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
+              <form onSubmit={handleSearch} className="md:col-span-2 flex gap-2">
                 <div className="relative flex-1">
                   <SearchIcon className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 w-4 h-4" />
                   <Input
                     type="text"
-                    placeholder="Search subscription plans..."
+                    placeholder="Search orders..."
                     value={searchInput}
                     onChange={(value) => setSearchInput(value)}
                     className="pl-10"
@@ -181,6 +169,34 @@ const SubscriptionPlanIndexPage: React.FC = () => {
                   Search
                 </Button>
               </form>
+
+              <Select
+                value={statusFilter}
+                onChange={(value) => {
+                  setStatusFilter(value);
+                  setCurrentPage(1);
+                }}
+                options={[
+                  { value: '', label: 'All Statuses' },
+                  { value: 'accepted', label: 'Accepted' },
+                  { value: 'preparing', label: 'Preparing' },
+                  { value: 'dispatch', label: 'Dispatch' },
+                ]}
+              />
+
+              <Select
+                value={paymentStatusFilter}
+                onChange={(value) => {
+                  setPaymentStatusFilter(value);
+                  setCurrentPage(1);
+                }}
+                options={[
+                  { value: '', label: 'All Payment Statuses' },
+                  { value: 'pending', label: 'Pending' },
+                  { value: 'failed', label: 'Failed' },
+                  { value: 'completed', label: 'Completed' },
+                ]}
+              />
             </div>
           </CardBody>
         </Card>
@@ -192,76 +208,77 @@ const SubscriptionPlanIndexPage: React.FC = () => {
           </Alert>
         )}
 
-        {/* Subscription Plans Table */}
+        {/* Orders Table */}
         <Card>
           <CardBody>
             {loading ? (
               <div className="flex justify-center items-center py-8">
                 <Spinner size="md" color="primary" />
               </div>
-            ) : subscriptionPlans.length === 0 ? (
+            ) : orders.length === 0 ? (
               <div className="text-center py-8">
-                <p className="text-gray-500">No subscription plans found</p>
-                {searchQuery && (
-                  <p className="text-sm text-gray-400 mt-1">
-                    Try adjusting your search criteria
-                  </p>
-                )}
+                <p className="text-gray-500">No orders found</p>
               </div>
             ) : (
               <>
                 <Table striped hover>
                   <TableHead>
                     <TableRow>
-                      <TableHeader>Title</TableHeader>
-                      <TableHeader>Price</TableHeader>
-                      <TableHeader>Dealer Price</TableHeader>
-                      <TableHeader>Purchasing Price</TableHeader>
-                      <TableHeader>Permissions</TableHeader>
-                      <TableHeader>Created</TableHeader>
+                      <TableHeader>Order ID</TableHeader>
+                      <TableHeader>User</TableHeader>
+                      <TableHeader>Status</TableHeader>
+                      <TableHeader>Payment Status</TableHeader>
+                      <TableHeader>Items</TableHeader>
+                      <TableHeader>Total</TableHeader>
+                      <TableHeader>Date</TableHeader>
                       <TableHeader>Actions</TableHeader>
                     </TableRow>
                   </TableHead>
                   <TableBody>
-                    {subscriptionPlans.map((plan) => (
-                      <TableRow key={plan.id}>
+                    {orders.map((order) => (
+                      <TableRow key={order.id}>
                         <TableCell>
-                          <div className="font-medium text-gray-900">{plan.title}</div>
+                          <div className="font-medium text-gray-900">#{order.id}</div>
+                        </TableCell>
+                        <TableCell>
+                          <div className="text-sm">
+                            {order.user_info?.name || 'N/A'}
+                            <div className="text-gray-500">{order.user_info?.phone}</div>
+                          </div>
+                        </TableCell>
+                        <TableCell>
+                          {getStatusBadge(order.status)}
+                        </TableCell>
+                        <TableCell>
+                          {getPaymentStatusBadge(order.payment_status)}
+                        </TableCell>
+                        <TableCell>
+                          <span className="text-sm">{order.items_count || 0} items</span>
+                          {order.total_quantity && (
+                            <div className="text-xs text-gray-500">
+                              {order.total_quantity} devices
+                            </div>
+                          )}
                         </TableCell>
                         <TableCell>
                           <span className="font-semibold text-green-600">
-                            {formatPrice(plan.price)}
+                            {formatPrice(order.total)}
                           </span>
-                        </TableCell>
-                        <TableCell>
-                          <span className="font-semibold text-blue-600">
-                            {plan.dealer_price ? formatPrice(plan.dealer_price) : 'N/A'}
-                          </span>
-                        </TableCell>
-                        <TableCell>
-                          <span className="font-semibold text-purple-600">
-                            {plan.purchasing_price ? formatPrice(plan.purchasing_price) : 'N/A'}
-                          </span>
-                        </TableCell>
-                        <TableCell>
-                          <Badge variant="info" size="sm">
-                            {plan.permissions_count || plan.permissions?.length || 0} permissions
-                          </Badge>
                         </TableCell>
                         <TableCell>
                           <span className="text-sm text-gray-500">
-                            {formatDate(plan.created_at)}
+                            {formatDate(order.created_at)}
                           </span>
                         </TableCell>
                         <TableCell>
-                          <ActionButtonGroup>
-                            <RoleBasedWidget allowedRoles={[ROLES.SUPER_ADMIN]}>
-                              <EditActionButton onClick={() => navigate(`/subscription-plans/${plan.id}/edit`)} />
-                            </RoleBasedWidget>
-                            <RoleBasedWidget allowedRoles={[ROLES.ADMIN]}>
-                              <DeleteActionButton onClick={() => handleDelete(plan.id, plan.title)} />
-                            </RoleBasedWidget>
-                          </ActionButtonGroup>
+                          <Button
+                            variant="outline"
+                            size="sm"
+                            onClick={() => navigate(`/device-orders/${order.id}`)}
+                            icon={<VisibilityIcon className="w-4 h-4" />}
+                          >
+                            View
+                          </Button>
                         </TableCell>
                       </TableRow>
                     ))}
@@ -291,4 +308,5 @@ const SubscriptionPlanIndexPage: React.FC = () => {
   );
 };
 
-export default SubscriptionPlanIndexPage;
+export default OrderIndexPage;
+

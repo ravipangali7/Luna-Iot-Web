@@ -6,6 +6,7 @@ import { useWalletBalance } from '../../hooks/useWalletBalance';
 import Button from '../ui/buttons/Button';
 import IconButton from '../ui/buttons/IconButton';
 import RoleBasedWidget from '../role-based/RoleBasedWidget';
+import CartWidget from '../cart/CartWidget';
 import { ROLES } from '../../utils/roleUtils';
 
 interface HeaderProps {
@@ -18,7 +19,7 @@ interface HeaderProps {
 }
 
 const Header: React.FC<HeaderProps> = ({ 
-  onMenuClick: _onMenuClick, 
+  onMenuClick, 
   onBack, 
   onRefresh, 
   onLiveTracking, 
@@ -40,10 +41,23 @@ const Header: React.FC<HeaderProps> = ({
   };
 
   return (
-    <header className="bg-white shadow-sm border-b border-gray-200 px-6 py-3">
+    <header className="bg-white shadow-sm border-b border-gray-200 px-3 sm:px-6 py-3">
       <div className="flex items-center justify-between">
         {/* Left side - Navigation buttons */}
-        <div className="flex items-center space-x-3">
+        <div className="flex items-center space-x-2 sm:space-x-3">
+          {/* Mobile Menu Button */}
+          <IconButton
+            variant="outline"
+            size="sm"
+            onClick={onMenuClick}
+            className="lg:hidden border-gray-400 text-gray-600 hover:bg-gray-50"
+            aria-label="Toggle menu"
+          >
+            <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 6h16M4 12h16M4 18h16" />
+            </svg>
+          </IconButton>
+
           {/* Back Button */}
           {onBack && (
             <IconButton
@@ -71,7 +85,7 @@ const Header: React.FC<HeaderProps> = ({
             </svg>
           </IconButton>
 
-          {/* Live Tracking Button */}
+          {/* Live Tracking Button - Hide text on mobile */}
           <Button
             variant="outline"
             size="sm"
@@ -84,16 +98,16 @@ const Header: React.FC<HeaderProps> = ({
               </svg>
             }
           >
-            Live Tracking
+            <span className="hidden sm:inline">Live Tracking</span>
           </Button>
 
-          {/* All Vehicles Button */}
+          {/* All Vehicles Button - Hide on mobile */}
           <RoleBasedWidget allowedRoles={[ROLES.SUPER_ADMIN, ROLES.DEALER]}>
           <Button
             variant="outline"
             size="sm"
             onClick={onAllVehicles}
-            className="border-red-500 text-red-500 hover:bg-red-50 flex items-center space-x-2"
+            className="hidden md:flex border-red-500 text-red-500 hover:bg-red-50 items-center space-x-2"
             icon={
               <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 7h12m0 0l-4-4m4 4l-4 4m0 6H4m0 0l4 4m-4-4l4-4" />
@@ -106,36 +120,43 @@ const Header: React.FC<HeaderProps> = ({
         </div>
 
         {/* Right side - User controls */}
-        <div className="flex items-center space-x-4">
-          {/* Wallet Balance */}
+        <div className="flex items-center space-x-2 sm:space-x-4">
+          {/* Cart Widget - For Dealers and Super Admins - Hide on mobile */}
+          <RoleBasedWidget allowedRoles={[ROLES.SUPER_ADMIN, ROLES.DEALER]}>
+            <div className="hidden sm:block">
+              <CartWidget />
+            </div>
+          </RoleBasedWidget>
+
+          {/* Wallet Balance - Compact on mobile */}
           <button
             onClick={handleWalletClick}
-            className="flex items-center space-x-2 px-3 py-1 bg-green-50 rounded-lg border border-green-200 hover:bg-green-100 transition-colors cursor-pointer group"
+            className="flex items-center space-x-1 sm:space-x-2 px-2 sm:px-3 py-1 bg-green-50 rounded-lg border border-green-200 hover:bg-green-100 transition-colors cursor-pointer group"
             title="View Wallet"
           >
             <svg className="w-4 h-4 text-green-600 group-hover:text-green-700" fill="none" stroke="currentColor" viewBox="0 0 24 24">
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 10h18M7 15h1m4 0h1m-7 4h12a3 3 0 003-3V8a3 3 0 00-3-3H6a3 3 0 00-3 3v8a3 3 0 003 3z" />
             </svg>
-            <span className="text-sm font-semibold text-green-700 group-hover:text-green-800">
+            <span className="text-xs sm:text-sm font-semibold text-green-700 group-hover:text-green-800">
               {walletLoading ? '...' : formatBalance()}
             </span>
           </button>
 
-          {/* Fullscreen Button */}
+          {/* Fullscreen Button - Hide on mobile */}
           <IconButton
             variant="outline"
             size="sm"
             onClick={onFullscreen}
-            className="border-gray-400 text-gray-400 hover:bg-gray-50"
+            className="hidden md:flex border-gray-400 text-gray-400 hover:bg-gray-50"
           >
             <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 8V4m0 0h4M4 4l5 5m11-1V4m0 0h-4m4 0l-5 5M4 16v4m0 0h4m-4 0l5-5m11 5l-5-5m5 5v-4m0 4h-4" />
             </svg>
           </IconButton>
 
-          {/* User Info */}
-          <div className="flex items-center space-x-3">
-            <div className="text-right">
+          {/* User Info - Compact on mobile */}
+          <div className="flex items-center space-x-2 sm:space-x-3">
+            <div className="hidden sm:block text-right">
               <p className="text-sm font-medium text-gray-600">{user?.name}</p>
             </div>
             <div className="h-8 w-8 rounded-full bg-gray-100 flex items-center justify-center">

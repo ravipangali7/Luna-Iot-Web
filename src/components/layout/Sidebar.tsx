@@ -1,4 +1,4 @@
-import React, { useState, useMemo } from 'react';
+import React, { useState, useMemo, useEffect } from 'react';
 import { useNavigate, useLocation } from 'react-router-dom';
 import { useAuth } from '../../hooks/useAuth';
 import { useSchoolAccess } from '../../hooks/useSchoolAccess';
@@ -30,6 +30,14 @@ const Sidebar: React.FC<SidebarProps> = ({ isOpen, onToggle }) => {
   const { user, logout, canAny, canAll } = useAuth();
   const { hasAccess: hasSchoolAccess } = useSchoolAccess();
   const [expandedItems, setExpandedItems] = useState<Set<string>>(new Set());
+
+  // Close sidebar on mobile when route changes
+  useEffect(() => {
+    if (isOpen && window.innerWidth < 1024) {
+      onToggle();
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [location.pathname]);
 
   // Navigation configuration with dynamic permissions
   const navigationItems: NavItem[] = [
@@ -113,6 +121,52 @@ const Sidebar: React.FC<SidebarProps> = ({ isOpen, onToggle }) => {
           <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
         </svg>
       )
+    },
+    {
+      id: 'device-orders',
+      label: 'Device Orders',
+      path: '/device-orders',
+      allowedRoles: ['Super Admin', 'Dealer'],
+      icon: (
+        <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M16 11V7a4 4 0 00-8 0v4M5 9h14l1 12H4L5 9z" />
+        </svg>
+      ),
+      children: [
+        {
+          id: 'order-catalog',
+          label: 'Product Catalog',
+          path: '/device-orders/catalog',
+          allowedRoles: ['Super Admin', 'Dealer'],
+          icon: (
+            <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 11H5m14 0a2 2 0 012 2v6a2 2 0 01-2 2H5a2 2 0 01-2-2v-6a2 2 0 012-2m14 0V9a2 2 0 00-2-2M5 11V9a2 2 0 012-2m0 0V5a2 2 0 012-2h6a2 2 0 012 2v2M7 7h10" />
+            </svg>
+          )
+        },
+        {
+          id: 'order-cart',
+          label: 'Cart',
+          path: '/device-orders/cart',
+          allowedRoles: ['Super Admin', 'Dealer'],
+          icon: (
+            <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 3h2l.4 2M7 13h10l4-8H5.4M7 13L5.4 5M7 13l-2.293 2.293c-.63.63-.184 1.707.707 1.707H17m0 0a2 2 0 100 4 2 2 0 000-4zm-8 2a2 2 0 11-4 0 2 2 0 014 0z" />
+            </svg>
+          )
+        },
+        {
+          id: 'order-list',
+          label: 'My Orders',
+          path: '/device-orders',
+          allowedRoles: ['Super Admin', 'Dealer'],
+          icon: (
+            <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2" />
+            </svg>
+          )
+        }
+      ]
     },
     
     

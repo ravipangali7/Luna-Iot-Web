@@ -42,6 +42,15 @@
     background-color: var(--color-gray-50);
 }
 
+/* Responsive padding for mobile */
+@media (max-width: 768px) {
+    .card__header,
+    .card__body,
+    .card__footer {
+        padding: var(--spacing-md);
+    }
+}
+
 .card__title {
     margin: 0;
     font-size: var(--font-size-lg);

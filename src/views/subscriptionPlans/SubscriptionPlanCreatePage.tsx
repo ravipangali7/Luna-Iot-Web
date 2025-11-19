@@ -29,6 +29,7 @@ const SubscriptionPlanCreatePage: React.FC = () => {
     title: '',
     price: 0,
     dealer_price: null,
+    purchasing_price: null,
     permission_ids: [],
   });
 
@@ -212,6 +213,20 @@ const SubscriptionPlanCreatePage: React.FC = () => {
                         type="number"
                         value={formData.dealer_price?.toString() || ''}
                         onChange={(value) => handleInputChange('dealer_price', value ? parseFloat(value) : null)}
+                        placeholder="0.00"
+                        min="0"
+                        step="0.01"
+                      />
+                    </div>
+
+                    <div>
+                      <label className="block text-sm font-medium text-gray-700 mb-1">
+                        Purchasing Price
+                      </label>
+                      <Input
+                        type="number"
+                        value={formData.purchasing_price?.toString() || ''}
+                        onChange={(value) => handleInputChange('purchasing_price', value ? parseFloat(value) : null)}
                         placeholder="0.00"
                         min="0"
                         step="0.01"

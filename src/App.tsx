@@ -32,6 +32,7 @@ import { ContactIndexPage, ContactCreatePage, ContactEditPage } from './views/al
 import { AlertTypeIndexPage, AlertTypeCreatePage, AlertTypeEditPage } from './views/alertSystem/alertTypes';
 import { AlertHistoryIndexPage, AlertHistoryViewPage } from './views/alertHistory';
 import { SubscriptionPlanIndexPage, SubscriptionPlanCreatePage, SubscriptionPlanEditPage } from './views/subscriptionPlans';
+import { ProductCatalogPage, CartPage, OrderCreatePage, OrderIndexPage, OrderShowPage } from './views/deviceOrders';
 import { UserIndexPage, UserShowPage, UserCreatePage, UserEditPage } from './views/users';
 import AddUserPage from './views/users/AddUserPage';
 import SchoolIndexPage from './views/school/SchoolIndexPage';
@@ -397,6 +398,33 @@ const AppRoutes: React.FC = () => {
         <Route path="subscription-plans/:id/edit" element={
           <RoleBasedRoute allowedRoles={[ROLES.SUPER_ADMIN]}>
             <SubscriptionPlanEditPage />
+          </RoleBasedRoute>
+        } />
+
+        {/* Device Order Routes - Dealer and Super Admin only */}
+        <Route path="device-orders/catalog" element={
+          <RoleBasedRoute allowedRoles={[ROLES.SUPER_ADMIN, ROLES.DEALER]}>
+            <ProductCatalogPage />
+          </RoleBasedRoute>
+        } />
+        <Route path="device-orders/cart" element={
+          <RoleBasedRoute allowedRoles={[ROLES.SUPER_ADMIN, ROLES.DEALER]}>
+            <CartPage />
+          </RoleBasedRoute>
+        } />
+        <Route path="device-orders/checkout" element={
+          <RoleBasedRoute allowedRoles={[ROLES.SUPER_ADMIN, ROLES.DEALER]}>
+            <OrderCreatePage />
+          </RoleBasedRoute>
+        } />
+        <Route path="device-orders" element={
+          <RoleBasedRoute allowedRoles={[ROLES.SUPER_ADMIN, ROLES.DEALER]}>
+            <OrderIndexPage />
+          </RoleBasedRoute>
+        } />
+        <Route path="device-orders/:id" element={
+          <RoleBasedRoute allowedRoles={[ROLES.SUPER_ADMIN, ROLES.DEALER]}>
+            <OrderShowPage />
           </RoleBasedRoute>
         } />
 
