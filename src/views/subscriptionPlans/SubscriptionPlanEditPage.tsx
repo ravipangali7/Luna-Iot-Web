@@ -31,6 +31,7 @@ const SubscriptionPlanEditPage: React.FC = () => {
   const [formData, setFormData] = useState<SubscriptionPlanFormData>({
     title: '',
     price: 0,
+    dealer_price: null,
     permission_ids: [],
   });
 
@@ -56,6 +57,7 @@ const SubscriptionPlanEditPage: React.FC = () => {
         setFormData({
           title: plan.title,
           price: plan.price,
+          dealer_price: plan.dealer_price || null,
           permission_ids: plan.permissions?.map(p => p.permission) || [],
         });
       } else {
@@ -252,6 +254,20 @@ const SubscriptionPlanEditPage: React.FC = () => {
                         step="0.01"
                         error={formErrors.price}
                         required
+                      />
+                    </div>
+
+                    <div>
+                      <label className="block text-sm font-medium text-gray-700 mb-1">
+                        Dealer Price
+                      </label>
+                      <Input
+                        type="number"
+                        value={formData.dealer_price?.toString() || ''}
+                        onChange={(value) => handleInputChange('dealer_price', value ? parseFloat(value) : null)}
+                        placeholder="0.00"
+                        min="0"
+                        step="0.01"
                       />
                     </div>
                   </div>

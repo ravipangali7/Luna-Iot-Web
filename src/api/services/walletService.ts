@@ -179,6 +179,27 @@ class WalletService {
       return { success: false, error: getErrorMessage(error) };
     }
   }
+
+  async transferBalance(recipientPhone: string, amount: number, description?: string): Promise<{ success: boolean; data?: Wallet; error?: string }> {
+    try {
+      const response = await apiClient.post('/api/finance/wallet/transfer/', {
+        recipient_phone: recipientPhone,
+        amount: amount,
+        description: description || ''
+      }, {
+        timeout: 30000
+      });
+      
+      if (response.data.success) {
+        return { success: true, data: response.data.data };
+      } else {
+        return { success: false, error: response.data.message || 'Failed to transfer balance' };
+      }
+    } catch (error) {
+      console.error('Transfer balance error:', error);
+      return { success: false, error: getErrorMessage(error) };
+    }
+  }
 }
 
 export const walletService = new WalletService();

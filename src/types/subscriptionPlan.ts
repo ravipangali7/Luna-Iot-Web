@@ -2,6 +2,7 @@ export interface SubscriptionPlan {
   id: number;
   title: string;
   price: number;
+  dealer_price?: number | null;
   permissions?: SubscriptionPlanPermission[]; // Optional for list view
   permissions_count?: number; // For list view
   created_at: string;
@@ -19,6 +20,7 @@ export interface SubscriptionPlanPermission {
 export interface SubscriptionPlanFormData {
   title: string;
   price: number;
+  dealer_price?: number | null;
   permission_ids: number[];
 }
 

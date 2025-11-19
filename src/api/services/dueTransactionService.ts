@@ -83,12 +83,12 @@ class DueTransactionService {
     }
   }
 
-  async getMyDueTransactions(params: PaginationParams & { is_paid?: boolean } = {}): Promise<PaginatedResponse<DueTransactionListItem>> {
+  async getMyDueTransactions(params: PaginationParams & { is_paid?: boolean; search?: string } = {}): Promise<PaginatedResponse<DueTransactionListItem>> {
     try {
-      const { page = 1, page_size = 20, is_paid } = params;
+      const { page = 1, page_size = 20, is_paid, search = '' } = params;
       
       const response = await apiClient.get('/api/finance/due-transaction/my/', {
-        params: { page, page_size, is_paid },
+        params: { page, page_size, is_paid, search },
         timeout: 30000
       });
       

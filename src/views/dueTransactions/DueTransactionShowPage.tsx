@@ -63,10 +63,11 @@ const DueTransactionShowPage: React.FC = () => {
   const handlePayWithWallet = async () => {
     if (!dueTransaction) return;
     
-    const totalAmount = typeof dueTransaction.total === 'string' ? parseFloat(dueTransaction.total) : dueTransaction.total;
+    const totalAmount = dueTransaction.display_total ?? dueTransaction.total;
+    const amount = typeof totalAmount === 'string' ? parseFloat(totalAmount) : totalAmount;
     const confirmed = await showConfirm(
       'Pay Due Transaction',
-      `Are you sure you want to pay Rs. ${(isNaN(totalAmount) ? 0 : totalAmount).toFixed(2)} from your wallet?`,
+      `Are you sure you want to pay Rs. ${(isNaN(amount) ? 0 : amount).toFixed(2)} from your wallet?`,
       'warning'
     );
     
@@ -250,6 +251,13 @@ const DueTransactionShowPage: React.FC = () => {
                 <div>{dueTransaction.user_info.name || 'N/A'}</div>
                 <small style={{ color: '#666' }}>{dueTransaction.user_info.phone}</small>
               </div>
+              {dueTransaction.paid_by_info && (
+                <div>
+                  <strong>Paid By:</strong>
+                  <div>{dueTransaction.paid_by_info.name || 'N/A'}</div>
+                  <small style={{ color: '#666' }}>{dueTransaction.paid_by_info.phone}</small>
+                </div>
+              )}
               <div>
                 <strong>Status:</strong>
                 <div>
@@ -268,16 +276,18 @@ const DueTransactionShowPage: React.FC = () => {
               </div>
               <div>
                 <strong>Subtotal:</strong>
-                <div>{formatCurrency(dueTransaction.subtotal)}</div>
+                <div>{formatCurrency(dueTransaction.display_subtotal ?? dueTransaction.subtotal)}</div>
               </div>
-              <div>
-                <strong>VAT:</strong>
-                <div>{formatCurrency(dueTransaction.vat)}</div>
-              </div>
+              {dueTransaction.show_vat && dueTransaction.display_vat != null && dueTransaction.display_vat > 0 && (
+                <div>
+                  <strong>VAT:</strong>
+                  <div>{formatCurrency(dueTransaction.display_vat)}</div>
+                </div>
+              )}
               <div>
                 <strong>Total:</strong>
                 <div style={{ fontSize: '1.25rem', fontWeight: 'bold' }}>
-                  {formatCurrency(dueTransaction.total)}
+                  {formatCurrency(dueTransaction.display_total ?? dueTransaction.total)}
                 </div>
               </div>
               <div>
@@ -354,6 +364,9 @@ const DueTransactionShowPage: React.FC = () => {
                     <TableHeader>Vehicle</TableHeader>
                     <TableHeader>Institute</TableHeader>
                     <TableHeader>Amount</TableHeader>
+                    {dueTransaction.show_dealer_price && (
+                      <TableHeader>Dealer Price</TableHeader>
+                    )}
                     <TableHeader>Quantity</TableHeader>
                     <TableHeader>Total</TableHeader>
                     {!dueTransaction.is_paid && (
@@ -388,16 +401,32 @@ const DueTransactionShowPage: React.FC = () => {
                         ) : 'N/A'}
                       </TableCell>
                       <TableCell>{particular.institute_name || 'N/A'}</TableCell>
-                      <TableCell>{formatCurrency(particular.amount)}</TableCell>
+                      <TableCell>{formatCurrency(particular.display_amount ?? particular.amount)}</TableCell>
+                      {dueTransaction.show_dealer_price && (
+                        <TableCell>
+                          {particular.dealer_amount !== null && particular.dealer_amount !== undefined
+                            ? formatCurrency(particular.dealer_amount)
+                            : 'N/A'}
+                        </TableCell>
+                      )}
                       <TableCell>{particular.quantity}</TableCell>
-                      <TableCell><strong>{formatCurrency(particular.total)}</strong></TableCell>
+                      <TableCell>
+                        <strong>
+                          {formatCurrency(
+                            (particular.display_amount ?? particular.amount) * particular.quantity
+                          )}
+                        </strong>
+                      </TableCell>
                       {!dueTransaction.is_paid && (
                         <TableCell>
                           {particular.type === 'vehicle' && particular.vehicle_id && (
                             <Button
                               variant="primary"
                               size="sm"
-                              onClick={() => handlePayParticular(particular.id, particular.total)}
+                              onClick={() => {
+                                const payAmount = (particular.display_amount ?? particular.amount) * particular.quantity;
+                                handlePayParticular(particular.id, payAmount);
+                              }}
                               disabled={processing || processingParticularId === particular.id}
                             >
                               <PaymentIcon style={{ marginRight: '0.25rem', fontSize: '1rem' }} />

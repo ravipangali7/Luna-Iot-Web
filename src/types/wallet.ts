@@ -39,3 +39,9 @@ export interface WalletTopUpPayload {
   description: string;
   performed_by_id?: number;
 }
+
+export interface WalletTransfer {
+  recipient_phone: string;
+  amount: number;
+  description?: string;
+}

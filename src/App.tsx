@@ -45,6 +45,7 @@ import SchoolSMSCreatePage from './views/school/schoolSMS/SchoolSMSCreatePage';
 import SchoolSMSEditPage from './views/school/schoolSMS/SchoolSMSEditPage';
 import { WalletIndexPage, MyWalletPage } from './views/wallet';
 import { TransactionIndexPage, WalletTransactionsPage, UserTransactionsPage } from './views/transactions';
+import PaymentCallbackPage from './views/payment/PaymentCallbackPage';
 import { DueTransactionIndexPage, DueTransactionShowPage } from './views/dueTransactions';
 import DueTransactionEditPage from './views/dueTransactions/DueTransactionEditPage';
 import { LunaTagIndexPage, LunaTagCreatePage, LunaTagEditPage } from './views/lunaTags';
@@ -147,6 +148,9 @@ const AppRoutes: React.FC = () => {
 
       {/* Public shared tracking route - no authentication required */}
       <Route path="/share-track/:token" element={<SharedTrackPage />} />
+      
+      {/* Payment callback route - accessible from ConnectIPS redirect */}
+      <Route path="/payment/callback" element={<PaymentCallbackPage />} />
 
       {/* Protected routes with layout */}
       <Route path="/" element={

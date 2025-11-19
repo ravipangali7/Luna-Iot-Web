@@ -1,7 +1,7 @@
 import React, { useState, useEffect, useCallback } from 'react';
 import { walletService } from '../../api/services/walletService';
 import { showSuccess, showError } from '../../utils/sweetAlert';
-import type { WalletListItem, WalletBalanceUpdate, WalletTopUpPayload } from '../../types/wallet';
+import type { WalletListItem, WalletBalanceUpdate, WalletTopUpPayload, WalletTransfer } from '../../types/wallet';
 import type { PaginationInfo } from '../../types/pagination';
 import Container from '../../components/ui/layout/Container';
 import Card from '../../components/ui/cards/Card';
@@ -57,6 +57,13 @@ const WalletIndexPage: React.FC = () => {
     description: ''
   });
   const [topUpLoading, setTopUpLoading] = useState(false);
+  const [showTransferModal, setShowTransferModal] = useState(false);
+  const [transferFormData, setTransferFormData] = useState<WalletTransfer>({
+    recipient_phone: '',
+    amount: 0,
+    description: ''
+  });
+  const [transferLoading, setTransferLoading] = useState(false);
 
   const loadWallets = useCallback(async () => {
     try {
@@ -186,6 +193,52 @@ const WalletIndexPage: React.FC = () => {
     });
   };
 
+  const handleOpenTransferModal = () => {
+    setTransferFormData({
+      recipient_phone: '',
+      amount: 0,
+      description: ''
+    });
+    setShowTransferModal(true);
+  };
+
+  const handleCloseTransferModal = () => {
+    setShowTransferModal(false);
+    setTransferFormData({
+      recipient_phone: '',
+      amount: 0,
+      description: ''
+    });
+  };
+
+  const handleTransferSubmit = async () => {
+    if (!transferFormData.recipient_phone || !transferFormData.amount || transferFormData.amount <= 0) {
+      showError('Validation Error', 'Please fill in all required fields with valid values');
+      return;
+    }
+
+    try {
+      setTransferLoading(true);
+      const result = await walletService.transferBalance(
+        transferFormData.recipient_phone,
+        transferFormData.amount,
+        transferFormData.description
+      );
+
+      if (result.success) {
+        showSuccess('Transfer Successful', `Successfully transferred ${formatCurrency(transferFormData.amount)}`);
+        setShowTransferModal(false);
+        loadWallets();
+      } else {
+        showError('Transfer Failed', result.error || 'Failed to transfer balance');
+      }
+    } catch (error) {
+      showError('Transfer Error', 'An unexpected error occurred during transfer');
+    } finally {
+      setTransferLoading(false);
+    }
+  };
+
   const formatCurrency = (amount: number | string) => {
     const numAmount = typeof amount === 'string' ? parseFloat(amount) : amount;
     if (isNaN(numAmount)) {
@@ -237,6 +290,9 @@ const WalletIndexPage: React.FC = () => {
             <p className="text-gray-600">Manage user wallet balances</p>
           </div>
           <div className="flex gap-2">
+            <Button onClick={handleOpenTransferModal} variant="primary" icon={<AccountBalanceWalletIcon className="w-4 h-4" />}>
+              Transfer Balance
+            </Button>
             <Button onClick={loadWallets} variant="outline" icon={<RefreshIcon className="w-4 h-4" />}>
               Refresh
             </Button>
@@ -575,6 +631,94 @@ const WalletIndexPage: React.FC = () => {
               </div>
             </div>
           )}
+        </Modal>
+
+        {/* Transfer Modal */}
+        <Modal
+          isOpen={showTransferModal}
+          onClose={handleCloseTransferModal}
+          title="Transfer Wallet Balance"
+        >
+          <div className="space-y-4">
+            <div className="bg-blue-50 p-4 rounded-lg">
+              <p className="text-sm text-gray-600">
+                Transfer balance from your wallet to another user by phone number.
+              </p>
+            </div>
+
+            <div className="space-y-4">
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1">
+                  Recipient Phone Number <span className="text-red-500">*</span>
+                </label>
+                <Input
+                  type="text"
+                  value={transferFormData.recipient_phone}
+                  onChange={(value) => setTransferFormData(prev => ({
+                    ...prev,
+                    recipient_phone: value
+                  }))}
+                  placeholder="Enter recipient phone number"
+                />
+              </div>
+
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1">
+                  Amount (₹) <span className="text-red-500">*</span>
+                </label>
+                <Input
+                  type="number"
+                  step="0.01"
+                  min="0.01"
+                  value={transferFormData.amount.toString()}
+                  onChange={(value) => setTransferFormData(prev => ({
+                    ...prev,
+                    amount: parseFloat(value) || 0
+                  }))}
+                  placeholder="Enter amount to transfer"
+                />
+              </div>
+
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1">
+                  Description (Optional)
+                </label>
+                <textarea
+                  className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                  rows={3}
+                  value={transferFormData.description}
+                  onChange={(e) => setTransferFormData(prev => ({
+                    ...prev,
+                    description: e.target.value
+                  }))}
+                  placeholder="Enter description for this transfer"
+                />
+              </div>
+            </div>
+
+            <div className="flex justify-end gap-3 pt-4 border-t border-gray-200">
+              <Button
+                onClick={handleCloseTransferModal}
+                variant="outline"
+                disabled={transferLoading}
+              >
+                Cancel
+              </Button>
+              <Button
+                onClick={handleTransferSubmit}
+                variant="primary"
+                disabled={transferLoading || !transferFormData.recipient_phone || !transferFormData.amount || transferFormData.amount <= 0}
+                className="flex items-center gap-2"
+              >
+                {transferLoading ? (
+                  <Spinner size="sm" />
+                ) : (
+                  <AccountBalanceWalletIcon className="w-4 h-4" />
+                )}
+                {transferLoading ? 'Processing...' : 'Transfer'}
+              </Button>
+            </div>
+          </div>
         </Modal>
       </div>
     </Container>

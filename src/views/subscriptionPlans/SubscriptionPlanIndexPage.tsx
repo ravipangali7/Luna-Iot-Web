@@ -212,6 +212,7 @@ const SubscriptionPlanIndexPage: React.FC = () => {
                     <TableRow>
                       <TableHeader>Title</TableHeader>
                       <TableHeader>Price</TableHeader>
+                      <TableHeader>Dealer Price</TableHeader>
                       <TableHeader>Permissions</TableHeader>
                       <TableHeader>Created</TableHeader>
                       <TableHeader>Actions</TableHeader>
@@ -226,6 +227,11 @@ const SubscriptionPlanIndexPage: React.FC = () => {
                         <TableCell>
                           <span className="font-semibold text-green-600">
                             {formatPrice(plan.price)}
+                          </span>
+                        </TableCell>
+                        <TableCell>
+                          <span className="font-semibold text-blue-600">
+                            {plan.dealer_price ? formatPrice(plan.dealer_price) : 'N/A'}
                           </span>
                         </TableCell>
                         <TableCell>

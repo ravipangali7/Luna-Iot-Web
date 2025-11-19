@@ -13,6 +13,9 @@ export interface DueTransactionParticular {
     vehicleNo: string;
   } | null;
   amount: number;
+  dealer_amount?: number | null;
+  display_amount?: number;
+  is_dealer_view?: boolean;
   quantity: number;
   total: number;
   created_at: string;
@@ -27,9 +30,21 @@ export interface DueTransaction {
     phone: string;
     is_active: boolean;
   };
+  paid_by?: number | null;
+  paid_by_info?: {
+    id: number;
+    name: string;
+    phone: string;
+    is_active: boolean;
+  } | null;
   subtotal: number;
   vat: number;
   total: number;
+  display_subtotal?: number;
+  display_vat?: number | null;
+  display_total?: number;
+  show_vat?: boolean;
+  show_dealer_price?: boolean;
   renew_date: string;
   expire_date: string;
   is_paid: boolean;
@@ -47,6 +62,8 @@ export interface DueTransactionListItem {
   subtotal: number;
   vat: number;
   total: number;
+  display_total?: number;
+  show_vat?: boolean;
   renew_date: string;
   expire_date: string;
   is_paid: boolean;

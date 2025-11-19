@@ -2,7 +2,9 @@ import React, { useState, useEffect, useCallback, useContext } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useWalletBalance } from '../../hooks/useWalletBalance';
 import { transactionService } from '../../api/services/transactionService';
+import { paymentService } from '../../api/services/paymentService';
 import type { TransactionListItem } from '../../types/transaction';
+import type { PaymentFormData } from '../../types/payment';
 import Container from '../../components/ui/layout/Container';
 import Card from '../../components/ui/cards/Card';
 import CardBody from '../../components/ui/cards/CardBody';
@@ -10,6 +12,8 @@ import Button from '../../components/ui/buttons/Button';
 import Badge from '../../components/ui/common/Badge';
 import Spinner from '../../components/ui/common/Spinner';
 import Alert from '../../components/ui/common/Alert';
+import Modal from '../../components/ui/common/Modal';
+import Input from '../../components/ui/forms/Input';
 import Table from '../../components/ui/tables/Table';
 import TableHead from '../../components/ui/tables/TableHead';
 import TableHeader from '../../components/ui/tables/TableHeader';
@@ -20,6 +24,7 @@ import { AuthContext } from '../../contexts/AuthContext';
 import ArrowBackIcon from '@mui/icons-material/ArrowBack';
 import AccountBalanceWalletIcon from '@mui/icons-material/AccountBalanceWallet';
 import RefreshIcon from '@mui/icons-material/Refresh';
+import AddIcon from '@mui/icons-material/Add';
 
 const MyWalletPage: React.FC = () => {
   const navigate = useNavigate();
@@ -29,6 +34,14 @@ const MyWalletPage: React.FC = () => {
   const [transactions, setTransactions] = useState<TransactionListItem[]>([]);
   const [transactionsLoading, setTransactionsLoading] = useState(false);
   const [transactionsError, setTransactionsError] = useState<string | null>(null);
+  
+  // Top Up Payment State
+  const [showTopUpModal, setShowTopUpModal] = useState(false);
+  const [topUpAmount, setTopUpAmount] = useState<string>('');
+  const [topUpRemarks, setTopUpRemarks] = useState<string>('');
+  const [topUpParticulars, setTopUpParticulars] = useState<string>('');
+  const [topUpLoading, setTopUpLoading] = useState(false);
+  const [topUpError, setTopUpError] = useState<string | null>(null);
 
   const handleBack = () => {
     navigate(-1);
@@ -96,6 +109,111 @@ const MyWalletPage: React.FC = () => {
 
   const getTransactionTypeBadge = (type: string) => {
     return type === 'CREDIT' ? 'success' : 'danger';
+  };
+
+  const handleTopUpClick = () => {
+    setShowTopUpModal(true);
+    setTopUpAmount('');
+    setTopUpRemarks('');
+    setTopUpParticulars('');
+    setTopUpError(null);
+  };
+
+  const handleCloseTopUpModal = () => {
+    setShowTopUpModal(false);
+    setTopUpAmount('');
+    setTopUpRemarks('');
+    setTopUpParticulars('');
+    setTopUpError(null);
+  };
+
+  const handleInitiatePayment = async () => {
+    const amount = parseFloat(topUpAmount);
+    
+    if (!amount || amount <= 0) {
+      setTopUpError('Please enter a valid amount greater than 0');
+      return;
+    }
+
+    try {
+      setTopUpLoading(true);
+      setTopUpError(null);
+
+      const result = await paymentService.initiatePayment({
+        amount: amount,
+        remarks: topUpRemarks || 'Wallet top-up',
+        particulars: topUpParticulars || 'User deposit',
+      });
+
+      if (result.success && result.data) {
+        const formData = result.data;
+        
+        // Validate form data before submission
+        if (!formData.gateway_url) {
+          setTopUpError('Gateway URL is missing');
+          return;
+        }
+        
+        // Validate required fields
+        const requiredFields = ['MERCHANTID', 'APPID', 'APPNAME', 'TXNID', 'TXNDATE', 'TXNAMT', 'TOKEN'];
+        const missingFields = requiredFields.filter(field => !formData[field as keyof PaymentFormData]);
+        
+        if (missingFields.length > 0) {
+          setTopUpError(`Missing required fields: ${missingFields.join(', ')}`);
+          return;
+        }
+        
+        // Close modal before redirecting
+        setShowTopUpModal(false);
+        
+        // Small delay to ensure modal closes, then submit form
+        setTimeout(() => {
+          submitPaymentForm(formData);
+        }, 100);
+      } else {
+        setTopUpError(result.error || 'Failed to initiate payment');
+      }
+    } catch (error) {
+      setTopUpError('An unexpected error occurred: ' + (error as Error).message);
+    } finally {
+      setTopUpLoading(false);
+    }
+  };
+
+  const submitPaymentForm = (formData: PaymentFormData) => {
+    // Create a form element for NCHL ConnectIPS
+    const form = document.createElement('form');
+    form.method = 'POST';
+    form.action = formData.gateway_url;
+    form.enctype = 'application/x-www-form-urlencoded';
+    form.style.display = 'none';
+    form.target = '_self'; // Submit in same window
+
+    // Add all required form fields (excluding metadata fields)
+    const fieldsToExclude = ['gateway_url', 'success_url', 'failure_url'];
+    
+    Object.entries(formData).forEach(([key, value]) => {
+      if (!fieldsToExclude.includes(key)) {
+        const input = document.createElement('input');
+        input.type = 'hidden';
+        input.name = key;
+        input.value = String(value);
+        form.appendChild(input);
+      }
+    });
+
+    // Append form to body
+    document.body.appendChild(form);
+    
+    // Log for debugging (remove in production)
+    console.log('Submitting payment form to:', formData.gateway_url);
+    console.log('Form fields:', Array.from(form.querySelectorAll('input')).map((inp: HTMLInputElement) => ({
+      name: inp.name,
+      value: inp.value.substring(0, 50) + (inp.value.length > 50 ? '...' : '')
+    })));
+
+    // Submit the form
+    form.submit();
   };
 
   if (loading) {
@@ -173,10 +291,19 @@ const MyWalletPage: React.FC = () => {
               </div>
               <p className="text-lg text-gray-600">Available Balance</p>
               {wallet && (
-                <div className="mt-4">
+                <div className="mt-4 flex justify-center items-center gap-3">
                   <Badge variant="success" size="sm">
                     Active Wallet
                   </Badge>
+                  <Button
+                    variant="success"
+                    size="sm"
+                    onClick={handleTopUpClick}
+                    className="flex items-center gap-2"
+                  >
+                    <AddIcon className="w-4 h-4" />
+                    Top Up
+                  </Button>
                 </div>
               )}
             </div>
@@ -301,6 +428,85 @@ const MyWalletPage: React.FC = () => {
             )}
           </CardBody>
         </Card>
+
+        {/* Top Up Modal */}
+        <Modal
+          isOpen={showTopUpModal}
+          onClose={handleCloseTopUpModal}
+          title="Top Up Wallet"
+        >
+          <div className="space-y-4">
+            {topUpError && (
+              <Alert variant="danger">
+                {topUpError}
+              </Alert>
+            )}
+
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-1">
+                Amount (₹)
+              </label>
+              <Input
+                type="number"
+                step="0.01"
+                min="0.01"
+                value={topUpAmount}
+                onChange={(value) => setTopUpAmount(value)}
+                placeholder="Enter amount"
+                disabled={topUpLoading}
+              />
+              <p className="text-xs text-gray-500 mt-1">
+                Minimum amount: ₹0.01
+              </p>
+            </div>
+
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-1">
+                Remarks (Optional)
+              </label>
+              <Input
+                type="text"
+                value={topUpRemarks}
+                onChange={(value) => setTopUpRemarks(value)}
+                placeholder="e.g., Wallet top-up"
+                disabled={topUpLoading}
+                maxLength={50}
+              />
+            </div>
+
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-1">
+                Particulars (Optional)
+              </label>
+              <Input
+                type="text"
+                value={topUpParticulars}
+                onChange={(value) => setTopUpParticulars(value)}
+                placeholder="e.g., User deposit"
+                disabled={topUpLoading}
+                maxLength={100}
+              />
+            </div>
+
+            <div className="flex justify-end gap-3 pt-4">
+              <Button
+                variant="outline"
+                onClick={handleCloseTopUpModal}
+                disabled={topUpLoading}
+              >
+                Cancel
+              </Button>
+              <Button
+                variant="success"
+                onClick={handleInitiatePayment}
+                disabled={topUpLoading || !topUpAmount || parseFloat(topUpAmount) <= 0}
+                loading={topUpLoading}
+              >
+                Proceed to Payment
+              </Button>
+            </div>
+          </div>
+        </Modal>
 
       </div>
     </Container>

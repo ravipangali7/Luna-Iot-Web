@@ -112,10 +112,12 @@ const DueTransactionIndexPage: React.FC = () => {
     navigate(`/due-transactions/${id}`);
   };
 
-  const handlePayWithWallet = async (id: number, total: number) => {
+  const handlePayWithWallet = async (id: number, due: DueTransactionListItem) => {
+    const totalAmount = due.display_total ?? due.total;
+    const amount = typeof totalAmount === 'string' ? parseFloat(totalAmount) : totalAmount;
     const confirmed = await showConfirm(
       'Pay Due Transaction',
-      `Are you sure you want to pay Rs. ${(typeof total === 'string' ? parseFloat(total) : total || 0).toFixed(2)} from your wallet?`,
+      `Are you sure you want to pay Rs. ${(isNaN(amount) ? 0 : amount).toFixed(2)} from your wallet?`,
       'warning'
     );
     
@@ -294,7 +296,7 @@ const DueTransactionIndexPage: React.FC = () => {
             <form onSubmit={handleSearch} style={{ flex: 1, minWidth: '200px', display: 'flex', gap: '0.5rem' }}>
               <Input
                 type="text"
-                placeholder="Search by user name, phone, or ID..."
+                placeholder="Search by user name, phone, vehicle, device, or ID..."
                 value={searchInput}
                 onChange={(value) => setSearchInput(value)}
                 style={{ flex: 1 }}
@@ -343,8 +345,12 @@ const DueTransactionIndexPage: React.FC = () => {
                   <TableRow>
                     <TableHeader>ID</TableHeader>
                     <TableHeader>User</TableHeader>
-                    <TableHeader>Subtotal</TableHeader>
-                    <TableHeader>VAT</TableHeader>
+                    {dueTransactions.length > 0 && dueTransactions[0].show_vat && dueTransactions.some(due => (due.vat ?? 0) > 0) && (
+                      <>
+                        <TableHeader>Subtotal</TableHeader>
+                        <TableHeader>VAT</TableHeader>
+                      </>
+                    )}
                     <TableHeader>Total</TableHeader>
                     <TableHeader>Renew Date</TableHeader>
                     <TableHeader>Expire Date</TableHeader>
@@ -363,9 +369,13 @@ const DueTransactionIndexPage: React.FC = () => {
                           <small style={{ color: '#666' }}>{due.user_phone}</small>
                         </div>
                       </TableCell>
-                      <TableCell>{formatCurrency(due.subtotal)}</TableCell>
-                      <TableCell>{formatCurrency(due.vat)}</TableCell>
-                      <TableCell><strong>{formatCurrency(due.total)}</strong></TableCell>
+                      {due.show_vat && (due.vat ?? 0) > 0 && (
+                        <>
+                          <TableCell>{formatCurrency(due.subtotal)}</TableCell>
+                          <TableCell>{formatCurrency(due.vat)}</TableCell>
+                        </>
+                      )}
+                      <TableCell><strong>{formatCurrency(due.display_total ?? due.total)}</strong></TableCell>
                       <TableCell>{formatDate(due.renew_date)}</TableCell>
                       <TableCell>{formatDate(due.expire_date)}</TableCell>
                       <TableCell>
@@ -409,7 +419,7 @@ const DueTransactionIndexPage: React.FC = () => {
                             <>
                               {!isSuperAdmin && (
                                 <ActionButton
-                                  onClick={() => handlePayWithWallet(due.id, due.total)}
+                                  onClick={() => handlePayWithWallet(due.id, due)}
                                   title="Pay with Wallet"
                                   disabled={processingId === due.id}
                                 >
