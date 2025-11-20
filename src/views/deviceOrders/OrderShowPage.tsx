@@ -1,12 +1,16 @@
 import React, { useState, useEffect } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
 import { deviceOrderService } from '../../api/services/deviceOrderService';
-import type { DeviceOrder } from '../../types/deviceOrder';
+import type { DeviceOrder, OrderStatusUpdate } from '../../types/deviceOrder';
+import { useAuth } from '../../hooks/useAuth';
+import { isSuperAdmin } from '../../utils/roleUtils';
+import { showSuccess, showError } from '../../utils/sweetAlert';
 import Container from '../../components/ui/layout/Container';
 import Card from '../../components/ui/cards/Card';
 import CardBody from '../../components/ui/cards/CardBody';
 import CardHeader from '../../components/ui/cards/CardHeader';
 import Button from '../../components/ui/buttons/Button';
+import Select from '../../components/ui/forms/Select';
 import Table from '../../components/ui/tables/Table';
 import TableHead from '../../components/ui/tables/TableHead';
 import TableHeader from '../../components/ui/tables/TableHeader';
@@ -17,13 +21,23 @@ import Badge from '../../components/ui/common/Badge';
 import Spinner from '../../components/ui/common/Spinner';
 import Alert from '../../components/ui/common/Alert';
 import ArrowBackIcon from '@mui/icons-material/ArrowBack';
+import EditIcon from '@mui/icons-material/Edit';
 
 const OrderShowPage: React.FC = () => {
   const navigate = useNavigate();
   const { id } = useParams<{ id: string }>();
+  const { user } = useAuth();
   const [order, setOrder] = useState<DeviceOrder | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const [updating, setUpdating] = useState(false);
+  const [statusUpdate, setStatusUpdate] = useState<OrderStatusUpdate>({
+    status: 'accepted',
+    payment_status: undefined,
+  });
+  const [showStatusUpdate, setShowStatusUpdate] = useState(false);
+
+  const userIsSuperAdmin = user ? isSuperAdmin(user) : false;
 
   const fetchOrder = async () => {
     if (!id) return;
@@ -50,6 +64,54 @@ const OrderShowPage: React.FC = () => {
   useEffect(() => {
     fetchOrder();
   }, [id]);
+
+  useEffect(() => {
+    if (order) {
+      setStatusUpdate({
+        status: order.status,
+        payment_status: order.payment_status,
+      });
+    }
+  }, [order]);
+
+  const handleStatusUpdate = async () => {
+    if (!order || !id) return;
+
+    try {
+      setUpdating(true);
+      setError(null);
+
+      const updateData: OrderStatusUpdate = {
+        status: statusUpdate.status,
+      };
+
+      if (statusUpdate.payment_status) {
+        updateData.payment_status = statusUpdate.payment_status;
+      }
+
+      const response = await deviceOrderService.updateOrderStatus(
+        parseInt(id),
+        updateData
+      );
+
+      if (response.success && response.data) {
+        setOrder(response.data);
+        setShowStatusUpdate(false);
+        showSuccess('Status Updated', 'Order status has been updated successfully');
+      } else {
+        const errorMsg = response.error || 'Failed to update order status';
+        setError(errorMsg);
+        showError('Update Failed', errorMsg);
+      }
+    } catch (err) {
+      const errorMsg = 'An unexpected error occurred';
+      setError(errorMsg);
+      showError('Update Error', errorMsg);
+      console.error('Error updating order status:', err);
+    } finally {
+      setUpdating(false);
+    }
+  };
 
   const formatPrice = (price: number | string | null | undefined) => {
     if (price === null || price === undefined) return 'Rs 0.00';
@@ -188,18 +250,88 @@ const OrderShowPage: React.FC = () => {
               <CardBody>
                 <div className="space-y-4">
                   <div>
-                    <label className="text-sm text-gray-600">Order Status</label>
+                    <div className="flex justify-between items-center mb-1">
+                      <label className="text-sm text-gray-600">Order Status</label>
+                      {userIsSuperAdmin && !showStatusUpdate && (
+                        <Button
+                          variant="outline"
+                          size="sm"
+                          onClick={() => setShowStatusUpdate(true)}
+                          icon={<EditIcon className="w-3 h-3" />}
+                        >
+                          Edit
+                        </Button>
+                      )}
+                    </div>
                     <div className="mt-1">
-                      {getStatusBadge(order.status)}
+                      {showStatusUpdate && userIsSuperAdmin ? (
+                        <Select
+                          value={statusUpdate.status}
+                          onChange={(value) => setStatusUpdate({ ...statusUpdate, status: value as 'accepted' | 'preparing' | 'dispatch' })}
+                          options={[
+                            { value: 'accepted', label: 'Accepted' },
+                            { value: 'preparing', label: 'Preparing' },
+                            { value: 'dispatch', label: 'Dispatch' },
+                          ]}
+                          size="sm"
+                        />
+                      ) : (
+                        getStatusBadge(order.status)
+                      )}
                     </div>
                   </div>
 
                   <div>
-                    <label className="text-sm text-gray-600">Payment Status</label>
+                    <div className="flex justify-between items-center mb-1">
+                      <label className="text-sm text-gray-600">Payment Status</label>
+                    </div>
                     <div className="mt-1">
-                      {getPaymentStatusBadge(order.payment_status)}
+                      {showStatusUpdate && userIsSuperAdmin ? (
+                        <Select
+                          value={statusUpdate.payment_status || order.payment_status}
+                          onChange={(value) => setStatusUpdate({ ...statusUpdate, payment_status: value as 'pending' | 'failed' | 'completed' })}
+                          options={[
+                            { value: 'pending', label: 'Pending' },
+                            { value: 'failed', label: 'Failed' },
+                            { value: 'completed', label: 'Completed' },
+                          ]}
+                          size="sm"
+                        />
+                      ) : (
+                        getPaymentStatusBadge(order.payment_status)
+                      )}
                     </div>
                   </div>
+
+                  {showStatusUpdate && userIsSuperAdmin && (
+                    <div className="border-t pt-4 flex gap-2">
+                      <Button
+                        variant="primary"
+                        size="sm"
+                        onClick={handleStatusUpdate}
+                        disabled={updating}
+                        loading={updating}
+                      >
+                        Update Status
+                      </Button>
+                      <Button
+                        variant="outline"
+                        size="sm"
+                        onClick={() => {
+                          setShowStatusUpdate(false);
+                          if (order) {
+                            setStatusUpdate({
+                              status: order.status,
+                              payment_status: order.payment_status,
+                            });
+                          }
+                        }}
+                        disabled={updating}
+                      >
+                        Cancel
+                      </Button>
+                    </div>
+                  )}
 
                   <div className="border-t pt-4 space-y-2">
                     <div className="flex justify-between">

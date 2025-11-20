@@ -1,13 +1,17 @@
 import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { deviceOrderService } from '../../api/services/deviceOrderService';
-import type { DeviceOrder } from '../../types/deviceOrder';
+import type { DeviceOrder, OrderStatusUpdate } from '../../types/deviceOrder';
+import { useAuth } from '../../hooks/useAuth';
+import { isSuperAdmin } from '../../utils/roleUtils';
+import { showSuccess, showError } from '../../utils/sweetAlert';
 import Container from '../../components/ui/layout/Container';
 import Card from '../../components/ui/cards/Card';
 import CardBody from '../../components/ui/cards/CardBody';
 import Button from '../../components/ui/buttons/Button';
 import Input from '../../components/ui/forms/Input';
 import Select from '../../components/ui/forms/Select';
+import Modal from '../../components/ui/common/Modal';
 import Table from '../../components/ui/tables/Table';
 import TableHead from '../../components/ui/tables/TableHead';
 import TableHeader from '../../components/ui/tables/TableHeader';
@@ -21,9 +25,11 @@ import Pagination from '../../components/ui/pagination/Pagination';
 import SearchIcon from '@mui/icons-material/Search';
 import RefreshIcon from '@mui/icons-material/Refresh';
 import VisibilityIcon from '@mui/icons-material/Visibility';
+import EditIcon from '@mui/icons-material/Edit';
 
 const OrderIndexPage: React.FC = () => {
   const navigate = useNavigate();
+  const { user } = useAuth();
   const [orders, setOrders] = useState<DeviceOrder[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -31,6 +37,15 @@ const OrderIndexPage: React.FC = () => {
   const [searchInput, setSearchInput] = useState('');
   const [statusFilter, setStatusFilter] = useState<string>('');
   const [paymentStatusFilter, setPaymentStatusFilter] = useState<string>('');
+  const [showStatusModal, setShowStatusModal] = useState(false);
+  const [selectedOrder, setSelectedOrder] = useState<DeviceOrder | null>(null);
+  const [statusUpdate, setStatusUpdate] = useState<OrderStatusUpdate>({
+    status: 'accepted',
+    payment_status: undefined,
+  });
+  const [updating, setUpdating] = useState(false);
+
+  const userIsSuperAdmin = user ? isSuperAdmin(user) : false;
 
   const [currentPage, setCurrentPage] = useState(1);
   const [pagination, setPagination] = useState({
@@ -79,6 +94,63 @@ const OrderIndexPage: React.FC = () => {
 
   const handleRefresh = () => {
     fetchOrders(currentPage, searchQuery, statusFilter, paymentStatusFilter);
+  };
+
+  const handleEditStatus = (order: DeviceOrder) => {
+    setSelectedOrder(order);
+    setStatusUpdate({
+      status: order.status,
+      payment_status: order.payment_status,
+    });
+    setShowStatusModal(true);
+  };
+
+  const handleCloseStatusModal = () => {
+    setShowStatusModal(false);
+    setSelectedOrder(null);
+    setStatusUpdate({
+      status: 'accepted',
+      payment_status: undefined,
+    });
+  };
+
+  const handleStatusUpdate = async () => {
+    if (!selectedOrder) return;
+
+    try {
+      setUpdating(true);
+      setError(null);
+
+      const updateData: OrderStatusUpdate = {
+        status: statusUpdate.status,
+      };
+
+      if (statusUpdate.payment_status) {
+        updateData.payment_status = statusUpdate.payment_status;
+      }
+
+      const response = await deviceOrderService.updateOrderStatus(
+        selectedOrder.id,
+        updateData
+      );
+
+      if (response.success && response.data) {
+        showSuccess('Status Updated', 'Order status has been updated successfully');
+        handleCloseStatusModal();
+        fetchOrders(currentPage, searchQuery, statusFilter, paymentStatusFilter);
+      } else {
+        const errorMsg = response.error || 'Failed to update order status';
+        setError(errorMsg);
+        showError('Update Failed', errorMsg);
+      }
+    } catch (err) {
+      const errorMsg = 'An unexpected error occurred';
+      setError(errorMsg);
+      showError('Update Error', errorMsg);
+      console.error('Error updating order status:', err);
+    } finally {
+      setUpdating(false);
+    }
   };
 
   const formatPrice = (price: number | string | null | undefined) => {
@@ -271,14 +343,27 @@ const OrderIndexPage: React.FC = () => {
                           </span>
                         </TableCell>
                         <TableCell>
-                          <Button
-                            variant="outline"
-                            size="sm"
-                            onClick={() => navigate(`/device-orders/${order.id}`)}
-                            icon={<VisibilityIcon className="w-4 h-4" />}
-                          >
-                            View
-                          </Button>
+                          <div className="flex gap-2">
+                            <Button
+                              variant="outline"
+                              size="sm"
+                              onClick={() => navigate(`/device-orders/${order.id}`)}
+                              icon={<VisibilityIcon className="w-4 h-4" />}
+                            >
+                              View
+                            </Button>
+                            {userIsSuperAdmin && (
+                              <Button
+                                variant="outline"
+                                size="sm"
+                                onClick={() => handleEditStatus(order)}
+                                icon={<EditIcon className="w-4 h-4" />}
+                                title="Edit Status"
+                              >
+                                Edit
+                              </Button>
+                            )}
+                          </div>
                         </TableCell>
                       </TableRow>
                     ))}
@@ -303,6 +388,74 @@ const OrderIndexPage: React.FC = () => {
             )}
           </CardBody>
         </Card>
+
+        {/* Status Update Modal */}
+        <Modal
+          isOpen={showStatusModal}
+          onClose={handleCloseStatusModal}
+          title="Update Order Status"
+          size="md"
+        >
+          {selectedOrder && (
+            <div className="space-y-4">
+              <div>
+                <p className="text-sm text-gray-600 mb-2">
+                  Order #{selectedOrder.id} - {selectedOrder.user_info?.name || 'N/A'}
+                </p>
+              </div>
+
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1">
+                  Order Status
+                </label>
+                <Select
+                  value={statusUpdate.status}
+                  onChange={(value) => setStatusUpdate({ ...statusUpdate, status: value as 'accepted' | 'preparing' | 'dispatch' })}
+                  options={[
+                    { value: 'accepted', label: 'Accepted' },
+                    { value: 'preparing', label: 'Preparing' },
+                    { value: 'dispatch', label: 'Dispatch' },
+                  ]}
+                />
+              </div>
+
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1">
+                  Payment Status
+                </label>
+                <Select
+                  value={statusUpdate.payment_status || selectedOrder.payment_status}
+                  onChange={(value) => setStatusUpdate({ ...statusUpdate, payment_status: value as 'pending' | 'failed' | 'completed' })}
+                  options={[
+                    { value: 'pending', label: 'Pending' },
+                    { value: 'failed', label: 'Failed' },
+                    { value: 'completed', label: 'Completed' },
+                  ]}
+                />
+              </div>
+
+              <div className="flex gap-2 pt-4 border-t">
+                <Button
+                  variant="primary"
+                  onClick={handleStatusUpdate}
+                  disabled={updating}
+                  loading={updating}
+                  className="flex-1"
+                >
+                  Update Status
+                </Button>
+                <Button
+                  variant="outline"
+                  onClick={handleCloseStatusModal}
+                  disabled={updating}
+                  className="flex-1"
+                >
+                  Cancel
+                </Button>
+              </div>
+            </div>
+          )}
+        </Modal>
       </div>
     </Container>
   );
