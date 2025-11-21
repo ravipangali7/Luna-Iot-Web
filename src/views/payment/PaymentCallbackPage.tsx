@@ -19,10 +19,26 @@ import AccountBalanceWalletIcon from '@mui/icons-material/AccountBalanceWallet';
  */
 const extractTransactionId = (searchParams: URLSearchParams, windowLocation?: Location): string | null => {
   // First, try standard URLSearchParams (works for normal URLs)
-  let txnId = searchParams.get('txn_id') || searchParams.get('TXNID');
+  const txnId = searchParams.get('TXNID') || searchParams.get('txn_id');
   
   if (txnId) {
     return txnId;
+  }
+  
+  // Handle case where URLSearchParams incorrectly parses malformed URLs
+  // Example: ?status=success?TXNID=TXN-03457827C3C1 becomes status: 'success?TXNID=TXN-03457827C3C1'
+  const statusValue = searchParams.get('status');
+  if (statusValue && statusValue.includes('?TXNID=')) {
+    // Extract TXNID from the status parameter value
+    const txnIdMatch = statusValue.match(/TXNID\s*=\s*([A-Z0-9-]+)/i);
+    if (txnIdMatch && txnIdMatch[1]) {
+      return txnIdMatch[1].trim();
+    }
+    // Fallback: more flexible pattern
+    const txnIdMatchFlexible = statusValue.match(/TXNID\s*=\s*([^&?\s]+)/i);
+    if (txnIdMatchFlexible && txnIdMatchFlexible[1]) {
+      return decodeURIComponent(txnIdMatchFlexible[1].trim());
+    }
   }
   
   // If not found, try to parse the URL manually (handles malformed URLs like ?status=success?TXNID=...)
@@ -43,7 +59,7 @@ const extractTransactionId = (searchParams: URLSearchParams, windowLocation?: Lo
         // Try to find TXNID parameter (case-insensitive)
         // Match TXNID=value where value can contain alphanumeric, hyphens, and underscores
         // First try strict pattern for transaction IDs like TXN-65063ACA3F63
-        let txnIdMatch = part.match(/TXNID\s*=\s*([A-Z0-9\-]+)/i);
+        let txnIdMatch = part.match(/TXNID\s*=\s*([A-Z0-9-]+)/i);
         if (txnIdMatch && txnIdMatch[1]) {
           const extracted = decodeURIComponent(txnIdMatch[1].trim());
           if (extracted) return extracted;
@@ -57,7 +73,7 @@ const extractTransactionId = (searchParams: URLSearchParams, windowLocation?: Lo
         }
         
         // Try to find txn_id parameter (case-insensitive)
-        let txnIdLowerMatch = part.match(/txn_id\s*=\s*([A-Z0-9\-]+)/i);
+        let txnIdLowerMatch = part.match(/txn_id\s*=\s*([A-Z0-9-]+)/i);
         if (txnIdLowerMatch && txnIdLowerMatch[1]) {
           const extracted = decodeURIComponent(txnIdLowerMatch[1].trim());
           if (extracted) return extracted;
@@ -73,7 +89,7 @@ const extractTransactionId = (searchParams: URLSearchParams, windowLocation?: Lo
       
       // If splitting by '?' didn't work, try regex on the entire query string
       // This handles cases where the format is more complex
-      let fullMatch = queryString.match(/(?:TXNID|txn_id)\s*=\s*([A-Z0-9\-]+)/i);
+      let fullMatch = queryString.match(/(?:TXNID|txn_id)\s*=\s*([A-Z0-9-]+)/i);
       if (fullMatch && fullMatch[1]) {
         const extracted = decodeURIComponent(fullMatch[1].trim());
         if (extracted) return extracted;
