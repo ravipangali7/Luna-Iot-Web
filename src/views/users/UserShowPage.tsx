@@ -237,7 +237,7 @@ const UserShowPage: React.FC = () => {
                 <div className="space-y-4">
                   <div className="text-center">
                     <div className="text-3xl font-bold text-green-600">
-                      ₹{(typeof wallet.balance === 'string' ? parseFloat(wallet.balance) : wallet.balance || 0).toFixed(2)}
+                      रु{(typeof wallet.balance === 'string' ? parseFloat(wallet.balance) : wallet.balance || 0).toFixed(2)}
                     </div>
                     <p className="text-sm text-gray-500">Current Balance</p>
                   </div>

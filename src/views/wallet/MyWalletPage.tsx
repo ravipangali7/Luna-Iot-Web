@@ -444,7 +444,7 @@ const MyWalletPage: React.FC = () => {
 
             <div>
               <label className="block text-sm font-medium text-gray-700 mb-1">
-                Amount (₹)
+                Amount (रु)
               </label>
               <Input
                 type="number"
@@ -456,7 +456,7 @@ const MyWalletPage: React.FC = () => {
                 disabled={topUpLoading}
               />
               <p className="text-xs text-gray-500 mt-1">
-                Minimum amount: ₹200
+                Minimum amount: रु200
               </p>
               {/* Quick Amount Buttons */}
               <div className="flex gap-2 mt-2">
@@ -469,7 +469,7 @@ const MyWalletPage: React.FC = () => {
                     disabled={topUpLoading}
                     className="flex-1"
                   >
-                    ₹{amount}
+                    रु{amount}
                   </Button>
                 ))}
               </div>

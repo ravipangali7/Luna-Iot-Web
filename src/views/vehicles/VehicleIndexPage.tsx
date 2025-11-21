@@ -1072,7 +1072,7 @@ const VehicleIndexPage: React.FC = () => {
                           <TableCell className="text-sm">
                             {vehicle.latestRecharge ? (
                               <div className="flex flex-col gap-1">
-                                <Badge variant="info" size="sm" className="w-fit">₹{vehicle.latestRecharge.amount}</Badge>
+                                <Badge variant="info" size="sm" className="w-fit">रु{vehicle.latestRecharge.amount}</Badge>
                                 <span className="text-xs text-gray-600">{formatTimeAgo(vehicle.latestRecharge.createdAt)}</span>
                               </div>
                             ) : (

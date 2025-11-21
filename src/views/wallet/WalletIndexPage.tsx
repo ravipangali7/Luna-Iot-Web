@@ -465,7 +465,7 @@ const WalletIndexPage: React.FC = () => {
 
                 <div>
                   <label className="block text-sm font-medium text-gray-700 mb-1">
-                    Amount (₹)
+                    Amount (रु)
                   </label>
                   <Input
                     type="number"
@@ -558,7 +558,7 @@ const WalletIndexPage: React.FC = () => {
 
                 <div>
                   <label className="block text-sm font-medium text-gray-700 mb-1">
-                    Amount (₹)
+                    Amount (रु)
                   </label>
                   <Input
                     type="number"
@@ -664,7 +664,7 @@ const WalletIndexPage: React.FC = () => {
 
               <div>
                 <label className="block text-sm font-medium text-gray-700 mb-1">
-                  Amount (₹) <span className="text-red-500">*</span>
+                  Amount (रु) <span className="text-red-500">*</span>
                 </label>
                 <Input
                   type="number"

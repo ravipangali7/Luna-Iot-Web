@@ -163,7 +163,7 @@ class TransactionService {
   // Helper method to format amount with sign
   formatAmount(amount: number, type: 'CREDIT' | 'DEBIT'): string {
     const sign = type === 'CREDIT' ? '+' : '-';
-    return `${sign}₹${amount.toFixed(2)}`;
+    return `${sign}रु${amount.toFixed(2)}`;
   }
 
   // Helper method to format currency
