@@ -13,6 +13,47 @@ import CheckCircleIcon from '@mui/icons-material/CheckCircle';
 import ErrorIcon from '@mui/icons-material/Error';
 import AccountBalanceWalletIcon from '@mui/icons-material/AccountBalanceWallet';
 
+/**
+ * Extract transaction ID from URL parameters.
+ * Handles malformed URLs with double question marks and both TXNID/txn_id parameter names.
+ */
+const extractTransactionId = (searchParams: URLSearchParams, windowLocation?: Location): string | null => {
+  // First, try standard URLSearchParams (works for normal URLs)
+  let txnId = searchParams.get('txn_id') || searchParams.get('TXNID');
+  
+  if (txnId) {
+    return txnId;
+  }
+  
+  // If not found, try to parse the URL manually (handles malformed URLs like ?status=success?TXNID=...)
+  if (windowLocation) {
+    const fullUrl = windowLocation.href;
+    const queryString = fullUrl.split('?')[1];
+    
+    if (queryString) {
+      // Handle malformed URLs with double question marks
+      // Example: ?status=success?TXNID=TXN-CC8952FECE23
+      const parts = queryString.split('?');
+      
+      for (const part of parts) {
+        // Try to find TXNID parameter
+        const txnIdMatch = part.match(/TXNID=([^&?]+)/i);
+        if (txnIdMatch && txnIdMatch[1]) {
+          return decodeURIComponent(txnIdMatch[1]);
+        }
+        
+        // Try to find txn_id parameter
+        const txnIdLowerMatch = part.match(/txn_id=([^&?]+)/i);
+        if (txnIdLowerMatch && txnIdLowerMatch[1]) {
+          return decodeURIComponent(txnIdLowerMatch[1]);
+        }
+      }
+    }
+  }
+  
+  return null;
+};
+
 const PaymentCallbackPage: React.FC = () => {
   const navigate = useNavigate();
   const [searchParams] = useSearchParams();
@@ -26,7 +67,8 @@ const PaymentCallbackPage: React.FC = () => {
         setLoading(true);
         setError(null);
 
-        const txnId = searchParams.get('txn_id');
+        // Extract transaction ID with support for malformed URLs
+        const txnId = extractTransactionId(searchParams, window.location);
 
         if (!txnId) {
           setError('Transaction ID is missing from callback URL');
