@@ -58,9 +58,6 @@ const PlaybackIndexPage: React.FC = () => {
   const animationRef = useRef<number>();
   const animationTimerRef = useRef<number | null>(null);
 
-  // Animation speed constants (similar to Flutter app)
-  const ANIMATION_SPEED_DEFAULT = 300; // milliseconds
-  
   // Speed multiplier options
   const SPEED_OPTIONS = [0.25, 0.5, 0.75, 1, 1.25, 1.5, 1.75, 2, 4, 8, 16];
   const [speedMultiplier, setSpeedMultiplier] = useState(1);
