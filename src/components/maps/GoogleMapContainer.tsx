@@ -1,5 +1,5 @@
 import React, { useEffect, useRef, useState } from 'react';
-import type { History } from '../../types/history';
+import type { History, Trip } from '../../types/history';
 import { GOOGLE_MAPS_CONFIG } from '../../config/maps';
 import type { Vehicle } from '../../types/vehicle';
 
@@ -142,6 +142,24 @@ declare namespace google {
   }
 }
 
+interface StopPoint {
+  trip: Trip;
+  nextTrip: Trip | null;
+  arrivalTime: string | null;
+  departureTime: string | null;
+  duration: number;
+  lat: number;
+  lng: number;
+}
+
+interface InterpolatedPoint {
+  latitude: number;
+  longitude: number;
+  speed?: number;
+  course?: number;
+  createdAt?: string;
+}
+
 interface GoogleMapContainerProps {
   historyData: History[];
   vehicle?: Vehicle;
@@ -152,6 +170,10 @@ interface GoogleMapContainerProps {
     currentDateTime?: string;
     progress?: number;
   };
+  interpolatedRoute?: InterpolatedPoint[];
+  stopPoints?: StopPoint[];
+  selectedTrip?: any;
+  onStopPointClick?: (stopPoint: StopPoint) => void;
   className?: string;
 }
 
@@ -159,11 +181,16 @@ const GoogleMapContainer: React.FC<GoogleMapContainerProps> = ({
   historyData,
   vehicle,
   playbackState,
+  interpolatedRoute = [],
+  stopPoints = [],
+  selectedTrip,
+  onStopPointClick,
   className = ''
 }) => {
   const mapRef = useRef<HTMLDivElement>(null);
   const mapInstanceRef = useRef<google.maps.Map | null>(null);
   const markersRef = useRef<google.maps.Marker[]>([]);
+  const stopPointMarkersRef = useRef<google.maps.Marker[]>([]);
   const polylinesRef = useRef<google.maps.Polyline[]>([]);
   const vehicleMarkerRef = useRef<google.maps.Marker | null>(null);
   const [mapLoaded, setMapLoaded] = useState(false);
@@ -191,7 +218,7 @@ const GoogleMapContainer: React.FC<GoogleMapContainerProps> = ({
     if (mapLoaded && historyData.length > 0 && !playbackState?.isPlaying) {
       updateMapWithHistory();
     }
-  }, [historyData, mapLoaded, playbackState?.isPlaying]);
+  }, [historyData, mapLoaded, playbackState?.isPlaying, stopPoints, selectedTrip]);
 
   useEffect(() => {
     if (mapLoaded && playbackState?.isPlaying) {
@@ -242,6 +269,12 @@ const GoogleMapContainer: React.FC<GoogleMapContainerProps> = ({
 
     // Clear existing markers and polylines
     clearMap();
+
+    // Clear stop points if a trip is selected
+    if (selectedTrip) {
+      stopPointMarkersRef.current.forEach(marker => marker.setMap(null));
+      stopPointMarkersRef.current = [];
+    }
 
     const locationData = historyData.filter(h => h.type === 'location' && h.latitude && h.longitude);
 
@@ -318,12 +351,52 @@ const GoogleMapContainer: React.FC<GoogleMapContainerProps> = ({
       markersRef.current.push(endMarker);
     }
 
+    // Add stop point markers (only when not showing single trip and not in playback mode)
+    if (!selectedTrip && stopPoints.length > 0 && !playbackState?.isPlaying) {
+      addStopPointMarkers();
+    }
+
     // Fit map to show all points
     if (routePath.length > 1) {
       const bounds = new google.maps.LatLngBounds();
       routePath.forEach(point => bounds.extend(point));
       mapInstanceRef.current.fitBounds(bounds);
     }
+  };
+
+  const addStopPointMarkers = () => {
+    if (!mapInstanceRef.current || !onStopPointClick) return;
+
+    // Clear existing stop point markers
+    stopPointMarkersRef.current.forEach(marker => marker.setMap(null));
+    stopPointMarkersRef.current = [];
+
+    // Add stop point markers
+    stopPoints.forEach((stopPoint) => {
+      const marker = new google.maps.Marker({
+        position: new google.maps.LatLng(stopPoint.lat, stopPoint.lng),
+        map: mapInstanceRef.current,
+        title: `Stop Point ${stopPoint.trip.tripNumber}`,
+        icon: {
+          path: google.maps.SymbolPath.CIRCLE,
+          scale: 8,
+          fillColor: '#EF4444',
+          fillOpacity: 1,
+          strokeColor: '#ffffff',
+          strokeWeight: 2,
+        },
+      });
+
+      // Add click listener
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      if (onStopPointClick) {
+        (marker as any).addListener('click', () => {
+          onStopPointClick(stopPoint);
+        });
+      }
+
+      stopPointMarkersRef.current.push(marker);
+    });
   };
 
   const addVehicleMarker = (point: History, isMoving: boolean = false) => {
@@ -393,63 +466,65 @@ const GoogleMapContainer: React.FC<GoogleMapContainerProps> = ({
   const updatePlaybackPosition = () => {
     if (!mapInstanceRef.current || !playbackState?.isPlaying) return;
 
-    const locationData = historyData.filter(h => h.type === 'location' && h.latitude && h.longitude);
+    // Use interpolated route if available, otherwise fall back to history data
+    const routePoints = interpolatedRoute.length > 0 ? interpolatedRoute : 
+      historyData.filter(h => h.type === 'location' && h.latitude && h.longitude).map(h => ({
+        latitude: h.latitude!,
+        longitude: h.longitude!,
+        speed: h.speed,
+        course: h.course,
+        createdAt: h.createdAt,
+      }));
 
-    if (playbackState.currentIndex >= locationData.length) return;
+    if (playbackState.currentIndex >= routePoints.length) return;
 
-    const currentPoint = locationData[playbackState.currentIndex];
-    const nextPoint = locationData[playbackState.currentIndex + 1];
-    const prevPoint = locationData[playbackState.currentIndex - 1];
+    const currentPoint = routePoints[playbackState.currentIndex];
+    const nextPoint = routePoints[playbackState.currentIndex + 1];
+    const prevPoint = routePoints[playbackState.currentIndex - 1];
 
     // Calculate smooth rotation based on movement direction
     let rotation = 0;
 
-    // Priority 1: Use course from GPS data if available and valid
+    // Priority 1: Use course from interpolated point if available and valid
     if (currentPoint.course !== undefined && currentPoint.course !== null && currentPoint.course >= 0 && currentPoint.course <= 360) {
       rotation = currentPoint.course;
-      console.log('Using GPS course:', rotation);
     }
     // Priority 2: Calculate bearing to next point for moving vehicle
     else if (nextPoint) {
       rotation = calculateBearing(
-        currentPoint.latitude!, currentPoint.longitude!,
-        nextPoint.latitude!, nextPoint.longitude!
+        currentPoint.latitude, currentPoint.longitude,
+        nextPoint.latitude, nextPoint.longitude
       );
-      console.log('Calculated bearing to next point:', rotation);
     }
     // Priority 3: Calculate bearing from previous point (for last point or stationary)
     else if (prevPoint) {
       rotation = calculateBearing(
-        prevPoint.latitude!, prevPoint.longitude!,
-        currentPoint.latitude!, currentPoint.longitude!
+        prevPoint.latitude, prevPoint.longitude,
+        currentPoint.latitude, currentPoint.longitude
       );
-      console.log('Calculated bearing from previous point:', rotation);
     }
-
-    // Add slight variation based on speed for more realistic movement
-    const speed = currentPoint.speed || 0;
-    if (speed > 0) {
-      // Add small random variation for more natural movement
-      const variation = (Math.random() - 0.5) * 2; // ±1 degree variation
-      rotation = (rotation + variation + 360) % 360;
-    }
-
-    console.log('Final rotation:', rotation, 'Speed:', speed);
-
-    // Update polyline to show only remaining route (trail effect)
-    updatePolylineTrail(locationData, playbackState.currentIndex);
 
     // Update vehicle marker with smooth movement and rotation
     if (vehicleMarkerRef.current) {
-      // Smooth position update
-      const newPosition = new google.maps.LatLng(currentPoint.latitude!, currentPoint.longitude!);
+      // Smooth position update using interpolated point
+      const newPosition = new google.maps.LatLng(currentPoint.latitude, currentPoint.longitude);
       vehicleMarkerRef.current.setPosition(newPosition);
 
       // Update rotation smoothly with proper icon handling
       updateVehicleMarkerRotation(rotation);
     } else {
       // Create new vehicle marker if it doesn't exist
-      addVehicleMarker(currentPoint, true);
+      const historyPoint: History = {
+        imei: '',
+        type: 'location',
+        dataType: 'location',
+        latitude: currentPoint.latitude,
+        longitude: currentPoint.longitude,
+        speed: currentPoint.speed,
+        course: currentPoint.course,
+        createdAt: currentPoint.createdAt,
+      };
+      addVehicleMarker(historyPoint, true);
     }
 
     // Enhanced camera movement - smooth pan with zoom following
@@ -500,31 +575,6 @@ const GoogleMapContainer: React.FC<GoogleMapContainerProps> = ({
     console.log('Vehicle marker icon updated with rotation:', smoothTargetRotation);
   };
 
-  const updatePolylineTrail = (locationData: History[], currentIndex: number) => {
-    if (!mapInstanceRef.current) return;
-
-    // Clear existing polylines
-    polylinesRef.current.forEach(polyline => polyline.setMap(null));
-    polylinesRef.current = [];
-
-    // Create new polyline with only remaining points (from current position to end)
-    const remainingPoints = locationData.slice(currentIndex).map(point =>
-      new google.maps.LatLng(point.latitude!, point.longitude!)
-    );
-
-    if (remainingPoints.length > 1) {
-      const polyline = new google.maps.Polyline({
-        path: remainingPoints,
-        geodesic: true,
-        strokeColor: '#3B82F6',
-        strokeOpacity: 1.0,
-        strokeWeight: 4,
-      });
-
-      polyline.setMap(mapInstanceRef.current);
-      polylinesRef.current.push(polyline);
-    }
-  };
 
   const calculateBearing = (lat1: number, lon1: number, lat2: number, lon2: number): number => {
     const dLon = (lon2 - lon1) * Math.PI / 180;
@@ -560,6 +610,10 @@ const GoogleMapContainer: React.FC<GoogleMapContainerProps> = ({
     markersRef.current.forEach(marker => marker.setMap(null));
     markersRef.current = [];
 
+    // Clear stop point markers
+    stopPointMarkersRef.current.forEach(marker => marker.setMap(null));
+    stopPointMarkersRef.current = [];
+
     // Clear vehicle marker
     if (vehicleMarkerRef.current) {
       vehicleMarkerRef.current.setMap(null);
@@ -579,60 +633,58 @@ const GoogleMapContainer: React.FC<GoogleMapContainerProps> = ({
         style={{ minHeight: '400px' }}
       />
 
-        {/* Playback Info Overlay - Bottom Right */}
+        {/* Full-Width Stats Bar - Bottom */}
         {playbackState?.isPlaying && (
-          <div className="absolute bottom-2 left-2 z-20 w-80 max-w-sm animate-in slide-in-from-bottom-4 duration-500">
-            <div className="bg-gradient-to-r from-green-600 via-green-700 to-emerald-700 text-white rounded-xl shadow-xl border border-green-500/30 backdrop-blur-sm hover:shadow-green-500/25 transition-all duration-300">
-              {/* Top accent line */}
-              <div className="h-0.5 bg-gradient-to-r from-green-400 via-emerald-400 to-green-500 rounded-t-xl"></div>
-              
-              <div className="px-4 py-3">
-                <div className="flex items-center justify-between">
-                  {/* Left Side - Date & Time */}
-                  <div className="flex items-center space-x-3">
-                    <div className="flex items-center space-x-2">
-                      <div className="relative">
-                        <div className="w-2 h-2 bg-white rounded-full animate-pulse"></div>
-                        <div className="absolute inset-0 w-2 h-2 bg-white rounded-full animate-ping opacity-30"></div>
-                      </div>
-                      <span className="text-xs font-bold text-green-100 tracking-wide">LIVE</span>
-                    </div>
-                    <div className="h-4 w-px bg-gradient-to-b from-transparent via-green-400/60 to-transparent"></div>
-                    <div className="text-left">
-                      <div className="text-xs text-green-200 font-medium uppercase tracking-wide mb-0.5">Time</div>
-                      <div className="text-sm font-bold text-white font-mono">
-                        {playbackState.currentDateTime ?
-                          new Date(playbackState.currentDateTime).toLocaleString('en-US', {
-                            hour: '2-digit',
-                            minute: '2-digit',
-                            second: '2-digit',
-                            hour12: true
-                          }) : 'N/A'}
-                      </div>
-                    </div>
+          <div className="absolute bottom-0 left-0 right-0 z-20 h-12 bg-gradient-to-r from-green-600 via-green-700 to-emerald-700 text-white shadow-lg border-t border-green-500/30 backdrop-blur-sm">
+            <div className="flex items-center justify-between h-full px-4">
+              {/* Left Side - Live Indicator & Time */}
+              <div className="flex items-center space-x-4">
+                <div className="flex items-center space-x-2">
+                  <div className="relative">
+                    <div className="w-2 h-2 bg-white rounded-full animate-pulse"></div>
+                    <div className="absolute inset-0 w-2 h-2 bg-white rounded-full animate-ping opacity-30"></div>
                   </div>
+                  <span className="text-xs font-bold text-green-100 tracking-wide">LIVE</span>
+                </div>
+                <div className="h-6 w-px bg-green-400/40"></div>
+                <div className="flex flex-col">
+                  <span className="text-xs text-green-200 font-medium uppercase tracking-wide">Time</span>
+                  <span className="text-sm font-bold text-white font-mono leading-tight">
+                    {playbackState.currentDateTime ?
+                      new Date(playbackState.currentDateTime).toLocaleString('en-US', {
+                        hour: '2-digit',
+                        minute: '2-digit',
+                        second: '2-digit',
+                        hour12: true
+                      }) : 'N/A'}
+                  </span>
+                </div>
+              </div>
 
-                  {/* Center Divider */}
-                  <div className="h-8 w-px bg-gradient-to-b from-transparent via-green-400/60 to-transparent"></div>
+              {/* Center - Progress */}
+              <div className="flex-1 mx-4">
+                <div className="w-full h-1.5 bg-green-400/20 rounded-full overflow-hidden">
+                  <div 
+                    className="h-full bg-gradient-to-r from-green-400 via-yellow-400 to-red-400 rounded-full transition-all duration-300 ease-out"
+                    style={{ 
+                      width: `${(playbackState?.progress || 0) * 100}%` 
+                    }}
+                  ></div>
+                </div>
+                <div className="text-xs text-green-200 text-center mt-0.5">
+                  {Math.round((playbackState?.progress || 0) * 100)}%
+                </div>
+              </div>
 
-                  {/* Right Side - Speed */}
-                  <div className="text-center">
-                    <div className="text-xs text-green-200 font-medium uppercase tracking-wide mb-1">Speed</div>
-                    <div className="flex items-baseline justify-center space-x-1">
-                      <div className="text-2xl font-black text-white font-mono">
-                        {(playbackState?.currentSpeed || 0).toFixed(1)}
-                      </div>
-                      <div className="text-sm text-green-200 font-bold">km/h</div>
-                    </div>
-                    {/* Compact speed indicator bar */}
-                    <div className="mt-1 w-20 h-1 bg-green-400/20 rounded-full overflow-hidden">
-                      <div 
-                        className="h-full bg-gradient-to-r from-green-400 via-yellow-400 to-red-400 rounded-full transition-all duration-500 ease-out"
-                        style={{ 
-                          width: `${Math.min(100, ((playbackState?.currentSpeed || 0) / 120) * 100)}%` 
-                        }}
-                      ></div>
-                    </div>
+              {/* Right Side - Speed */}
+              <div className="flex items-center space-x-3">
+                <div className="text-right">
+                  <div className="text-xs text-green-200 font-medium uppercase tracking-wide">Speed</div>
+                  <div className="flex items-baseline space-x-1">
+                    <span className="text-lg font-black text-white font-mono">
+                      {(playbackState?.currentSpeed || 0).toFixed(1)}
+                    </span>
+                    <span className="text-xs text-green-200 font-bold">km/h</span>
                   </div>
                 </div>
               </div>

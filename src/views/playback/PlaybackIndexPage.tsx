@@ -5,11 +5,12 @@ import { historyService } from '../../api/services/historyService';
 import GeoUtils from '../../utils/geoUtils';
 import Card from '../../components/ui/cards/Card';
 import CardBody from '../../components/ui/cards/CardBody';
-import DatePicker from '../../components/ui/forms/DatePicker';
+import DateTimePicker from '../../components/ui/forms/DateTimePicker';
 import Select from '../../components/ui/forms/Select';
 import Button from '../../components/ui/buttons/Button';
 import Spinner from '../../components/ui/common/Spinner';
 import GoogleMapContainer from '../../components/maps/GoogleMapContainer';
+import StopPointModal from '../../components/modals/StopPointModal';
 import { handleVehicleAction, VEHICLE_ACTIONS } from '../../utils/vehicleActionUtils';
 import type { Vehicle } from '../../types/vehicle';
 import type { History, Trip, PlaybackState } from '../../types/history';
@@ -21,8 +22,8 @@ const PlaybackIndexPage: React.FC = () => {
 
   // Form state
   const [selectedVehicle, setSelectedVehicle] = useState<string>('');
-  const [startDate, setStartDate] = useState<string>('');
-  const [endDate, setEndDate] = useState<string>('');
+  const [startDateTime, setStartDateTime] = useState<string>('');
+  const [endDateTime, setEndDateTime] = useState<string>('');
 
   // Data state
   const [historyData, setHistoryData] = useState<History[]>([]);
@@ -55,6 +56,56 @@ const PlaybackIndexPage: React.FC = () => {
   });
 
   const animationRef = useRef<number>();
+  const animationTimerRef = useRef<number | null>(null);
+
+  // Animation speed constants (similar to Flutter app)
+  const ANIMATION_SPEED_DEFAULT = 300; // milliseconds
+  
+  // Speed multiplier options
+  const SPEED_OPTIONS = [0.25, 0.5, 0.75, 1, 1.25, 1.5, 1.75, 2, 4, 8, 16];
+  const [speedMultiplier, setSpeedMultiplier] = useState(1);
+  
+  // Interpolated route for smooth animation
+  const [interpolatedRoute, setInterpolatedRoute] = useState<Array<{
+    latitude: number;
+    longitude: number;
+    speed?: number;
+    course?: number;
+    createdAt?: string;
+  }>>([]);
+  
+  // Interpolation steps per segment (how many mini points between two GPS points)
+  // Adjust steps based on speed for optimal performance
+  const getInterpolationSteps = (speedMultiplier: number): number => {
+    if (speedMultiplier >= 16) return 2; // 16x speed: minimal steps
+    if (speedMultiplier >= 8) return 3; // 8x speed: very few steps
+    if (speedMultiplier >= 4) return 4; // 4x speed: few steps
+    if (speedMultiplier >= 2) return 5; // 2x speed: moderate steps
+    if (speedMultiplier >= 1.5) return 7; // 1.5x-1.75x: medium steps
+    if (speedMultiplier >= 1) return 10; // 1x-1.25x: standard steps
+    if (speedMultiplier >= 0.5) return 12; // 0.5x-0.75x: more steps for smoothness
+    return 15; // 0.25x: maximum steps for very smooth slow motion
+  };
+
+  // Stop points state
+  const [stopPoints, setStopPoints] = useState<Array<{
+    trip: Trip;
+    nextTrip: Trip | null;
+    arrivalTime: string | null;
+    departureTime: string | null;
+    duration: number; // in minutes
+    lat: number;
+    lng: number;
+  }>>([]);
+  const [selectedStopPoint, setSelectedStopPoint] = useState<{
+    trip: Trip;
+    nextTrip: Trip | null;
+    arrivalTime: string | null;
+    departureTime: string | null;
+    duration: number;
+    lat: number;
+    lng: number;
+  } | null>(null);
 
   useEffect(() => {
     loadVehicles();
@@ -66,6 +117,9 @@ const PlaybackIndexPage: React.FC = () => {
     return () => {
       if (animationRef.current) {
         cancelAnimationFrame(animationRef.current);
+      }
+      if (animationTimerRef.current) {
+        clearTimeout(animationTimerRef.current);
       }
     };
   }, []);
@@ -91,29 +145,67 @@ const PlaybackIndexPage: React.FC = () => {
     const today = new Date();
     const yesterday = new Date(today);
     yesterday.setDate(yesterday.getDate() - 1);
-
-    setStartDate(yesterday.toISOString().split('T')[0]);
-    setEndDate(today.toISOString().split('T')[0]);
-  };
-
-  // Get today's date in YYYY-MM-DD format for max date validation
-  const getTodayString = () => {
-    return new Date().toISOString().split('T')[0];
-  };
-
-  // Handle start date change
-  const handleStartDateChange = (date: string) => {
-    setStartDate(date);
     
-    // If end date is before new start date, reset end date to start date
-    if (endDate && date && endDate < date) {
-      setEndDate(date);
+    // Set start datetime to yesterday 00:00
+    const startDateStr = yesterday.toISOString().split('T')[0];
+    const startDateTimeStr = `${startDateStr}T00:00`;
+    
+    // Set end datetime to today 23:59
+    const endDateStr = today.toISOString().split('T')[0];
+    const endDateTimeStr = `${endDateStr}T23:59`;
+
+    setStartDateTime(startDateTimeStr);
+    setEndDateTime(endDateTimeStr);
+  };
+
+  // Get today's datetime in YYYY-MM-DDTHH:mm format for max datetime validation
+  const getTodayDateTimeString = () => {
+    const today = new Date();
+    const dateStr = today.toISOString().split('T')[0];
+    const timeStr = today.toTimeString().split(' ')[0].substring(0, 5); // HH:mm
+    return `${dateStr}T${timeStr}`;
+  };
+
+
+  // Handle start datetime change
+  const handleStartDateTimeChange = (datetime: string) => {
+    setStartDateTime(datetime);
+    
+    // If end datetime is before new start datetime, reset end datetime
+    if (endDateTime && datetime && endDateTime < datetime) {
+      // Set end datetime to same date but with 23:59 time
+      const datePart = datetime.split('T')[0];
+      setEndDateTime(`${datePart}T23:59`);
     }
   };
 
-  // Handle end date change
-  const handleEndDateChange = (date: string) => {
-    setEndDate(date);
+  // Handle end datetime change
+  const handleEndDateTimeChange = (datetime: string) => {
+    setEndDateTime(datetime);
+  };
+
+  // Filter history data by datetime range (similar to Flutter app)
+  const filterHistoryByDateTime = (
+    allHistoryData: History[],
+    startDateTimeStr: string,
+    endDateTimeStr: string
+  ): History[] => {
+    if (!startDateTimeStr || !endDateTimeStr) {
+      return allHistoryData;
+    }
+
+    // Parse datetime strings (YYYY-MM-DDTHH:mm format)
+    const startDateTime = new Date(startDateTimeStr);
+    const endDateTime = new Date(endDateTimeStr);
+
+    return allHistoryData.filter((history) => {
+      if (!history.createdAt) return false;
+
+      const historyDateTime = new Date(history.createdAt);
+
+      // Check if history is within the selected datetime range
+      return historyDateTime >= startDateTime && historyDateTime <= endDateTime;
+    });
   };
 
   // Handle vehicle selection with inactive check
@@ -132,9 +224,13 @@ const PlaybackIndexPage: React.FC = () => {
   };
 
   const fetchHistoryData = useCallback(async () => {
-    if (!selectedVehicle || !startDate || !endDate) {
+    if (!selectedVehicle || !startDateTime || !endDateTime) {
       return;
     }
+
+    // Extract date parts from datetime for API call
+    const startDate = startDateTime.split('T')[0];
+    const endDate = endDateTime.split('T')[0];
 
     const calculateTrips = async (history: History[]) => {
       // Simple trip calculation based on ignition status
@@ -228,6 +324,39 @@ const PlaybackIndexPage: React.FC = () => {
       setTrips(trips);
       setTripSegments(segments);
 
+      // Calculate stop points between trips
+      const calculatedStopPoints: Array<{
+        trip: Trip;
+        nextTrip: Trip | null;
+        arrivalTime: string | null;
+        departureTime: string | null;
+        duration: number;
+        lat: number;
+        lng: number;
+      }> = [];
+
+      for (let i = 0; i < trips.length - 1; i++) {
+        const trip = trips[i];
+        const nextTrip = trips[i + 1];
+        const timestamps = getStopPointTimestamps(trip, nextTrip, history);
+        const duration = calculateStopDuration(timestamps.arrivalTime, timestamps.departureTime);
+
+        // Only include stop points with duration >= 1 minute
+        if (duration >= 1) {
+          calculatedStopPoints.push({
+            trip,
+            nextTrip,
+            arrivalTime: timestamps.arrivalTime,
+            departureTime: timestamps.departureTime,
+            duration,
+            lat: trip.endLatitude,
+            lng: trip.endLongitude,
+          });
+        }
+      }
+
+      setStopPoints(calculatedStopPoints);
+
       // Load addresses for segments
       setLoadingAddresses(true);
       for (let i = 0; i < segments.length; i++) {
@@ -260,21 +389,37 @@ const PlaybackIndexPage: React.FC = () => {
       const response = await historyService.getCombinedHistoryByDateRange(selectedVehicle, startDate, endDate);
 
       if (response.success && response.data) {
-        setHistoryData(response.data);
-        await calculateTrips(response.data);
+        // Filter by datetime range (similar to Flutter app)
+        const filteredHistoryData = filterHistoryByDateTime(
+          response.data,
+          startDateTime,
+          endDateTime
+        );
+
+        setHistoryData(filteredHistoryData);
+        await calculateTrips(filteredHistoryData);
+        
+        // Generate interpolated route for filtered history data
+        const locationData = filteredHistoryData.filter(h => h.type === 'location' && h.latitude && h.longitude);
+        const steps = getInterpolationSteps(speedMultiplier);
+        const interpolated = generateInterpolatedRoute(locationData, steps);
+        setInterpolatedRoute(interpolated);
       } else {
         console.error('Failed to load history:', response.error);
         setHistoryData([]);
         setTrips([]);
+        setInterpolatedRoute([]);
       }
     } catch (error) {
       console.error('Error loading history:', error);
       setHistoryData([]);
       setTrips([]);
+      setInterpolatedRoute([]);
+      setSelectedTrip(null);
     } finally {
       setLoadingHistory(false);
     }
-  }, [selectedVehicle, startDate, endDate, vehicles]);
+  }, [selectedVehicle, startDateTime, endDateTime, vehicles]);
 
   // Handle URL parameters for pre-selecting vehicle
   useEffect(() => {
@@ -298,7 +443,7 @@ const PlaybackIndexPage: React.FC = () => {
         setSelectedVehicleData(vehicle);
         
         // Auto-load data when vehicle is pre-selected
-        if (startDate && endDate) {
+        if (startDateTime && endDateTime) {
           console.log('🚀 Auto-loading playback data for vehicle:', vehicleImei);
           setTimeout(() => {
             fetchHistoryData();
@@ -306,7 +451,7 @@ const PlaybackIndexPage: React.FC = () => {
         }
       }
     }
-  }, [searchParams, vehicles, startDate, endDate, fetchHistoryData]);
+  }, [searchParams, vehicles, startDateTime, endDateTime, fetchHistoryData]);
 
 
   const calculateDistance = (lat1: number, lon1: number, lat2: number, lon2: number): number => {
@@ -320,9 +465,226 @@ const PlaybackIndexPage: React.FC = () => {
     return R * c;
   };
 
+  // Get stop point timestamps (arrival and departure times)
+  const getStopPointTimestamps = (
+    trip: Trip,
+    _nextTrip: Trip | null,
+    allHistoryData: History[]
+  ): { arrivalTime: string | null; departureTime: string | null } => {
+    const stopLatitude = trip.endLatitude;
+    const stopLongitude = trip.endLongitude;
+
+    // Find location history records
+    const locationHistory = allHistoryData.filter(
+      (data) => data.type === 'location' && data.latitude && data.longitude
+    );
+
+    // Find the arrival record (exact match with stop point coordinates)
+    let arrivalRecord: History | null = null;
+    for (const record of locationHistory) {
+      if (
+        record.latitude === stopLatitude &&
+        record.longitude === stopLongitude
+      ) {
+        arrivalRecord = record;
+        break;
+      }
+    }
+
+    // Find ignition off status record after arrival
+    let ignitionOffRecord: History | null = null;
+    if (arrivalRecord) {
+      const arrivalIndex = allHistoryData.indexOf(arrivalRecord);
+      if (arrivalIndex >= 0) {
+        // Look for ignition off status after arrival
+        for (let i = arrivalIndex; i < allHistoryData.length; i++) {
+          const record = allHistoryData[i];
+          if (record.type === 'status' && record.ignition === false) {
+            ignitionOffRecord = record;
+            break;
+          }
+        }
+      }
+    }
+
+    // Find departure record (next location record after ignition off)
+    let departureRecord: History | null = null;
+    if (ignitionOffRecord) {
+      const ignitionOffIndex = allHistoryData.indexOf(ignitionOffRecord);
+      if (ignitionOffIndex >= 0) {
+        // Look for next location record after ignition off
+        for (let i = ignitionOffIndex; i < allHistoryData.length; i++) {
+          const record = allHistoryData[i];
+          if (record.type === 'location' && record.latitude && record.longitude) {
+            departureRecord = record;
+            break;
+          }
+        }
+      }
+    }
+
+    return {
+      arrivalTime: arrivalRecord?.createdAt || null,
+      departureTime: departureRecord?.createdAt || null,
+    };
+  };
+
+  // Calculate stop duration in minutes
+  const calculateStopDuration = (arrivalTime: string | null, departureTime: string | null): number => {
+    if (!arrivalTime || !departureTime) return 0;
+    const arrival = new Date(arrivalTime).getTime();
+    const departure = new Date(departureTime).getTime();
+    return (departure - arrival) / (1000 * 60); // Convert to minutes
+  };
+
+
+  // Interpolate between two GPS points
+  const interpolatePoints = (
+    startPoint: { latitude: number; longitude: number; speed?: number; course?: number; createdAt?: string },
+    endPoint: { latitude: number; longitude: number; speed?: number; course?: number; createdAt?: string },
+    numSteps: number
+  ): Array<{ latitude: number; longitude: number; speed?: number; course?: number; createdAt?: string }> => {
+    const points: Array<{ latitude: number; longitude: number; speed?: number; course?: number; createdAt?: string }> = [];
+    
+    for (let i = 0; i <= numSteps; i++) {
+      const t = i / numSteps; // Interpolation factor (0 to 1)
+      
+      // Linear interpolation for latitude and longitude
+      const lat = startPoint.latitude + (endPoint.latitude - startPoint.latitude) * t;
+      const lng = startPoint.longitude + (endPoint.longitude - startPoint.longitude) * t;
+      
+      // Interpolate speed
+      const speed = startPoint.speed !== undefined && endPoint.speed !== undefined
+        ? startPoint.speed + (endPoint.speed - startPoint.speed) * t
+        : endPoint.speed || startPoint.speed;
+      
+      // Calculate bearing/direction for smooth rotation
+      const course = calculateBearing(
+        startPoint.latitude,
+        startPoint.longitude,
+        endPoint.latitude,
+        endPoint.longitude
+      );
+      
+      // Interpolate timestamp
+      let createdAt: string | undefined;
+      if (startPoint.createdAt && endPoint.createdAt) {
+        const startTime = new Date(startPoint.createdAt).getTime();
+        const endTime = new Date(endPoint.createdAt).getTime();
+        const interpolatedTime = new Date(startTime + (endTime - startTime) * t);
+        createdAt = interpolatedTime.toISOString();
+      } else {
+        createdAt = endPoint.createdAt || startPoint.createdAt;
+      }
+      
+      points.push({
+        latitude: lat,
+        longitude: lng,
+        speed,
+        course,
+        createdAt,
+      });
+    }
+    
+    return points;
+  };
+
+  // Calculate bearing between two points
+  const calculateBearing = (lat1: number, lon1: number, lat2: number, lon2: number): number => {
+    const dLon = (lon2 - lon1) * Math.PI / 180;
+    const lat1Rad = lat1 * Math.PI / 180;
+    const lat2Rad = lat2 * Math.PI / 180;
+
+    const y = Math.sin(dLon) * Math.cos(lat2Rad);
+    const x = Math.cos(lat1Rad) * Math.sin(lat2Rad) - Math.sin(lat1Rad) * Math.cos(lat2Rad) * Math.cos(dLon);
+
+    let bearing = Math.atan2(y, x) * 180 / Math.PI;
+    bearing = (bearing + 360) % 360;
+
+    return bearing;
+  };
+
+  // Generate interpolated route from location data
+  const generateInterpolatedRoute = (
+    locationData: History[],
+    stepsPerSegment: number
+  ): Array<{ latitude: number; longitude: number; speed?: number; course?: number; createdAt?: string }> => {
+    if (locationData.length < 2) {
+      // If less than 2 points, return as is
+      return locationData.map(point => ({
+        latitude: point.latitude!,
+        longitude: point.longitude!,
+        speed: point.speed,
+        course: point.course,
+        createdAt: point.createdAt,
+      }));
+    }
+
+    const interpolatedPoints: Array<{ latitude: number; longitude: number; speed?: number; course?: number; createdAt?: string }> = [];
+
+    for (let i = 0; i < locationData.length - 1; i++) {
+      const startPoint = {
+        latitude: locationData[i].latitude!,
+        longitude: locationData[i].longitude!,
+        speed: locationData[i].speed,
+        course: locationData[i].course,
+        createdAt: locationData[i].createdAt,
+      };
+
+      const endPoint = {
+        latitude: locationData[i + 1].latitude!,
+        longitude: locationData[i + 1].longitude!,
+        speed: locationData[i + 1].speed,
+        course: locationData[i + 1].course,
+        createdAt: locationData[i + 1].createdAt,
+      };
+
+      // Interpolate between start and end point
+      const segmentPoints = interpolatePoints(startPoint, endPoint, stepsPerSegment);
+      
+      // Add all points except the last one (to avoid duplicates with next segment's first point)
+      if (i === 0) {
+        // First segment: include all points including the first one
+        interpolatedPoints.push(...segmentPoints);
+      } else {
+        // Subsequent segments: skip first point (already added as last point of previous segment)
+        interpolatedPoints.push(...segmentPoints.slice(1));
+      }
+    }
+
+    return interpolatedPoints;
+  };
+
   const handleTripSelect = (trip: Trip) => {
     setSelectedTrip(trip);
     setHistoryData(trip.tripPoints);
+    
+    // Generate interpolated route for the selected trip
+    const locationData = trip.tripPoints.filter(h => h.type === 'location' && h.latitude && h.longitude);
+    const steps = getInterpolationSteps(speedMultiplier);
+    const interpolated = generateInterpolatedRoute(locationData, steps);
+    setInterpolatedRoute(interpolated);
+  };
+
+  const handleStopPointClick = (stopPoint: {
+    trip: Trip;
+    nextTrip: Trip | null;
+    arrivalTime: string | null;
+    departureTime: string | null;
+    duration: number;
+    lat: number;
+    lng: number;
+  }) => {
+    setSelectedStopPoint(stopPoint);
+  };
+
+  const handleCloseStopModal = () => {
+    setSelectedStopPoint(null);
+  };
+
+  const handleViewTrip = (trip: Trip) => {
+    handleCloseStopModal();
+    handleTripSelect(trip);
   };
 
   const handlePlayback = () => {
@@ -333,51 +695,115 @@ const PlaybackIndexPage: React.FC = () => {
     }
   };
 
+  // Calculate animation speed based on route length and speed multiplier
+  const calculateAnimationSpeed = (routeLength: number, multiplier: number) => {
+    let baseSpeed: number;
+    if (routeLength < 10) {
+      baseSpeed = 100; // Fast for short routes
+    } else if (routeLength < 50) {
+      baseSpeed = 150; // Medium speed
+    } else {
+      baseSpeed = 200; // Slower for long routes
+    }
+    
+    // Apply speed multiplier: actualSpeed = baseSpeed / multiplier
+    // For higher speeds (4x, 8x, 16x), use more aggressive reduction
+    return Math.max(20, Math.floor(baseSpeed / multiplier)); // Minimum 20ms for smoothness
+  };
+
   const startPlayback = () => {
-    if (historyData.length === 0) return;
+    if (historyData.length === 0 || interpolatedRoute.length === 0) return;
+
+    // Use interpolated route for smooth animation
+    const speed = calculateAnimationSpeed(interpolatedRoute.length, speedMultiplier);
 
     setPlaybackState(prev => ({ ...prev, isPlaying: true, currentIndex: 0 }));
 
-    const animate = () => {
-      setPlaybackState(prev => {
-        if (prev.currentIndex >= historyData.length - 1) {
-          return { ...prev, isPlaying: false, currentIndex: 0 };
-        }
+    let currentSpeed = speed;
+    let animationFrameId: number | null = null;
+    let lastFrameTime = performance.now();
+    let isPlayingRef = true;
 
-        const nextIndex = prev.currentIndex + 1;
-        const progress = nextIndex / (historyData.length - 1);
+    const animate = (currentTime: number) => {
+      if (!isPlayingRef) {
+        return;
+      }
 
-        animationRef.current = requestAnimationFrame(animate);
+      const deltaTime = currentTime - lastFrameTime;
+      
+      // Only update if enough time has passed (throttle for performance)
+      if (deltaTime >= currentSpeed) {
+        lastFrameTime = currentTime;
 
-        let currentDateTime = '';
-        const createdAt = historyData[nextIndex]?.createdAt;
-        if (createdAt) {
-          const dateObj = new Date(createdAt);
-          if (!isNaN(dateObj.getTime())) {
-            const [date, timeWithMs] = dateObj.toISOString().split('T');
-            const time = timeWithMs?.split('.')[0] || '';
-            currentDateTime = `${date} ${time}`;
+        setPlaybackState(prev => {
+          if (!prev.isPlaying) {
+            isPlayingRef = false;
+            return prev; // Stop if paused
           }
-        }
+          
+          if (prev.currentIndex >= interpolatedRoute.length - 1) {
+            isPlayingRef = false;
+            return { ...prev, isPlaying: false, currentIndex: 0 };
+          }
 
-        return {
-          ...prev,
-          currentIndex: nextIndex,
-          progress,
-          currentSpeed: historyData[nextIndex]?.speed || 0,
-          currentDateTime: currentDateTime,
-        };
-      });
+          // Move to next interpolated point for smooth animation
+          const nextIndex = prev.currentIndex + 1;
+          const progress = nextIndex / (interpolatedRoute.length - 1);
+
+          let currentDateTime = '';
+          const currentPoint = interpolatedRoute[nextIndex];
+          if (currentPoint?.createdAt) {
+            const dateObj = new Date(currentPoint.createdAt);
+            if (!isNaN(dateObj.getTime())) {
+              const [date, timeWithMs] = dateObj.toISOString().split('T');
+              const time = timeWithMs?.split('.')[0] || '';
+              currentDateTime = `${date} ${time}`;
+            }
+          }
+
+          // Recalculate speed if multiplier changed
+          const newSpeed = calculateAnimationSpeed(interpolatedRoute.length, speedMultiplier);
+          if (newSpeed !== currentSpeed) {
+            currentSpeed = newSpeed;
+          }
+
+          return {
+            ...prev,
+            currentIndex: nextIndex,
+            progress,
+            currentSpeed: currentPoint?.speed || 0,
+            currentDateTime: currentDateTime,
+          };
+        });
+      }
+
+      // Continue animation loop
+      if (isPlayingRef) {
+        animationFrameId = requestAnimationFrame(animate);
+        animationRef.current = animationFrameId;
+      }
     };
 
-    animationRef.current = requestAnimationFrame(animate);
+    // Start animation with requestAnimationFrame for smoother performance
+    animationFrameId = requestAnimationFrame(animate);
+    animationRef.current = animationFrameId;
   };
 
   const stopPlayback = () => {
     if (animationRef.current) {
       cancelAnimationFrame(animationRef.current);
+      animationRef.current = undefined;
     }
-    setPlaybackState(prev => ({ ...prev, isPlaying: false }));
+    if (animationTimerRef.current) {
+      clearTimeout(animationTimerRef.current);
+      animationTimerRef.current = null;
+    }
+    setPlaybackState(prev => {
+      if (prev.isPlaying) {
+        return { ...prev, isPlaying: false, currentIndex: 0 };
+      }
+      return prev;
+    });
   };
 
   const vehicleOptions = [
@@ -421,23 +847,23 @@ const PlaybackIndexPage: React.FC = () => {
             </div>
             <div>
               <label className="block text-sm font-medium text-gray-700 mb-1">
-                Start Date
+                Start Date & Time
               </label>
-              <DatePicker
-                value={startDate}
-                onChange={handleStartDateChange}
-                max={getTodayString()}
+              <DateTimePicker
+                value={startDateTime}
+                onChange={handleStartDateTimeChange}
+                max={getTodayDateTimeString()}
               />
             </div>
             <div>
               <label className="block text-sm font-medium text-gray-700 mb-1">
-                End Date
+                End Date & Time
               </label>
-              <DatePicker
-                value={endDate}
-                onChange={handleEndDateChange}
-                min={startDate || undefined}
-                max={getTodayString()}
+              <DateTimePicker
+                value={endDateTime}
+                onChange={handleEndDateTimeChange}
+                min={startDateTime || undefined}
+                max={getTodayDateTimeString()}
               />
             </div>
             <div className="flex items-end gap-2">
@@ -445,19 +871,52 @@ const PlaybackIndexPage: React.FC = () => {
                 variant="primary"
                 onClick={fetchHistoryData}
                 loading={loadingHistory}
-                disabled={!selectedVehicle || !startDate || !endDate}
+                disabled={!selectedVehicle || !startDateTime || !endDateTime}
                 className="w-full"
               >
                 GO
               </Button>
               {historyData.length > 0 && (
-                <Button
-                  variant={playbackState.isPlaying ? "danger" : "primary"}
-                  onClick={handlePlayback}
-                  disabled={loadingHistory}
-                >
-                  {playbackState.isPlaying ? 'Stop' : 'Play'}
-                </Button>
+                <>
+                  <Button
+                    variant={playbackState.isPlaying ? "danger" : "primary"}
+                    onClick={handlePlayback}
+                    disabled={loadingHistory}
+                  >
+                    {playbackState.isPlaying ? 'Stop' : 'Play'}
+                  </Button>
+                  
+                  {/* Speed Selector Dropdown */}
+                  <div className="w-24">
+                    <Select
+                      options={SPEED_OPTIONS.map(speed => ({
+                        value: speed.toString(),
+                        label: `${speed}x`
+                      }))}
+                      value={speedMultiplier.toString()}
+                      onChange={(value) => {
+                        const newMultiplier = parseFloat(value);
+                        setSpeedMultiplier(newMultiplier);
+                        
+                        // Regenerate interpolated route with new step count
+                        const locationData = historyData.filter(h => h.type === 'location' && h.latitude && h.longitude);
+                        if (locationData.length > 0) {
+                          const steps = getInterpolationSteps(newMultiplier);
+                          const interpolated = generateInterpolatedRoute(locationData, steps);
+                          setInterpolatedRoute(interpolated);
+                        }
+                        
+                        // If playing, restart with new speed
+                        if (playbackState.isPlaying) {
+                          stopPlayback();
+                          setTimeout(() => startPlayback(), 100);
+                        }
+                      }}
+                      disabled={loadingHistory}
+                      size="sm"
+                    />
+                  </div>
+                </>
               )}
             </div>
           </div>
@@ -599,49 +1058,20 @@ const PlaybackIndexPage: React.FC = () => {
                   historyData={historyData}
                   vehicle={selectedVehicleData || undefined}
                   playbackState={playbackState}
+                  interpolatedRoute={interpolatedRoute}
+                  stopPoints={stopPoints}
+                  selectedTrip={selectedTrip}
+                  onStopPointClick={handleStopPointClick}
                   className="w-full h-full"
                 />
               </div>
-
-              {/* Playback Info */}
-              {playbackState.isPlaying && (
-                <div className="mt-4 p-4 bg-blue-50 rounded-lg">
-                  <div className="grid grid-cols-1 md:grid-cols-3 gap-4 text-sm">
-                    <div>
-                      <span className="text-gray-600">Current Time:</span>
-                      <p className="font-medium">
-                        {playbackState.currentDateTime ?
-                          new Date(playbackState.currentDateTime).toISOString().split('T')[0] + ' ' + new Date(playbackState.currentDateTime).toISOString().split('T')[1].split('.')[0] : 'N/A'}
-                      </p>
-                    </div>
-                    <div>
-                      <span className="text-gray-600">Speed:</span>
-                      <p className="font-medium">{playbackState.currentSpeed.toFixed(1)} km/h</p>
-                    </div>
-                    <div>
-                      <span className="text-gray-600">Progress:</span>
-                      <p className="font-medium">
-                        {playbackState.currentIndex + 1} / {historyData.length}
-                      </p>
-                    </div>
-                  </div>
-                  <div className="mt-2">
-                    <div className="w-full bg-gray-200 rounded-full h-2">
-                      <div
-                        className="bg-blue-600 h-2 rounded-full transition-all duration-300"
-                        style={{ width: `${playbackState.progress * 100}%` }}
-                      ></div>
-                    </div>
-                  </div>
-                </div>
-              )}
             </Card>
           </div>
         </div>
       )}
 
       {/* No Data Message */}
-      {!loadingHistory && selectedVehicle && startDate && endDate && historyData.length === 0 && (
+      {!loadingHistory && selectedVehicle && startDateTime && endDateTime && historyData.length === 0 && (
         <Card>
           <CardBody>
             <div className="text-center py-8">
@@ -651,6 +1081,17 @@ const PlaybackIndexPage: React.FC = () => {
             </div>
           </CardBody>
         </Card>
+      )}
+
+      {/* Stop Point Modal */}
+      {selectedStopPoint && (
+        <StopPointModal
+          isOpen={!!selectedStopPoint}
+          onClose={handleCloseStopModal}
+          stopPoint={selectedStopPoint}
+          onViewTrip={handleViewTrip}
+          onViewNextTrip={handleViewTrip}
+        />
       )}
     </div>
   );
