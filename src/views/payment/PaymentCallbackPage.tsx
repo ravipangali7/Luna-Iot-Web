@@ -28,25 +28,69 @@ const extractTransactionId = (searchParams: URLSearchParams, windowLocation?: Lo
   // If not found, try to parse the URL manually (handles malformed URLs like ?status=success?TXNID=...)
   if (windowLocation) {
     const fullUrl = windowLocation.href;
-    const queryString = fullUrl.split('?')[1];
+    // Remove hash if present
+    const urlWithoutHash = fullUrl.split('#')[0];
+    const queryString = urlWithoutHash.split('?')[1];
     
     if (queryString) {
       // Handle malformed URLs with double question marks
-      // Example: ?status=success?TXNID=TXN-CC8952FECE23
+      // Example: ?status=success?TXNID=TXN-65063ACA3F63
+      // Split by '?' to get all parts
       const parts = queryString.split('?');
       
+      // Search through all parts for TXNID or txn_id
       for (const part of parts) {
-        // Try to find TXNID parameter
-        const txnIdMatch = part.match(/TXNID=([^&?]+)/i);
+        // Try to find TXNID parameter (case-insensitive)
+        // Match TXNID=value where value can contain alphanumeric, hyphens, and underscores
+        // First try strict pattern for transaction IDs like TXN-65063ACA3F63
+        let txnIdMatch = part.match(/TXNID\s*=\s*([A-Z0-9\-]+)/i);
         if (txnIdMatch && txnIdMatch[1]) {
-          return decodeURIComponent(txnIdMatch[1]);
+          const extracted = decodeURIComponent(txnIdMatch[1].trim());
+          if (extracted) return extracted;
         }
         
-        // Try to find txn_id parameter
-        const txnIdLowerMatch = part.match(/txn_id=([^&?]+)/i);
-        if (txnIdLowerMatch && txnIdLowerMatch[1]) {
-          return decodeURIComponent(txnIdLowerMatch[1]);
+        // Fallback: more flexible pattern that captures until &, ?, or whitespace
+        txnIdMatch = part.match(/TXNID\s*=\s*([^&?\s]+)/i);
+        if (txnIdMatch && txnIdMatch[1]) {
+          const extracted = decodeURIComponent(txnIdMatch[1].trim());
+          if (extracted) return extracted;
         }
+        
+        // Try to find txn_id parameter (case-insensitive)
+        let txnIdLowerMatch = part.match(/txn_id\s*=\s*([A-Z0-9\-]+)/i);
+        if (txnIdLowerMatch && txnIdLowerMatch[1]) {
+          const extracted = decodeURIComponent(txnIdLowerMatch[1].trim());
+          if (extracted) return extracted;
+        }
+        
+        // Fallback for txn_id
+        txnIdLowerMatch = part.match(/txn_id\s*=\s*([^&?\s]+)/i);
+        if (txnIdLowerMatch && txnIdLowerMatch[1]) {
+          const extracted = decodeURIComponent(txnIdLowerMatch[1].trim());
+          if (extracted) return extracted;
+        }
+      }
+      
+      // If splitting by '?' didn't work, try regex on the entire query string
+      // This handles cases where the format is more complex
+      let fullMatch = queryString.match(/(?:TXNID|txn_id)\s*=\s*([A-Z0-9\-]+)/i);
+      if (fullMatch && fullMatch[1]) {
+        const extracted = decodeURIComponent(fullMatch[1].trim());
+        if (extracted) return extracted;
+      }
+      
+      // Fallback: more flexible pattern on entire query string
+      fullMatch = queryString.match(/(?:TXNID|txn_id)\s*=\s*([^&?\s]+)/i);
+      if (fullMatch && fullMatch[1]) {
+        const extracted = decodeURIComponent(fullMatch[1].trim());
+        if (extracted) return extracted;
+      }
+      
+      // Last resort: look for any pattern that looks like TXN- followed by alphanumeric
+      // This handles edge cases where the parameter name might be slightly different
+      const txnPatternMatch = queryString.match(/TXN-[A-Z0-9]+/i);
+      if (txnPatternMatch && txnPatternMatch[0]) {
+        return txnPatternMatch[0];
       }
     }
   }
@@ -69,6 +113,15 @@ const PaymentCallbackPage: React.FC = () => {
 
         // Extract transaction ID with support for malformed URLs
         const txnId = extractTransactionId(searchParams, window.location);
+
+        // Debug logging (remove in production if needed)
+        if (!txnId) {
+          console.warn('Failed to extract transaction ID from URL:', {
+            href: window.location.href,
+            search: window.location.search,
+            searchParams: Object.fromEntries(searchParams.entries()),
+          });
+        }
 
         if (!txnId) {
           setError('Transaction ID is missing from callback URL');
