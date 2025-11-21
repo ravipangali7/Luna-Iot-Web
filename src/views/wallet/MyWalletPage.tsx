@@ -449,15 +449,30 @@ const MyWalletPage: React.FC = () => {
               <Input
                 type="number"
                 step="0.01"
-                min="0.01"
+                min="200"
                 value={topUpAmount}
                 onChange={(value) => setTopUpAmount(value)}
                 placeholder="Enter amount"
                 disabled={topUpLoading}
               />
               <p className="text-xs text-gray-500 mt-1">
-                Minimum amount: ₹0.01
+                Minimum amount: ₹200
               </p>
+              {/* Quick Amount Buttons */}
+              <div className="flex gap-2 mt-2">
+                {[200, 500, 800, 1000].map((amount) => (
+                  <Button
+                    key={amount}
+                    variant="outline"
+                    size="sm"
+                    onClick={() => setTopUpAmount(amount.toString())}
+                    disabled={topUpLoading}
+                    className="flex-1"
+                  >
+                    ₹{amount}
+                  </Button>
+                ))}
+              </div>
             </div>
 
             <div>
@@ -499,7 +514,7 @@ const MyWalletPage: React.FC = () => {
               <Button
                 variant="success"
                 onClick={handleInitiatePayment}
-                disabled={topUpLoading || !topUpAmount || parseFloat(topUpAmount) <= 0}
+                disabled={topUpLoading || !topUpAmount || parseFloat(topUpAmount) < 200}
                 loading={topUpLoading}
               >
                 Proceed to Payment
