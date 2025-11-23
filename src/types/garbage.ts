@@ -1,4 +1,4 @@
-import type { Institute } from './institute';
+import type { Institute } from './school';
 import type { Vehicle } from './vehicle';
 
 export interface GarbageVehicle {
