@@ -44,6 +44,9 @@ import SchoolParentEditPage from './views/school/schoolParents/SchoolParentEditP
 import SchoolParentViewPage from './views/school/schoolParents/SchoolParentViewPage';
 import SchoolSMSCreatePage from './views/school/schoolSMS/SchoolSMSCreatePage';
 import SchoolSMSEditPage from './views/school/schoolSMS/SchoolSMSEditPage';
+import GarbageIndexPage from './views/garbage/GarbageIndexPage';
+import GarbageShowPage from './views/garbage/GarbageShowPage';
+import GarbageVehicleCreatePage from './views/garbage/garbageVehicles/GarbageVehicleCreatePage';
 import { WalletIndexPage, MyWalletPage } from './views/wallet';
 import { TransactionIndexPage, WalletTransactionsPage, UserTransactionsPage } from './views/transactions';
 import PaymentCallbackPage from './views/payment/PaymentCallbackPage';
@@ -747,6 +750,23 @@ const AppRoutes: React.FC = () => {
         <Route path="school/:id/sms/:smsId/edit" element={
           <ModuleBasedRoute allowedRoles={[ROLES.SUPER_ADMIN]} moduleType="school">
             <SchoolSMSEditPage />
+          </ModuleBasedRoute>
+        } />
+
+        {/* Garbage Routes - Super Admin or users with garbage module access */}
+        <Route path="garbage" element={
+          <ModuleBasedRoute allowedRoles={[ROLES.SUPER_ADMIN]} moduleType="garbage">
+            <GarbageIndexPage />
+          </ModuleBasedRoute>
+        } />
+        <Route path="garbage/:id" element={
+          <ModuleBasedRoute allowedRoles={[ROLES.SUPER_ADMIN]} moduleType="garbage">
+            <GarbageShowPage />
+          </ModuleBasedRoute>
+        } />
+        <Route path="garbage/:id/vehicles/create" element={
+          <ModuleBasedRoute allowedRoles={[ROLES.SUPER_ADMIN]} moduleType="garbage">
+            <GarbageVehicleCreatePage />
           </ModuleBasedRoute>
         } />
 

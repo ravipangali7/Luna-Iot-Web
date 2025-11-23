@@ -2,12 +2,13 @@ import React from 'react';
 import { Navigate } from 'react-router-dom';
 import { useAuth } from '../../hooks/useAuth';
 import { useSchoolAccess } from '../../hooks/useSchoolAccess';
+import { useGarbageAccess } from '../../hooks/useGarbageAccess';
 import { hasRole } from '../../utils/roleUtils';
 
 interface ModuleBasedRouteProps {
   children: React.ReactNode;
   allowedRoles?: string[];
-  moduleType?: 'school' | 'alert-system'; // Type of module to check access for
+  moduleType?: 'school' | 'alert-system' | 'garbage'; // Type of module to check access for
   fallbackPath?: string;
   fallbackComponent?: React.ReactNode;
 }
@@ -21,8 +22,9 @@ const ModuleBasedRoute: React.FC<ModuleBasedRouteProps> = ({
 }) => {
   const { user, isLoading } = useAuth();
   const { hasAccess: hasSchoolAccess, loading: schoolAccessLoading } = useSchoolAccess();
+  const { hasAccess: hasGarbageAccess, loading: garbageAccessLoading } = useGarbageAccess();
 
-  if (isLoading || (moduleType === 'school' && schoolAccessLoading)) {
+  if (isLoading || (moduleType === 'school' && schoolAccessLoading) || (moduleType === 'garbage' && garbageAccessLoading)) {
     return (
       <div className="min-h-screen flex items-center justify-center">
         <div className="text-lg">Loading...</div>
@@ -41,6 +43,8 @@ const ModuleBasedRoute: React.FC<ModuleBasedRouteProps> = ({
   let hasModuleAccess = false;
   if (moduleType === 'school') {
     hasModuleAccess = hasSchoolAccess;
+  } else if (moduleType === 'garbage') {
+    hasModuleAccess = hasGarbageAccess;
   }
   // Add other module types here as needed (e.g., alert-system)
 
