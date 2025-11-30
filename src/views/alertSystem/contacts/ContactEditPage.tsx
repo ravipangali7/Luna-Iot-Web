@@ -34,7 +34,7 @@ interface FormData {
 const ContactEditPage: React.FC = () => {
   const { instituteId, id } = useParams<{ instituteId: string; id: string }>();
   const navigate = useNavigate();
-  const { hasAccess, loading: accessLoading, isAdmin, hasAccessToInstitute } = useAlertSystemAccess(Number(instituteId));
+  const { hasAccess, loading: accessLoading, isAdmin } = useAlertSystemAccess(Number(instituteId));
 
   const [loading, setLoading] = useState(true);
   const [submitting, setSubmitting] = useState(false);
