@@ -34,7 +34,7 @@ interface FormData {
 const ContactCreatePage: React.FC = () => {
   const { instituteId } = useParams<{ instituteId: string }>();
   const navigate = useNavigate();
-  const { hasAccessToInstitute } = useAlertSystemAccess(Number(instituteId));
+  const { hasAccess, loading: accessLoading, isAdmin, hasAccessToInstitute } = useAlertSystemAccess(Number(instituteId));
 
   const [loading, setLoading] = useState(false);
   const [submitting, setSubmitting] = useState(false);
@@ -73,13 +73,19 @@ const ContactCreatePage: React.FC = () => {
   }, [instituteId]);
 
   useEffect(() => {
-    if (hasAccessToInstitute(Number(instituteId))) {
+    // Allow access if user has general alert-system access or is admin
+    // Backend will validate specific institute access when creating
+    if (accessLoading) {
+      return;
+    }
+    
+    if (hasAccess || isAdmin) {
       fetchData();
     } else {
       setError('Access denied. You do not have permission to create contacts for this institute.');
       setLoading(false);
     }
-  }, [hasAccessToInstitute, instituteId, fetchData]);
+  }, [hasAccess, isAdmin, accessLoading, fetchData]);
 
   // Handle input changes
   const handleInputChange = (field: keyof FormData, value: string | boolean | number[]) => {

@@ -34,7 +34,7 @@ interface FormData {
 const ContactEditPage: React.FC = () => {
   const { instituteId, id } = useParams<{ instituteId: string; id: string }>();
   const navigate = useNavigate();
-  const { hasAccessToInstitute } = useAlertSystemAccess(Number(instituteId));
+  const { hasAccess, loading: accessLoading, isAdmin, hasAccessToInstitute } = useAlertSystemAccess(Number(instituteId));
 
   const [loading, setLoading] = useState(true);
   const [submitting, setSubmitting] = useState(false);
@@ -85,13 +85,19 @@ const ContactEditPage: React.FC = () => {
   }, [id, instituteId]);
 
   useEffect(() => {
-    if (hasAccessToInstitute(Number(instituteId))) {
+    // Allow access if user has general alert-system access or is admin
+    // Backend will validate specific institute access when updating
+    if (accessLoading) {
+      return;
+    }
+    
+    if (hasAccess || isAdmin) {
       fetchData();
     } else {
       setError('Access denied. You do not have permission to edit contacts for this institute.');
       setLoading(false);
     }
-  }, [hasAccessToInstitute, instituteId, fetchData]);
+  }, [hasAccess, isAdmin, accessLoading, fetchData]);
 
   // Handle input changes
   const handleInputChange = (field: keyof FormData, value: string | boolean | number[]) => {

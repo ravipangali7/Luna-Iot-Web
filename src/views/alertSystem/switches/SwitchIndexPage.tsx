@@ -21,7 +21,7 @@ import { confirmDelete, showSuccess, showError } from '../../../utils/sweetAlert
 const SwitchIndexPage: React.FC = () => {
   const { instituteId } = useParams<{ instituteId: string }>();
   const navigate = useNavigate();
-  const { hasAccessToInstitute } = useAlertSystemAccess(Number(instituteId));
+  const { hasAccessToInstitute, isAdmin } = useAlertSystemAccess(Number(instituteId));
 
   const [switches, setSwitches] = useState<AlertSwitch[]>([]);
   const [loading, setLoading] = useState(true);
@@ -169,6 +169,7 @@ const SwitchIndexPage: React.FC = () => {
           <Button
             variant="primary"
             onClick={handleCreate}
+            disabled={!isAdmin}
             icon={
               <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v16m8-8H4" />
@@ -211,7 +212,7 @@ const SwitchIndexPage: React.FC = () => {
                 {searchTerm ? 'No switches match your search criteria.' : 'Get started by creating your first alert switch.'}
               </p>
               {!searchTerm && (
-                <Button variant="primary" onClick={handleCreate}>
+                <Button variant="primary" onClick={handleCreate} disabled={!isAdmin}>
                   Add Switch
                 </Button>
               )}

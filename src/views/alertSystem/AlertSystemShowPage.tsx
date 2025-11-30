@@ -281,6 +281,7 @@ const AlertSystemShowPage: React.FC = () => {
           <Button
             variant="primary"
             onClick={handleAddGeofence}
+            disabled={!isAdmin}
             icon={
               <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 6v6m0 0v6m0-6h6m-6 0H6" />
@@ -292,6 +293,7 @@ const AlertSystemShowPage: React.FC = () => {
           <Button
             variant="primary"
             onClick={handleAddRadar}
+            disabled={!isAdmin}
             icon={
               <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 6v6m0 0v6m0-6h6m-6 0H6" />
@@ -303,6 +305,7 @@ const AlertSystemShowPage: React.FC = () => {
           <Button
             variant="primary"
             onClick={handleAddBuzzer}
+            disabled={!isAdmin}
             icon={
               <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 6v6m0 0v6m0-6h6m-6 0H6" />
@@ -314,6 +317,7 @@ const AlertSystemShowPage: React.FC = () => {
           <Button
             variant="primary"
             onClick={handleAddSwitch}
+            disabled={!isAdmin}
             icon={
               <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 6v6m0 0v6m0-6h6m-6 0H6" />
@@ -675,7 +679,7 @@ const AlertSystemShowPage: React.FC = () => {
                        <TableCell>
                          <div className="flex space-x-2">
                           
-                           {isAdmin && (
+                           {(isAdmin || hasAccess) && (
                              <Button
                                variant="secondary"
                                size="sm"
@@ -689,7 +693,7 @@ const AlertSystemShowPage: React.FC = () => {
                                Edit
                              </Button>
                            )}
-                           {isAdmin && (
+                           {(isAdmin || hasAccess) && (
                              <Button
                                variant="danger"
                                size="sm"

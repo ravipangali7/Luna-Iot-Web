@@ -16,7 +16,7 @@ import { confirmDelete, showSuccess, showError } from '../../../utils/sweetAlert
 const ContactIndexPage: React.FC = () => {
   const { instituteId } = useParams<{ instituteId: string }>();
   const navigate = useNavigate();
-  const { hasAccessToInstitute } = useAlertSystemAccess(Number(instituteId));
+  const { hasAccess, loading: accessLoading, isAdmin } = useAlertSystemAccess(Number(instituteId));
 
   const [contacts, setContacts] = useState<AlertContact[]>([]);
   const [loading, setLoading] = useState(true);
@@ -40,13 +40,19 @@ const ContactIndexPage: React.FC = () => {
   }, [instituteId]);
 
   useEffect(() => {
-    if (hasAccessToInstitute(Number(instituteId))) {
+    // Allow access if user has general alert-system access or is admin
+    // Backend will validate specific institute access when fetching/deleting
+    if (accessLoading) {
+      return;
+    }
+    
+    if (hasAccess || isAdmin) {
       fetchContacts();
     } else {
       setError('Access denied. You do not have permission to view contacts for this institute.');
       setLoading(false);
     }
-  }, [hasAccessToInstitute, instituteId, fetchContacts]);
+  }, [hasAccess, isAdmin, accessLoading, fetchContacts]);
 
   // Handle delete contact
   const handleDelete = async (contact: AlertContact) => {

@@ -558,125 +558,125 @@ const AppRoutes: React.FC = () => {
           <DueTransactionEditPage />
         } />
 
-        {/* Alert System Routes - Super Admin only */}
+        {/* Alert System Routes - Super Admin or Institute Module access */}
         <Route path="alert-system" element={
-          <RoleBasedRoute allowedRoles={[ROLES.SUPER_ADMIN]}>
+          <ModuleBasedRoute allowedRoles={[ROLES.SUPER_ADMIN]} moduleType="alert-system">
             <AlertSystemIndexPage />
-          </RoleBasedRoute>
+          </ModuleBasedRoute>
         } />
         <Route path="alert-system/:id" element={
-          <RoleBasedRoute allowedRoles={[ROLES.SUPER_ADMIN]}>
+          <ModuleBasedRoute allowedRoles={[ROLES.SUPER_ADMIN]} moduleType="alert-system">
             <AlertSystemShowPage />
-          </RoleBasedRoute>
+          </ModuleBasedRoute>
         } />
 
-        {/* Geofence Routes - Super Admin only */}
+        {/* Geofence Routes - Super Admin or Institute Module access */}
         <Route path="alert-system/:instituteId/geofences/create" element={
-          <RoleBasedRoute allowedRoles={[ROLES.SUPER_ADMIN]}>
+          <ModuleBasedRoute allowedRoles={[ROLES.SUPER_ADMIN]} moduleType="alert-system">
             <GeofenceCreatePage />
-          </RoleBasedRoute>
+          </ModuleBasedRoute>
         } />
         <Route path="alert-system/:instituteId/geofences/:id/edit" element={
-          <RoleBasedRoute allowedRoles={[ROLES.SUPER_ADMIN]}>
+          <ModuleBasedRoute allowedRoles={[ROLES.SUPER_ADMIN]} moduleType="alert-system">
             <GeofenceEditPage />
-          </RoleBasedRoute>
+          </ModuleBasedRoute>
         } />
 
-        {/* Radar Routes - Super Admin only */}
+        {/* Radar Routes - Super Admin or Institute Module access */}
         <Route path="alert-system/:instituteId/radars" element={
-          <RoleBasedRoute allowedRoles={[ROLES.SUPER_ADMIN]}>
+          <ModuleBasedRoute allowedRoles={[ROLES.SUPER_ADMIN]} moduleType="alert-system">
             <RadarIndexPage />
-          </RoleBasedRoute>
+          </ModuleBasedRoute>
         } />
         <Route path="alert-system/:instituteId/radars/create" element={
-          <RoleBasedRoute allowedRoles={[ROLES.SUPER_ADMIN]}>
+          <ModuleBasedRoute allowedRoles={[ROLES.SUPER_ADMIN]} moduleType="alert-system">
             <RadarCreatePage />
-          </RoleBasedRoute>
+          </ModuleBasedRoute>
         } />
         <Route path="alert-system/:instituteId/radars/:id/edit" element={
-          <RoleBasedRoute allowedRoles={[ROLES.SUPER_ADMIN]}>
+          <ModuleBasedRoute allowedRoles={[ROLES.SUPER_ADMIN]} moduleType="alert-system">
             <RadarEditPage />
-          </RoleBasedRoute>
+          </ModuleBasedRoute>
         } />
 
-        {/* Buzzer Routes - Super Admin only */}
+        {/* Buzzer Routes - Super Admin or Institute Module access */}
         <Route path="alert-system/:instituteId/buzzers" element={
-          <RoleBasedRoute allowedRoles={[ROLES.SUPER_ADMIN]}>
+          <ModuleBasedRoute allowedRoles={[ROLES.SUPER_ADMIN]} moduleType="alert-system">
             <BuzzerIndexPage />
-          </RoleBasedRoute>
+          </ModuleBasedRoute>
         } />
         <Route path="alert-system/:instituteId/buzzers/create" element={
-          <RoleBasedRoute allowedRoles={[ROLES.SUPER_ADMIN]}>
+          <ModuleBasedRoute allowedRoles={[ROLES.SUPER_ADMIN]} moduleType="alert-system">
             <BuzzerCreatePage />
-          </RoleBasedRoute>
+          </ModuleBasedRoute>
         } />
         <Route path="alert-system/:instituteId/buzzers/:id/edit" element={
-          <RoleBasedRoute allowedRoles={[ROLES.SUPER_ADMIN]}>
+          <ModuleBasedRoute allowedRoles={[ROLES.SUPER_ADMIN]} moduleType="alert-system">
             <BuzzerEditPage />
-          </RoleBasedRoute>
+          </ModuleBasedRoute>
         } />
 
-        {/* Switch Routes - Super Admin only */}
+        {/* Switch Routes - Super Admin or Institute Module access */}
         <Route path="alert-system/:instituteId/switches" element={
-          <RoleBasedRoute allowedRoles={[ROLES.SUPER_ADMIN]}>
+          <ModuleBasedRoute allowedRoles={[ROLES.SUPER_ADMIN]} moduleType="alert-system">
             <SwitchIndexPage />
-          </RoleBasedRoute>
+          </ModuleBasedRoute>
         } />
         <Route path="alert-system/:instituteId/switches/create" element={
-          <RoleBasedRoute allowedRoles={[ROLES.SUPER_ADMIN]}>
+          <ModuleBasedRoute allowedRoles={[ROLES.SUPER_ADMIN]} moduleType="alert-system">
             <SwitchCreatePage />
-          </RoleBasedRoute>
+          </ModuleBasedRoute>
         } />
         <Route path="alert-system/:instituteId/switches/:id/edit" element={
-          <RoleBasedRoute allowedRoles={[ROLES.SUPER_ADMIN]}>
+          <ModuleBasedRoute allowedRoles={[ROLES.SUPER_ADMIN]} moduleType="alert-system">
             <SwitchEditPage />
-          </RoleBasedRoute>
+          </ModuleBasedRoute>
         } />
 
-        {/* Contact Routes - Super Admin only */}
+        {/* Contact Routes - Super Admin or Institute Module access */}
         <Route path="alert-system/:instituteId/contacts" element={
-          <RoleBasedRoute allowedRoles={[ROLES.SUPER_ADMIN]}>
+          <ModuleBasedRoute allowedRoles={[ROLES.SUPER_ADMIN]} moduleType="alert-system">
             <ContactIndexPage />
-          </RoleBasedRoute>
+          </ModuleBasedRoute>
         } />
         <Route path="alert-system/:instituteId/contacts/create" element={
-          <RoleBasedRoute allowedRoles={[ROLES.SUPER_ADMIN]}>
+          <ModuleBasedRoute allowedRoles={[ROLES.SUPER_ADMIN]} moduleType="alert-system">
             <ContactCreatePage />
-          </RoleBasedRoute>
+          </ModuleBasedRoute>
         } />
         <Route path="alert-system/:instituteId/contacts/:id/edit" element={
-          <RoleBasedRoute allowedRoles={[ROLES.SUPER_ADMIN]}>
+          <ModuleBasedRoute allowedRoles={[ROLES.SUPER_ADMIN]} moduleType="alert-system">
             <ContactEditPage />
-          </RoleBasedRoute>
+          </ModuleBasedRoute>
         } />
 
-        {/* Alert Type Routes - Super Admin only */}
+        {/* Alert Type Routes - Super Admin or Institute Module access */}
         <Route path="alert-types" element={
-          <RoleBasedRoute allowedRoles={[ROLES.SUPER_ADMIN]}>
+          <ModuleBasedRoute allowedRoles={[ROLES.SUPER_ADMIN]} moduleType="alert-system">
             <AlertTypeIndexPage />
-          </RoleBasedRoute>
+          </ModuleBasedRoute>
         } />
         <Route path="alert-types/create" element={
-          <RoleBasedRoute allowedRoles={[ROLES.SUPER_ADMIN]}>
+          <ModuleBasedRoute allowedRoles={[ROLES.SUPER_ADMIN]} moduleType="alert-system">
             <AlertTypeCreatePage />
-          </RoleBasedRoute>
+          </ModuleBasedRoute>
         } />
         <Route path="alert-types/:id/edit" element={
-          <RoleBasedRoute allowedRoles={[ROLES.SUPER_ADMIN]}>
+          <ModuleBasedRoute allowedRoles={[ROLES.SUPER_ADMIN]} moduleType="alert-system">
             <AlertTypeEditPage />
-          </RoleBasedRoute>
+          </ModuleBasedRoute>
         } />
 
-        {/* Alert History Routes - Super Admin only */}
+        {/* Alert History Routes - Super Admin or Institute Module access */}
         <Route path="alert-history" element={
-          <RoleBasedRoute allowedRoles={[ROLES.SUPER_ADMIN]}>
+          <ModuleBasedRoute allowedRoles={[ROLES.SUPER_ADMIN]} moduleType="alert-system">
             <AlertHistoryIndexPage />
-          </RoleBasedRoute>
+          </ModuleBasedRoute>
         } />
         <Route path="alert-history/:id" element={
-          <RoleBasedRoute allowedRoles={[ROLES.SUPER_ADMIN]}>
+          <ModuleBasedRoute allowedRoles={[ROLES.SUPER_ADMIN]} moduleType="alert-system">
             <AlertHistoryViewPage />
-          </RoleBasedRoute>
+          </ModuleBasedRoute>
         } />
 
         {/* Phone Call Campaign Routes - Super Admin only */}

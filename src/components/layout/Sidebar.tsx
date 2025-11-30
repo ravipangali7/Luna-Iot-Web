@@ -2,6 +2,8 @@ import React, { useState, useMemo, useEffect } from 'react';
 import { useNavigate, useLocation } from 'react-router-dom';
 import { useAuth } from '../../hooks/useAuth';
 import { useSchoolAccess } from '../../hooks/useSchoolAccess';
+import { useAlertSystemAccess } from '../../hooks/useAlertSystemAccess';
+import { useGarbageAccess } from '../../hooks/useGarbageAccess';
 import Button from '../ui/buttons/Button';
 import Badge from '../ui/common/Badge';
 import logo from '../../assets/logo.png';
@@ -29,6 +31,8 @@ const Sidebar: React.FC<SidebarProps> = ({ isOpen, onToggle }) => {
   const location = useLocation();
   const { user, logout, canAny, canAll } = useAuth();
   const { hasAccess: hasSchoolAccess } = useSchoolAccess();
+  const { hasAccess: hasAlertSystemAccess } = useAlertSystemAccess();
+  const { hasAccess: hasGarbageAccess } = useGarbageAccess();
   const [expandedItems, setExpandedItems] = useState<Set<string>>(new Set());
 
   // Close sidebar on mobile when route changes
@@ -553,7 +557,8 @@ const Sidebar: React.FC<SidebarProps> = ({ isOpen, onToggle }) => {
       allowedRoles: ['Super Admin'],
       icon: (
         <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
+          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 12h2m14 0h2M5 12v6a2 2 0 002 2h10a2 2 0 002-2v-6M5 12V8a2 2 0 012-2h10a2 2 0 012 2v4M7 8V6a2 2 0 012-2h6a2 2 0 012 2v2M7 8h10" />
+          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 18a1 1 0 11-2 0 1 1 0 012 0zM17 18a1 1 0 11-2 0 1 1 0 012 0z" />
         </svg>
       )
     },
@@ -672,6 +677,36 @@ const Sidebar: React.FC<SidebarProps> = ({ isOpen, onToggle }) => {
           return false;
         }
 
+        // Special handling for Alert System item: check both role-based and module-based access
+        if (item.id === 'alert-system-group' || item.id === 'alert-system') {
+          // Check if user is Super Admin (role-based)
+          if (user.roles && user.roles.length > 0) {
+            const userRoleNames = user.roles.map(role => role.name);
+            const isSuperAdmin = userRoleNames.includes(ROLES.SUPER_ADMIN);
+            
+            // Show if Super Admin OR has alert system module access
+            if (isSuperAdmin || hasAlertSystemAccess) {
+              return true;
+            }
+          }
+          return false;
+        }
+
+        // Special handling for Garbage item: check both role-based and module-based access
+        if (item.id === 'garbage') {
+          // Check if user is Super Admin (role-based)
+          if (user.roles && user.roles.length > 0) {
+            const userRoleNames = user.roles.map(role => role.name);
+            const isSuperAdmin = userRoleNames.includes(ROLES.SUPER_ADMIN);
+            
+            // Show if Super Admin OR has garbage module access
+            if (isSuperAdmin || hasGarbageAccess) {
+              return true;
+            }
+          }
+          return false;
+        }
+
         // Check role-based access (backward compatibility)
         if (item.allowedRoles && item.allowedRoles.length > 0) {
           if (!user.roles || user.roles.length === 0) return false;
@@ -721,7 +756,7 @@ const Sidebar: React.FC<SidebarProps> = ({ isOpen, onToggle }) => {
     };
 
     return filterItems(navigationItems);
-  }, [user, canAny, canAll, hasSchoolAccess, navigationItems]);
+  }, [user, canAny, canAll, hasSchoolAccess, hasAlertSystemAccess, hasGarbageAccess, navigationItems]);
 
   const handleLogout = async () => {
     logout();

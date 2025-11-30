@@ -35,7 +35,7 @@ interface AlertBuzzer {
 const BuzzerIndexPage: React.FC = () => {
   const { instituteId } = useParams<{ instituteId: string }>();
   const navigate = useNavigate();
-  const { hasAccessToInstitute } = useAlertSystemAccess(Number(instituteId));
+  const { hasAccessToInstitute, isAdmin } = useAlertSystemAccess(Number(instituteId));
 
   const [buzzers, setBuzzers] = useState<AlertBuzzer[]>([]);
   const [loading, setLoading] = useState(true);
@@ -167,6 +167,7 @@ const BuzzerIndexPage: React.FC = () => {
           <Button
             variant="primary"
             onClick={handleCreate}
+            disabled={!isAdmin}
             icon={
               <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v16m8-8H4" />
@@ -209,7 +210,7 @@ const BuzzerIndexPage: React.FC = () => {
                 {searchTerm ? 'No buzzers match your search criteria.' : 'Get started by creating your first alert buzzer.'}
               </p>
               {!searchTerm && (
-                <Button variant="primary" onClick={handleCreate}>
+                <Button variant="primary" onClick={handleCreate} disabled={!isAdmin}>
                   Add Buzzer
                 </Button>
               )}
