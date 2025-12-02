@@ -3,7 +3,7 @@ import { useNavigate, useParams } from 'react-router-dom';
 import Container from '../../components/ui/layout/Container';
 import Card from '../../components/ui/cards/Card';
 import Button from '../../components/ui/buttons/Button';
-import Textarea from '../../components/ui/forms/Textarea';
+import TextArea from '../../components/ui/forms/TextArea';
 import SingleSelect from '../../components/ui/forms/SingleSelect';
 import Input from '../../components/ui/forms/Input';
 import Checkbox from '../../components/ui/forms/Checkbox';
@@ -279,21 +279,29 @@ const PublicVehicleEditPage: React.FC = () => {
                           </button>
                         </div>
                         {isExisting && imageData ? (
-                          <Input
-                            type="text"
-                            placeholder="Image title (optional)"
-                            value={imageData.title || ''}
-                            onChange={(e) => handleExistingImageTitleChange(index, e.target.value)}
-                            label={`Image ${index + 1} Title`}
-                          />
+                          <div>
+                            <label className="block text-sm font-medium text-gray-700 mb-1">
+                              Image {index + 1} Title
+                            </label>
+                            <Input
+                              type="text"
+                              placeholder="Image title (optional)"
+                              value={imageData.title || ''}
+                              onChange={(value) => handleExistingImageTitleChange(index, value)}
+                            />
+                          </div>
                         ) : (
-                          <Input
-                            type="text"
-                            placeholder="Image title (optional)"
-                            value={formData.image_titles?.[index - existingImages.length] || ''}
-                            onChange={(e) => handleNewImageTitleChange(index - existingImages.length, e.target.value)}
-                            label={`Image ${index + 1} Title`}
-                          />
+                          <div>
+                            <label className="block text-sm font-medium text-gray-700 mb-1">
+                              Image {index + 1} Title
+                            </label>
+                            <Input
+                              type="text"
+                              placeholder="Image title (optional)"
+                              value={formData.image_titles?.[index - existingImages.length] || ''}
+                              onChange={(value) => handleNewImageTitleChange(index - existingImages.length, value)}
+                            />
+                          </div>
                         )}
                       </div>
                     );
@@ -316,8 +324,10 @@ const PublicVehicleEditPage: React.FC = () => {
             </div>
 
             <div>
-              <Textarea
-                label="Description"
+              <label className="block text-sm font-medium text-gray-700 mb-2">
+                Description
+              </label>
+              <TextArea
                 value={formData.description || ''}
                 onChange={(value) => setFormData({ ...formData, description: value })}
                 placeholder="Enter vehicle description..."
@@ -326,8 +336,10 @@ const PublicVehicleEditPage: React.FC = () => {
             </div>
 
             <div>
+              <label className="block text-sm font-medium text-gray-700 mb-2">
+                Active
+              </label>
               <Checkbox
-                label="Active"
                 checked={formData.is_active}
                 onChange={(checked) => setFormData({ ...formData, is_active: checked })}
               />

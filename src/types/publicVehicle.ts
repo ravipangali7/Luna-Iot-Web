@@ -17,6 +17,8 @@ export interface PublicVehicle {
     id: number;
     name: string;
     vehicleNo: string;
+    imei?: string;
+    vehicleType?: string;
   };
   description: string | null;
   is_active: boolean;
@@ -33,6 +35,7 @@ export interface PublicVehicleFormData {
   images?: File[];
   image_titles?: string[];
   images_to_delete?: number[];
+  existing_image_titles?: { [key: number]: string };
 }
 
 export interface InstituteModuleAccess {

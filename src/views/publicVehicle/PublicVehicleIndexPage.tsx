@@ -204,7 +204,7 @@ const PublicVehicleIndexPage: React.FC = () => {
                 type="text"
                 placeholder="Search institutes by name, phone, or address..."
                 value={searchTerm}
-                onChange={(e) => handleSearch(e.target.value)}
+                onChange={(value) => handleSearch(value)}
                 className="w-full"
               />
             </div>
