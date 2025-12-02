@@ -4,12 +4,13 @@ import { useAuth } from '../../hooks/useAuth';
 import { useSchoolAccess } from '../../hooks/useSchoolAccess';
 import { useGarbageAccess } from '../../hooks/useGarbageAccess';
 import { useAlertSystemAccess } from '../../hooks/useAlertSystemAccess';
+import { usePublicVehicleAccess } from '../../hooks/usePublicVehicleAccess';
 import { hasRole } from '../../utils/roleUtils';
 
 interface ModuleBasedRouteProps {
   children: React.ReactNode;
   allowedRoles?: string[];
-  moduleType?: 'school' | 'alert-system' | 'garbage'; // Type of module to check access for
+  moduleType?: 'school' | 'alert-system' | 'garbage' | 'public-vehicle'; // Type of module to check access for
   fallbackPath?: string;
   fallbackComponent?: React.ReactNode;
 }
@@ -25,8 +26,9 @@ const ModuleBasedRoute: React.FC<ModuleBasedRouteProps> = ({
   const { hasAccess: hasSchoolAccess, loading: schoolAccessLoading } = useSchoolAccess();
   const { hasAccess: hasGarbageAccess, loading: garbageAccessLoading } = useGarbageAccess();
   const { hasAccess: hasAlertSystemAccess, loading: alertSystemAccessLoading } = useAlertSystemAccess();
+  const { hasAccess: hasPublicVehicleAccess, loading: publicVehicleAccessLoading } = usePublicVehicleAccess();
 
-  if (isLoading || (moduleType === 'school' && schoolAccessLoading) || (moduleType === 'garbage' && garbageAccessLoading) || (moduleType === 'alert-system' && alertSystemAccessLoading)) {
+  if (isLoading || (moduleType === 'school' && schoolAccessLoading) || (moduleType === 'garbage' && garbageAccessLoading) || (moduleType === 'alert-system' && alertSystemAccessLoading) || (moduleType === 'public-vehicle' && publicVehicleAccessLoading)) {
     return (
       <div className="min-h-screen flex items-center justify-center">
         <div className="text-lg">Loading...</div>
@@ -49,11 +51,22 @@ const ModuleBasedRoute: React.FC<ModuleBasedRouteProps> = ({
     hasModuleAccess = hasGarbageAccess;
   } else if (moduleType === 'alert-system') {
     hasModuleAccess = hasAlertSystemAccess;
+  } else if (moduleType === 'public-vehicle') {
+    hasModuleAccess = hasPublicVehicleAccess;
   }
 
   // Allow access if user has role-based access OR module-based access
-  if (hasRoleAccess || hasModuleAccess) {
-    return <>{children}</>;
+  // If no allowedRoles specified, allow module access only
+  if (allowedRoles.length === 0) {
+    // No role restriction - allow if user has module access
+    if (hasModuleAccess) {
+      return <>{children}</>;
+    }
+  } else {
+    // Role restriction specified - allow if user has role access OR module access
+    if (hasRoleAccess || hasModuleAccess) {
+      return <>{children}</>;
+    }
   }
 
   // No access - redirect or show fallback

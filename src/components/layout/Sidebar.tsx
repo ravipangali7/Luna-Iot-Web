@@ -4,6 +4,7 @@ import { useAuth } from '../../hooks/useAuth';
 import { useSchoolAccess } from '../../hooks/useSchoolAccess';
 import { useAlertSystemAccess } from '../../hooks/useAlertSystemAccess';
 import { useGarbageAccess } from '../../hooks/useGarbageAccess';
+import { usePublicVehicleAccess } from '../../hooks/usePublicVehicleAccess';
 import Button from '../ui/buttons/Button';
 import Badge from '../ui/common/Badge';
 import logo from '../../assets/logo.png';
@@ -33,6 +34,7 @@ const Sidebar: React.FC<SidebarProps> = ({ isOpen, onToggle }) => {
   const { hasAccess: hasSchoolAccess } = useSchoolAccess();
   const { hasAccess: hasAlertSystemAccess } = useAlertSystemAccess();
   const { hasAccess: hasGarbageAccess } = useGarbageAccess();
+  const { hasAccess: hasPublicVehicleAccess } = usePublicVehicleAccess();
   const [expandedItems, setExpandedItems] = useState<Set<string>>(new Set());
 
   // Close sidebar on mobile when route changes
@@ -563,6 +565,17 @@ const Sidebar: React.FC<SidebarProps> = ({ isOpen, onToggle }) => {
       )
     },
     {
+      id: 'public-vehicle',
+      label: 'Public Vehicle',
+      path: '/public-vehicle',
+      allowedRoles: ['Super Admin'],
+      icon: (
+        <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 7h12m0 0l-4-4m4 4l-4 4m0 6H4m0 0l4 4m-4-4l4-4" />
+        </svg>
+      )
+    },
+    {
       id: 'users',
       label: 'Users',
       path: '/users',
@@ -707,6 +720,21 @@ const Sidebar: React.FC<SidebarProps> = ({ isOpen, onToggle }) => {
           return false;
         }
 
+        // Special handling for Public Vehicle item: check both role-based and module-based access
+        if (item.id === 'public-vehicle') {
+          // Check if user is Super Admin (role-based)
+          if (user.roles && user.roles.length > 0) {
+            const userRoleNames = user.roles.map(role => role.name);
+            const isSuperAdmin = userRoleNames.includes(ROLES.SUPER_ADMIN);
+            
+            // Show if Super Admin OR has public vehicle module access
+            if (isSuperAdmin || hasPublicVehicleAccess) {
+              return true;
+            }
+          }
+          return false;
+        }
+
         // Check role-based access (backward compatibility)
         if (item.allowedRoles && item.allowedRoles.length > 0) {
           if (!user.roles || user.roles.length === 0) return false;
@@ -756,7 +784,7 @@ const Sidebar: React.FC<SidebarProps> = ({ isOpen, onToggle }) => {
     };
 
     return filterItems(navigationItems);
-  }, [user, canAny, canAll, hasSchoolAccess, hasAlertSystemAccess, hasGarbageAccess, navigationItems]);
+  }, [user, canAny, canAll, hasSchoolAccess, hasAlertSystemAccess, hasGarbageAccess, hasPublicVehicleAccess, navigationItems]);
 
   const handleLogout = async () => {
     logout();

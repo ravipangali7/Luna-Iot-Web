@@ -47,6 +47,11 @@ import SchoolSMSEditPage from './views/school/schoolSMS/SchoolSMSEditPage';
 import GarbageIndexPage from './views/garbage/GarbageIndexPage';
 import GarbageShowPage from './views/garbage/GarbageShowPage';
 import GarbageVehicleCreatePage from './views/garbage/garbageVehicles/GarbageVehicleCreatePage';
+import PublicVehicleIndexPage from './views/publicVehicle/PublicVehicleIndexPage';
+import PublicVehicleShowPage from './views/publicVehicle/PublicVehicleShowPage';
+import PublicVehicleViewPage from './views/publicVehicle/PublicVehicleViewPage';
+import PublicVehicleCreatePage from './views/publicVehicle/PublicVehicleCreatePage';
+import PublicVehicleEditPage from './views/publicVehicle/PublicVehicleEditPage';
 import { WalletIndexPage, MyWalletPage } from './views/wallet';
 import { TransactionIndexPage, WalletTransactionsPage, UserTransactionsPage } from './views/transactions';
 import PaymentCallbackPage from './views/payment/PaymentCallbackPage';
@@ -767,6 +772,33 @@ const AppRoutes: React.FC = () => {
         <Route path="garbage/:id/vehicles/create" element={
           <ModuleBasedRoute allowedRoles={[ROLES.SUPER_ADMIN]} moduleType="garbage">
             <GarbageVehicleCreatePage />
+          </ModuleBasedRoute>
+        } />
+
+        {/* Public Vehicle Routes - Super Admin or users with public-vehicle module access */}
+        <Route path="public-vehicle" element={
+          <ModuleBasedRoute allowedRoles={[ROLES.SUPER_ADMIN]} moduleType="public-vehicle">
+            <PublicVehicleIndexPage />
+          </ModuleBasedRoute>
+        } />
+        <Route path="public-vehicle/:id" element={
+          <ModuleBasedRoute moduleType="public-vehicle">
+            <PublicVehicleShowPage />
+          </ModuleBasedRoute>
+        } />
+        <Route path="public-vehicle/:id/vehicles/create" element={
+          <ModuleBasedRoute moduleType="public-vehicle">
+            <PublicVehicleCreatePage />
+          </ModuleBasedRoute>
+        } />
+        <Route path="public-vehicle/:id/vehicles/:vehicleId" element={
+          <ModuleBasedRoute moduleType="public-vehicle">
+            <PublicVehicleViewPage />
+          </ModuleBasedRoute>
+        } />
+        <Route path="public-vehicle/:id/vehicles/:vehicleId/edit" element={
+          <ModuleBasedRoute moduleType="public-vehicle">
+            <PublicVehicleEditPage />
           </ModuleBasedRoute>
         } />
 
