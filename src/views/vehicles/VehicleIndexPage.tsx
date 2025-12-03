@@ -39,6 +39,7 @@ import Tooltip from '../../components/ui/common/Tooltip';
 import Pagination from '../../components/ui/pagination/Pagination';
 import RoleBasedWidget from '../../components/role-based/RoleBasedWidget';
 import { ROLES } from '../../utils/roleUtils';
+import { getSearchVariants } from '../../utils/numeralUtils';
 import RefreshIcon from '@mui/icons-material/Refresh';
 import PowerSettingsNewIcon from '@mui/icons-material/PowerSettingsNew';
 import { AuthContext } from '../../contexts/AuthContext';
@@ -99,17 +100,44 @@ const VehicleIndexPage: React.FC = () => {
   const applyFilters = useCallback(() => {
     let filtered = [...vehicles];
 
-    // Apply search query
+    // Apply search query with numeral normalization
     if (searchQuery) {
-      filtered = filtered.filter(vehicle =>
-        vehicle.imei.toLowerCase().includes(searchQuery.toLowerCase()) ||
-        vehicle.vehicleNo.toLowerCase().includes(searchQuery.toLowerCase()) ||
-        vehicle.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
-        vehicle.vehicleType.toLowerCase().includes(searchQuery.toLowerCase()) ||
-        (vehicle.device?.phone || '').toLowerCase().includes(searchQuery.toLowerCase()) ||
-        getCustomerInfo(vehicle).toLowerCase().includes(searchQuery.toLowerCase()) ||
-        getCustomerPhone(vehicle).toLowerCase().includes(searchQuery.toLowerCase())
-      );
+      // Get search variants (original, English, Nepali)
+      const searchVariants = getSearchVariants(searchQuery);
+      const searchVariantsLower = searchVariants.map(v => v.toLowerCase());
+
+      filtered = filtered.filter(vehicle => {
+        // Get all searchable text fields
+        const searchableFields = [
+          vehicle.imei,
+          vehicle.vehicleNo || '',
+          vehicle.name || '',
+          vehicle.vehicleType || '',
+          vehicle.device?.phone || '',
+          getCustomerInfo(vehicle),
+          getCustomerPhone(vehicle),
+        ];
+
+        // Check if any search variant matches any field (with normalization)
+        for (const field of searchableFields) {
+          if (!field) continue;
+          
+          // Get normalized variants of the field
+          const fieldVariants = getSearchVariants(field);
+          const fieldVariantsLower = fieldVariants.map(v => v.toLowerCase());
+
+          // Check if any search variant matches any field variant
+          for (const searchVariantLower of searchVariantsLower) {
+            for (const fieldVariantLower of fieldVariantsLower) {
+              if (fieldVariantLower.includes(searchVariantLower)) {
+                return true;
+              }
+            }
+          }
+        }
+
+        return false;
+      });
     }
 
     // Apply other filters
