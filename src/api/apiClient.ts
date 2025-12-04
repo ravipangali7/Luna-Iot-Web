@@ -18,12 +18,21 @@ apiClient.interceptors.request.use(
     const publicEndpoints = [
       '/api/alert-system/alert-radar/token/',
       '/api/alert-system/alert-history/by-radar/',
-      '/share-track/'
+      '/share-track/',
+      '/api/vehicle-tag/alert/',  // Vehicle tag alert creation (public)
     ];
     
-    const isPublicEndpoint = publicEndpoints.some(endpoint => 
-      config.url?.includes(endpoint)
+    // Check if this is a public vehicle tag endpoint (get tag by VTID or QR image)
+    const url = config.url || '';
+    const isVehicleTagPublicEndpoint = url.includes('/api/vehicle-tag/') && (
+      url.includes('/alert/') ||  // Alert creation endpoint
+      /\/api\/vehicle-tag\/VTID\d+\/$/.test(url) ||  // Get tag by VTID (e.g., /api/vehicle-tag/VTID83/)
+      /\/api\/vehicle-tag\/VTID\d+\/qr\//.test(url)  // Get QR image (e.g., /api/vehicle-tag/VTID83/qr/)
     );
+    
+    const isPublicEndpoint = publicEndpoints.some(endpoint => 
+      url.includes(endpoint)
+    ) || isVehicleTagPublicEndpoint;
     
     if (!isPublicEndpoint) {
       const token = localStorage.getItem('token');
@@ -49,7 +58,7 @@ apiClient.interceptors.response.use(
   (error) => {
     if (error.response?.status === 401) {
       // Don't redirect if we're on a public page
-      const publicPaths = ['/alert-system/radar/token/', '/share-track/'];
+      const publicPaths = ['/alert-system/radar/token/', '/share-track/', '/vehicle-tag/alert/'];
       const isPublicPath = publicPaths.some(path => 
         window.location.pathname.includes(path)
       );

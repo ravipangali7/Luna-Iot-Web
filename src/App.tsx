@@ -64,6 +64,7 @@ import { PopupIndexPage, PopupCreatePage, PopupEditPage, PopupShowPage } from '.
 import { NotificationIndexPage, NotificationCreatePage, NotificationShowPage } from './views/notices/notifications';
 import { BannerIndexPage, BannerCreatePage, BannerEditPage, BannerShowPage } from './views/notices/banners';
 import SettingsPage from './views/settings/SettingsPage';
+import { VehicleTagIndexPage, BulkTagPage, VehicleTagAlertPage, VehicleTagHistoryPage } from './views/vehicleTag';
 import RoleBasedRoute from './components/role-based/RoleBasedRoute';
 import ModuleBasedRoute from './components/role-based/ModuleBasedRoute';
 import { ROLES } from './utils/roleUtils';
@@ -160,6 +161,9 @@ const AppRoutes: React.FC = () => {
       
       {/* Payment callback route - accessible from ConnectIPS redirect */}
       <Route path="/payment/callback" element={<PaymentCallbackPage />} />
+      
+      {/* Vehicle Tag Alert Page - Public access (no login required) */}
+      <Route path="/vehicle-tag/alert/:vtid" element={<VehicleTagAlertPage />} />
 
       {/* Protected routes with layout */}
       <Route path="/" element={
@@ -800,6 +804,23 @@ const AppRoutes: React.FC = () => {
           <ModuleBasedRoute moduleType="public-vehicle">
             <PublicVehicleEditPage />
           </ModuleBasedRoute>
+        } />
+
+        {/* Vehicle Tag Routes - Super Admin only */}
+        <Route path="vehicle-tag" element={
+          <RoleBasedRoute allowedRoles={[ROLES.SUPER_ADMIN]}>
+            <VehicleTagIndexPage />
+          </RoleBasedRoute>
+        } />
+        <Route path="vehicle-tag/bulk" element={
+          <RoleBasedRoute allowedRoles={[ROLES.SUPER_ADMIN]}>
+            <BulkTagPage />
+          </RoleBasedRoute>
+        } />
+        <Route path="vehicle-tag/history" element={
+          <RoleBasedRoute allowedRoles={[ROLES.SUPER_ADMIN]}>
+            <VehicleTagHistoryPage />
+          </RoleBasedRoute>
         } />
 
         {/* Settings Route - Super Admin only */}
