@@ -1,6 +1,5 @@
 import React, { useState, useEffect, useCallback } from 'react';
 import { vehicleTagService } from '../../api/services/vehicleTagService';
-import { showError } from '../../utils/sweetAlert';
 import Container from '../../components/ui/layout/Container';
 import Card from '../../components/ui/cards/Card';
 import CardBody from '../../components/ui/cards/CardBody';
@@ -17,7 +16,6 @@ import Pagination from '../../components/ui/pagination/Pagination';
 import Input from '../../components/ui/forms/Input';
 import Button from '../../components/ui/buttons/Button';
 import type { VehicleTagAlert, PaginationData } from '../../types/vehicleTag';
-import { AlertTypeLabels } from '../../types/vehicleTag';
 
 const VehicleTagHistoryPage: React.FC = () => {
   const [alerts, setAlerts] = useState<VehicleTagAlert[]>([]);
@@ -204,6 +202,10 @@ const VehicleTagHistoryPage: React.FC = () => {
                     currentPage={pagination.current_page}
                     totalPages={pagination.total_pages}
                     onPageChange={handlePageChange}
+                    hasNext={pagination.has_next}
+                    hasPrevious={pagination.has_previous}
+                    totalItems={pagination.total_items}
+                    pageSize={pagination.page_size}
                   />
                 </div>
               )}

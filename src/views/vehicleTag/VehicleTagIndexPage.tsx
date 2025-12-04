@@ -404,6 +404,10 @@ const VehicleTagIndexPage: React.FC = () => {
                     currentPage={pagination.current_page}
                     totalPages={pagination.total_pages}
                     onPageChange={handlePageChange}
+                    hasNext={pagination.has_next}
+                    hasPrevious={pagination.has_previous}
+                    totalItems={pagination.total_items}
+                    pageSize={pagination.page_size}
                   />
                 </div>
               )}

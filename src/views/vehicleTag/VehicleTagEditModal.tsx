@@ -51,14 +51,20 @@ const VehicleTagEditModal: React.FC<VehicleTagEditModalProps> = ({
   const [userSearchQuery, setUserSearchQuery] = useState('');
   const [filteredUsers, setFilteredUsers] = useState<Array<{ id: number; name: string; phone: string }>>([]);
   const [showUserDropdown, setShowUserDropdown] = useState(false);
-  const [loading, setLoading] = useState(false);
   const [saving, setSaving] = useState(false);
   const userDropdownRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
     if (isOpen && tag) {
+      let userId: number | null = null;
+      if (tag.user?.id) {
+        userId = tag.user.id;
+      } else if (tag.user_info && typeof tag.user_info === 'object' && tag.user_info !== null && 'id' in tag.user_info) {
+        userId = tag.user_info.id;
+      }
+      
       setFormData({
-        user_id: tag.user?.id || tag.user_info && typeof tag.user_info === 'object' ? tag.user_info.id : null,
+        user_id: userId,
         vehicle_model: tag.vehicle_model || '',
         registration_no: tag.registration_no || '',
         register_type: tag.register_type || '',
@@ -116,7 +122,6 @@ const VehicleTagEditModal: React.FC<VehicleTagEditModalProps> = ({
 
   const loadUsers = async () => {
     try {
-      setLoading(true);
       // Load users using light users endpoint for better performance
       const result = await userService.getLightUsers();
       if (result.success && result.data) {
@@ -130,8 +135,6 @@ const VehicleTagEditModal: React.FC<VehicleTagEditModalProps> = ({
       }
     } catch (error) {
       console.error('Error loading users:', error);
-    } finally {
-      setLoading(false);
     }
   };
 

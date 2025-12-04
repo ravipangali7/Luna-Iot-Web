@@ -1,29 +1,35 @@
-export enum RegisterType {
-  TRADITIONAL_OLD = 'traditional_old',
-  TRADITIONAL_NEW = 'traditional_new',
-  EMBOSSED = 'embossed',
-}
+export const RegisterType = {
+  TRADITIONAL_OLD: 'traditional_old',
+  TRADITIONAL_NEW: 'traditional_new',
+  EMBOSSED: 'embossed',
+} as const;
 
-export enum VehicleCategory {
-  PRIVATE = 'private',
-  PUBLIC = 'public',
-  GOVERNMENT = 'government',
-  DIPLOMATS = 'diplomats',
-  NON_PROFIT_ORG = 'non_profit_org',
-  CORPORATION = 'corporation',
-  TOURISM = 'tourism',
-  MINISTRY = 'ministry',
-}
+export type RegisterType = typeof RegisterType[keyof typeof RegisterType];
 
-export enum AlertType {
-  WRONG_PARKING = 'wrong_parking',
-  BLOCKING_ROAD = 'blocking_road',
-  NOT_LOCKED_IGNITION_ON = 'not_locked_ignition_on',
-  VEHICLE_TOW_ALERT = 'vehicle_tow_alert',
-  TRAFFIC_RULE_VIOLATION = 'traffic_rule_violation',
-  FIRE_PHYSICAL_THREAT = 'fire_physical_threat',
-  ACCIDENT_ALERT = 'accident_alert',
-}
+export const VehicleCategory = {
+  PRIVATE: 'private',
+  PUBLIC: 'public',
+  GOVERNMENT: 'government',
+  DIPLOMATS: 'diplomats',
+  NON_PROFIT_ORG: 'non_profit_org',
+  CORPORATION: 'corporation',
+  TOURISM: 'tourism',
+  MINISTRY: 'ministry',
+} as const;
+
+export type VehicleCategory = typeof VehicleCategory[keyof typeof VehicleCategory];
+
+export const AlertType = {
+  WRONG_PARKING: 'wrong_parking',
+  BLOCKING_ROAD: 'blocking_road',
+  NOT_LOCKED_IGNITION_ON: 'not_locked_ignition_on',
+  VEHICLE_TOW_ALERT: 'vehicle_tow_alert',
+  TRAFFIC_RULE_VIOLATION: 'traffic_rule_violation',
+  FIRE_PHYSICAL_THREAT: 'fire_physical_threat',
+  ACCIDENT_ALERT: 'accident_alert',
+} as const;
+
+export type AlertType = typeof AlertType[keyof typeof AlertType];
 
 export const AlertTypeLabels: Record<AlertType, string> = {
   [AlertType.WRONG_PARKING]: 'Wrong Parking',

@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useRef } from 'react';
-import { useParams, useNavigate } from 'react-router-dom';
+import { useParams } from 'react-router-dom';
 import { vehicleTagService } from '../../api/services/vehicleTagService';
 import { showSuccess, showError } from '../../utils/sweetAlert';
 import Swal from 'sweetalert2';
@@ -14,7 +14,6 @@ import { AlertTypeLabels } from '../../types/vehicleTag';
 
 const VehicleTagAlertPage: React.FC = () => {
   const { vtid } = useParams<{ vtid: string }>();
-  const navigate = useNavigate();
   const [tag, setTag] = useState<VehicleTag | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);

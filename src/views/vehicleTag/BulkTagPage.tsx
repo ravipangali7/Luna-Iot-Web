@@ -6,7 +6,6 @@ import Card from '../../components/ui/cards/Card';
 import CardBody from '../../components/ui/cards/CardBody';
 import Button from '../../components/ui/buttons/Button';
 import Input from '../../components/ui/forms/Input';
-import Spinner from '../../components/ui/common/Spinner';
 import Alert from '../../components/ui/common/Alert';
 import type { VehicleTag } from '../../types/vehicleTag';
 import jsPDF from 'jspdf';
