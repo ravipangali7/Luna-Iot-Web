@@ -72,19 +72,27 @@ class VehicleTagService {
     error?: string;
   }> {
     try {
+      // Validate required fields
+      if (data.latitude === undefined || data.longitude === undefined) {
+        return { 
+          success: false, 
+          error: 'Location (latitude and longitude) is required to send alerts' 
+        };
+      }
+
+      if (!data.person_image) {
+        return { 
+          success: false, 
+          error: 'Image is required to send alerts' 
+        };
+      }
+
       const formData = new FormData();
       formData.append('vtid', data.vtid);
       formData.append('alert', data.alert);
-      
-      if (data.latitude !== undefined) {
-        formData.append('latitude', data.latitude.toString());
-      }
-      if (data.longitude !== undefined) {
-        formData.append('longitude', data.longitude.toString());
-      }
-      if (data.person_image) {
-        formData.append('person_image', data.person_image);
-      }
+      formData.append('latitude', data.latitude.toString());
+      formData.append('longitude', data.longitude.toString());
+      formData.append('person_image', data.person_image);
 
       const response = await apiClient.post('/api/vehicle-tag/alert/', formData, {
         headers: {

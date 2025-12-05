@@ -80,9 +80,9 @@ export interface VehicleTagAlert {
 
 export interface VehicleTagAlertCreateData {
   vtid: string;
-  latitude?: number;
-  longitude?: number;
-  person_image?: File;
+  latitude: number;
+  longitude: number;
+  person_image: File;
   alert: AlertType;
 }
 
