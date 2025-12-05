@@ -59,51 +59,103 @@ const VehicleTagAlertPage: React.FC = () => {
         return;
       }
 
-      navigator.geolocation.getCurrentPosition(
-        (position) => {
-          const loc = {
-            lat: position.coords.latitude,
-            lng: position.coords.longitude,
-          };
-          resolve(loc);
-        },
-        async (error) => {
-          console.warn('Geolocation error:', error);
-          if (error.code === error.PERMISSION_DENIED) {
-            const result = await Swal.fire({
-              title: 'Location Permission Required',
-              html: 'Location access is required to send alerts.<br/><br/>Please allow location access in your browser settings and click "Request Again".',
-              icon: 'warning',
-              showCancelButton: true,
-              confirmButtonText: 'Request Again',
-              cancelButtonText: 'Cancel',
-              confirmButtonColor: '#10b981',
-              allowOutsideClick: false,
-            });
+      // Check permission status using Permissions API if available
+      const checkPermissionStatus = async () => {
+        if (navigator.permissions && navigator.permissions.query) {
+          try {
+            const permissionStatus = await navigator.permissions.query({ name: 'geolocation' as PermissionName });
+            if (permissionStatus.state === 'denied') {
+              // Permission is permanently denied - show instructions
+              await Swal.fire({
+                title: 'Location Permission Denied',
+                html: `
+                  <p>Location access is permanently denied in your browser settings.</p>
+                  <p><strong>To enable location access:</strong></p>
+                  <ol style="text-align: left; margin: 15px 0;">
+                    <li>Click the lock/info icon in your browser's address bar</li>
+                    <li>Find "Location" in the permissions list</li>
+                    <li>Change it from "Block" to "Allow"</li>
+                    <li>Refresh this page and try again</li>
+                  </ol>
+                `,
+                icon: 'info',
+                confirmButtonText: 'I Understand',
+                confirmButtonColor: '#10b981',
+              });
+              resolve(null);
+              return true; // Indicates permission is permanently denied
+            }
+          } catch (e) {
+            // Permissions API not supported or failed - continue with normal flow
+            console.warn('Permissions API check failed:', e);
+          }
+        }
+        return false; // Permission not permanently denied or API not available
+      };
 
-            if (result.isConfirmed) {
-              // Try again (recursive call)
-              const retryLoc = await requestLocationPermission(retryCount + 1);
-              resolve(retryLoc);
+      const handlePermissionCheck = async () => {
+        const isPermanentlyDenied = await checkPermissionStatus();
+        if (isPermanentlyDenied) {
+          return; // Already handled in checkPermissionStatus
+        }
+
+        // Try to get location
+        navigator.geolocation.getCurrentPosition(
+          (position) => {
+            const loc = {
+              lat: position.coords.latitude,
+              lng: position.coords.longitude,
+            };
+            resolve(loc);
+          },
+          async (error) => {
+            console.warn('Geolocation error:', error);
+            if (error.code === error.PERMISSION_DENIED) {
+              const result = await Swal.fire({
+                title: 'Location Permission Required',
+                html: `
+                  <p>Location access is required to send alerts.</p>
+                  <p><strong>Please allow location access:</strong></p>
+                  <ol style="text-align: left; margin: 15px 0;">
+                    <li>Click the lock/info icon in your browser's address bar</li>
+                    <li>Find "Location" in the permissions list</li>
+                    <li>Change it from "Block" to "Allow"</li>
+                    <li>Click "Request Again" below</li>
+                  </ol>
+                `,
+                icon: 'warning',
+                showCancelButton: true,
+                confirmButtonText: 'Request Again',
+                cancelButtonText: 'Cancel',
+                confirmButtonColor: '#10b981',
+                allowOutsideClick: false,
+              });
+
+              if (result.isConfirmed) {
+                // Try again (recursive call)
+                const retryLoc = await requestLocationPermission(retryCount + 1);
+                resolve(retryLoc);
+              } else {
+                showError(
+                  'Permission Required',
+                  'Location access is required to send alerts. Please grant location permission and try again.'
+                );
+                resolve(null);
+              }
             } else {
-              // User cancelled - show message but keep asking next time
-              showError(
-                'Permission Required',
-                'Location access is required to send alerts. Please grant location permission and try again.'
-              );
+              showError('Location Error', 'Failed to get your location. Please check your browser settings.');
               resolve(null);
             }
-          } else {
-            showError('Location Error', 'Failed to get your location. Please check your browser settings.');
-            resolve(null);
+          },
+          {
+            enableHighAccuracy: true,
+            timeout: 10000,
+            maximumAge: 0
           }
-        },
-        {
-          enableHighAccuracy: true,
-          timeout: 10000,
-          maximumAge: 0
-        }
-      );
+        );
+      };
+
+      handlePermissionCheck();
     });
   };
 
@@ -113,6 +165,36 @@ const VehicleTagAlertPage: React.FC = () => {
       if (!navigator.mediaDevices || !navigator.mediaDevices.getUserMedia) {
         showError('Camera Not Supported', 'Your browser does not support camera access.');
         return null;
+      }
+
+      // Check permission status using Permissions API if available
+      if (navigator.permissions && navigator.permissions.query) {
+        try {
+          const permissionStatus = await navigator.permissions.query({ name: 'camera' as PermissionName });
+          if (permissionStatus.state === 'denied') {
+            // Permission is permanently denied - show instructions
+            await Swal.fire({
+              title: 'Camera Permission Denied',
+              html: `
+                <p>Camera access is permanently denied in your browser settings.</p>
+                <p><strong>To enable camera access:</strong></p>
+                <ol style="text-align: left; margin: 15px 0;">
+                  <li>Click the lock/info icon in your browser's address bar</li>
+                  <li>Find "Camera" in the permissions list</li>
+                  <li>Change it from "Block" to "Allow"</li>
+                  <li>Refresh this page and try again</li>
+                </ol>
+              `,
+              icon: 'info',
+              confirmButtonText: 'I Understand',
+              confirmButtonColor: '#10b981',
+            });
+            return null;
+          }
+        } catch (e) {
+          // Permissions API not supported or failed - continue with normal flow
+          console.warn('Permissions API check failed:', e);
+        }
       }
 
       // Start camera stream
@@ -167,7 +249,16 @@ const VehicleTagAlertPage: React.FC = () => {
       if (error.name === 'NotAllowedError' || error.name === 'PermissionDeniedError') {
         const result = await Swal.fire({
           title: 'Camera Permission Required',
-          html: 'Camera access is required to send alerts.<br/><br/>Please allow camera access in your browser settings and click "Request Again".',
+          html: `
+            <p>Camera access is required to send alerts.</p>
+            <p><strong>Please allow camera access:</strong></p>
+            <ol style="text-align: left; margin: 15px 0;">
+              <li>Click the lock/info icon in your browser's address bar</li>
+              <li>Find "Camera" in the permissions list</li>
+              <li>Change it from "Block" to "Allow"</li>
+              <li>Click "Request Again" below</li>
+            </ol>
+          `,
           icon: 'warning',
           showCancelButton: true,
           confirmButtonText: 'Request Again',
@@ -180,7 +271,6 @@ const VehicleTagAlertPage: React.FC = () => {
           // Try again (recursive call)
           return await captureImageFromCamera(retryCount + 1);
         } else {
-          // User cancelled - show message but keep asking next time
           showError(
             'Permission Required',
             'Camera access is required to send alerts. Please grant camera permission and try again.'
