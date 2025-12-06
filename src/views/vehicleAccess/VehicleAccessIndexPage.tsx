@@ -343,7 +343,7 @@ const VehicleAccessIndexPage: React.FC = () => {
                         <div>
                           <div className="font-medium">{vehicle.name}</div>
                           <div className="text-sm text-gray-500">
-                            {vehicle.vehicleNo} • {vehicle.vehicleType} • {vehicle.imei}
+                            {vehicle.vehicleNo} • {vehicle.vehicleType}
                           </div>
                         </div>
                       </TableCell>
