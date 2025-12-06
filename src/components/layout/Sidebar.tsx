@@ -748,6 +748,21 @@ const Sidebar: React.FC<SidebarProps> = ({ isOpen, onToggle }) => {
           return false;
         }
 
+        // Special handling for Alert History: check both role-based and module-based access
+        if (item.id === 'alert-history') {
+          // Check if user is Super Admin (role-based)
+          if (user.roles && user.roles.length > 0) {
+            const userRoleNames = user.roles.map(role => role.name);
+            const isSuperAdmin = userRoleNames.includes(ROLES.SUPER_ADMIN);
+            
+            // Show if Super Admin OR has alert system module access
+            if (isSuperAdmin || hasAlertSystemAccess) {
+              return true;
+            }
+          }
+          return false;
+        }
+
         // Special handling for Garbage item: check both role-based and module-based access
         if (item.id === 'garbage') {
           // Check if user is Super Admin (role-based)
