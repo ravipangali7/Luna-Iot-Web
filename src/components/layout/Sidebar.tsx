@@ -60,6 +60,75 @@ const Sidebar: React.FC<SidebarProps> = ({ isOpen, onToggle }) => {
       )
     },
     {
+      id: 'vehicles',
+      label: 'Vehicles',
+      path: '/Vehicles',
+      allowedRoles: ['Super Admin', 'Dealer', 'Customer'],
+      icon: (
+        <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 17a2 2 0 11-4 0 2 2 0 014 0zM19 17a2 2 0 11-4 0 2 2 0 014 0z" />
+          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 16V6a1 1 0 00-1-1H4a1 1 0 00-1 1v10a1 1 0 001 1h1m8-1a1 1 0 01-1 1H9m4-1V8a1 1 0 011-1h2a1 1 0 011 1v8m-4 0h1m4 0h1a1 1 0 001-1v-1a1 1 0 00-1-1h-1" />
+        </svg>
+      ),
+      children: [
+        {
+          id: 'add-vehicle',
+          label: 'Add Vehicle',
+          path: '/vehicles/create',
+          allowedRoles: ['Super Admin', 'Dealer', 'Customer'],
+          icon: (
+            <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v16m8-8H4" />
+            </svg>
+          )
+        },
+        {
+          id: 'all-vehicles',
+          label: 'All Vehicles',
+          path: '/vehicles',
+          allowedRoles: ['Super Admin', 'Dealer', 'Customer'],
+          icon: (
+            <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 7v8a2 2 0 002 2h6M8 7V5a2 2 0 012-2h4.586a1 1 0 01.707.293l4.414 4.414a1 1 0 01.293.707V15a2 2 0 01-2 2h-2M8 7H6a2 2 0 00-2 2v10a2 2 0 002 2h8a2 2 0 002-2v-2" />
+            </svg>
+          )
+        },
+        {
+          id: 'live-tracking',
+          label: 'Live Tracking',
+          path: '/live-tracking',
+          allowedRoles: ['Super Admin', 'Dealer', 'Customer'],
+          icon: (
+            <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 20l-5.447-2.724A2 2 0 013 15.382V6.618a2 2 0 011.553-1.894L9 2m0 18v-16m0 16l6-2.727m0 0V4m0 13.273L21 17.382A2 2 0 0021 15.382V6.618a2 2 0 00-1.553-1.894L15 4" />
+            </svg>
+          )
+        },
+        {
+          id: 'reports',
+          label: 'Reports',
+          path: '/reports',
+          allowedRoles: ['Super Admin', 'Dealer', 'Customer'],
+          icon: (
+            <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 17v-2m3 2v-4m3 4v-6m2 10H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
+            </svg>
+          )
+        },
+        {
+          id: 'playback',
+          label: 'Playback',
+          path: '/playback',
+          allowedRoles: ['Super Admin', 'Dealer', 'Customer'],
+          icon: (
+            <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M14.828 14.828a4 4 0 01-5.656 0M9 10h1m4 0h1m-6 4h1m4 0h1m6-6V6a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2h12a2 2 0 002-2v-2M7 7h10M7 11h4m6 0h2M7 15h4m6 0h2" />
+            </svg>
+          )
+        },
+      ]
+    },
+    {
       id: 'devices',
       label: 'Devices',
       path: '/devices',
@@ -187,74 +256,7 @@ const Sidebar: React.FC<SidebarProps> = ({ isOpen, onToggle }) => {
         </svg>
       )
     },
-    {
-      id: 'vehicles',
-      label: 'Vehicles',
-      path: '/Vehicles',
-      allowedRoles: ['Super Admin', 'Dealer', 'Customer'],
-      icon: (
-        <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 7v8a2 2 0 002 2h6M8 7V5a2 2 0 012-2h4.586a1 1 0 01.707.293l4.414 4.414a1 1 0 01.293.707V15a2 2 0 01-2 2h-2M8 7H6a2 2 0 00-2 2v10a2 2 0 002 2h8a2 2 0 002-2v-2" />
-        </svg>
-      ),
-      children: [
-        {
-          id: 'add-vehicle',
-          label: 'Add Vehicle',
-          path: '/vehicles/create',
-          allowedRoles: ['Super Admin', 'Dealer', 'Customer'],
-          icon: (
-            <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v16m8-8H4" />
-            </svg>
-          )
-        },
-        {
-          id: 'all-vehicles',
-          label: 'All Vehicles',
-          path: '/vehicles',
-          allowedRoles: ['Super Admin', 'Dealer', 'Customer'],
-          icon: (
-            <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 7v8a2 2 0 002 2h6M8 7V5a2 2 0 012-2h4.586a1 1 0 01.707.293l4.414 4.414a1 1 0 01.293.707V15a2 2 0 01-2 2h-2M8 7H6a2 2 0 00-2 2v10a2 2 0 002 2h8a2 2 0 002-2v-2" />
-            </svg>
-          )
-        },
-        {
-          id: 'live-tracking',
-          label: 'Live Tracking',
-          path: '/live-tracking',
-          allowedRoles: ['Super Admin', 'Dealer', 'Customer'],
-          icon: (
-            <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 20l-5.447-2.724A2 2 0 013 15.382V6.618a2 2 0 011.553-1.894L9 2m0 18v-16m0 16l6-2.727m0 0V4m0 13.273L21 17.382A2 2 0 0021 15.382V6.618a2 2 0 00-1.553-1.894L15 4" />
-            </svg>
-          )
-        },
-        {
-          id: 'reports',
-          label: 'Reports',
-          path: '/reports',
-          allowedRoles: ['Super Admin', 'Dealer', 'Customer'],
-          icon: (
-            <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 17v-2m3 2v-4m3 4v-6m2 10H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
-            </svg>
-          )
-        },
-        {
-          id: 'playback',
-          label: 'Playback',
-          path: '/playback',
-          allowedRoles: ['Super Admin', 'Dealer', 'Customer'],
-          icon: (
-            <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M14.828 14.828a4 4 0 01-5.656 0M9 10h1m4 0h1m-6 4h1m4 0h1m6-6V6a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2h12a2 2 0 002-2v-2M7 7h10M7 11h4m6 0h2M7 15h4m6 0h2" />
-            </svg>
-          )
-        },
-      ]
-    },
+    
     {
       id: 'vehicle-tag',
       label: 'Vehicle Tag',
@@ -375,7 +377,9 @@ const Sidebar: React.FC<SidebarProps> = ({ isOpen, onToggle }) => {
       allowedRoles: ['Super Admin'],
       icon: (
         <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M7 7h.01M7 3h5c.512 0 1.024.195 1.414.586l7 7a2 2 0 010 2.828l-7 7a2 2 0 01-2.828 0l-7-7A1.994 1.994 0 013 12V7a4 4 0 014-4z" />
+          <circle cx="12" cy="12" r="10" strokeWidth={2} />
+          <circle cx="12" cy="12" r="6" strokeWidth={2} />
+          <circle cx="12" cy="12" r="2" fill="currentColor" />
         </svg>
       ),
       children: [
