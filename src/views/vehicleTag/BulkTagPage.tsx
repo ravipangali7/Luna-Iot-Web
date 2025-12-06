@@ -97,6 +97,35 @@ const BulkTagPage: React.FC = () => {
         format: [100, 150], // Tag size in mm (approximately 4x6 inches)
       });
 
+      // Helper function to load image and convert to base64
+      const loadImageAsBase64 = async (url: string): Promise<string> => {
+        try {
+          // Add cache busting to ensure fresh images
+          const cacheBustUrl = `${url}?t=${Date.now()}`;
+          const response = await fetch(cacheBustUrl);
+          
+          if (!response.ok) {
+            throw new Error(`HTTP error! status: ${response.status}`);
+          }
+          
+          const blob = await response.blob();
+          
+          // Convert blob to base64
+          return new Promise((resolve, reject) => {
+            const reader = new FileReader();
+            reader.onloadend = () => {
+              const base64String = reader.result as string;
+              resolve(base64String);
+            };
+            reader.onerror = reject;
+            reader.readAsDataURL(blob);
+          });
+        } catch (error) {
+          console.error('Error loading image:', error);
+          throw error;
+        }
+      };
+
       for (let i = 0; i < tagsToPrint.length; i++) {
         if (i > 0) {
           pdf.addPage();
@@ -107,24 +136,31 @@ const BulkTagPage: React.FC = () => {
 
         // Fetch QR code image
         try {
-          const response = await fetch(qrImageUrl);
-          const blob = await response.blob();
-          const imageUrl = URL.createObjectURL(blob);
+          // Load image as base64 for better PDF quality
+          const imageBase64 = await loadImageAsBase64(qrImageUrl);
+          
+          // Verify image is valid
+          if (!imageBase64 || !imageBase64.startsWith('data:image')) {
+            throw new Error('Invalid image data');
+          }
 
           // Add image to PDF (centered)
-          const imgWidth = 80;
-          const imgHeight = 120;
+          // Image dimensions: 600x900 pixels = 2:3 ratio
+          // PDF page: 100x150mm = 2:3 ratio
+          const imgWidth = 80;  // mm
+          const imgHeight = 120; // mm (maintains 2:3 aspect ratio)
           const x = (100 - imgWidth) / 2;
           const y = (150 - imgHeight) / 2;
 
-          pdf.addImage(imageUrl, 'PNG', x, y, imgWidth, imgHeight);
-
-          // Clean up
-          URL.revokeObjectURL(imageUrl);
+          // Add image with better quality settings
+          pdf.addImage(imageBase64, 'PNG', x, y, imgWidth, imgHeight, undefined, 'FAST');
         } catch (imgError) {
           console.error(`Failed to load image for tag ${tag.vtid}:`, imgError);
-          // Add text fallback
+          // Add text fallback with better formatting
+          pdf.setFontSize(12);
+          pdf.setTextColor(0, 0, 0);
           pdf.text(`Tag: ${tag.vtid}`, 50, 75, { align: 'center' });
+          pdf.text('QR Code unavailable', 50, 85, { align: 'center' });
         }
       }
 
@@ -162,6 +198,74 @@ const BulkTagPage: React.FC = () => {
     }
 
     handlePrint(selectedTags);
+  };
+
+  const handlePrintSingle = async (tag: VehicleTag) => {
+    try {
+      setLoading(true);
+      const qrImageUrl = vehicleTagService.getQrImageUrl(tag.vtid);
+
+      // Helper function to load image and convert to base64
+      const loadImageAsBase64 = async (url: string): Promise<string> => {
+        try {
+          // Add cache busting to ensure fresh images
+          const cacheBustUrl = `${url}?t=${Date.now()}`;
+          const response = await fetch(cacheBustUrl);
+          
+          if (!response.ok) {
+            throw new Error(`HTTP error! status: ${response.status}`);
+          }
+          
+          const blob = await response.blob();
+          
+          // Convert blob to base64
+          return new Promise((resolve, reject) => {
+            const reader = new FileReader();
+            reader.onloadend = () => {
+              const base64String = reader.result as string;
+              resolve(base64String);
+            };
+            reader.onerror = reject;
+            reader.readAsDataURL(blob);
+          });
+        } catch (error) {
+          console.error('Error loading image:', error);
+          throw error;
+        }
+      };
+
+      // Load image as base64
+      const imageBase64 = await loadImageAsBase64(qrImageUrl);
+      
+      // Verify image is valid
+      if (!imageBase64 || !imageBase64.startsWith('data:image')) {
+        throw new Error('Invalid image data');
+      }
+
+      // Create PDF for single tag
+      const pdf = new jsPDF({
+        orientation: 'portrait',
+        unit: 'mm',
+        format: [100, 150], // Tag size in mm
+      });
+
+      // Add image to PDF (centered)
+      const imgWidth = 80;  // mm
+      const imgHeight = 120; // mm (maintains 2:3 aspect ratio)
+      const x = (100 - imgWidth) / 2;
+      const y = (150 - imgHeight) / 2;
+
+      // Add image with better quality settings
+      pdf.addImage(imageBase64, 'PNG', x, y, imgWidth, imgHeight, undefined, 'FAST');
+
+      // Save PDF
+      pdf.save(`vehicle_tag_${tag.vtid}.pdf`);
+      showSuccess('PDF Downloaded', `PDF for ${tag.vtid} has been downloaded`);
+    } catch (error) {
+      showError('Print Error', 'Failed to generate PDF: ' + (error as Error).message);
+    } finally {
+      setLoading(false);
+    }
   };
 
   return (
@@ -312,7 +416,7 @@ const BulkTagPage: React.FC = () => {
 
                       {/* Print Single Button */}
                       <Button
-                        onClick={() => handlePrint([tag])}
+                        onClick={() => handlePrintSingle(tag)}
                         disabled={loading}
                         variant="outline"
                         className="mt-3 w-full text-xs"
