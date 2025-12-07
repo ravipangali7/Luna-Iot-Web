@@ -4,7 +4,7 @@ import { vehicleService } from '../../api/services/vehicleService';
 import { deviceService } from '../../api/services/deviceService';
 import { confirmDelete, showSuccess, showError } from '../../utils/sweetAlert';
 import { useRefresh } from '../../contexts/RefreshContext';
-import type { Vehicle, VehicleFilters } from '../../types/vehicle';
+import type { Vehicle } from '../../types/vehicle';
 import { VEHICLE_TYPES } from '../../types/vehicle';
 import { getState, getStateBackgroundColor, getBattery, getSignal, getIgnition, getCharging, getImagePath } from '../../utils/vehicleUtils';
 import { VehicleImageState } from '../../utils/vehicleUtils';
