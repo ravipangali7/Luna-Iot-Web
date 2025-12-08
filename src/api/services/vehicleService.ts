@@ -343,6 +343,55 @@ class VehicleService {
       return { success: false, error: getErrorMessage(error) };
     }
   }
+
+  async exportVehiclesToExcel(query?: string, expirePeriod?: string, vehicleType?: string): Promise<{ success: boolean; error?: string }> {
+    try {
+      const params = new URLSearchParams();
+      if (query) {
+        params.append('q', query);
+      }
+      if (expirePeriod) {
+        params.append('expire_period', expirePeriod);
+      }
+      if (vehicleType) {
+        params.append('vehicle_type', vehicleType);
+      }
+
+      const response = await apiClient.get(`/api/fleet/vehicle/export-excel?${params.toString()}`, {
+        responseType: 'blob',
+        timeout: 120000 // 2 minutes for large exports
+      });
+
+      // Create blob URL and trigger download
+      const blob = new Blob([response.data], {
+        type: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet'
+      });
+      const url = window.URL.createObjectURL(blob);
+      const link = document.createElement('a');
+      link.href = url;
+      
+      // Extract filename from Content-Disposition header or use default
+      const contentDisposition = response.headers['content-disposition'];
+      let filename = 'vehicles_export.xlsx';
+      if (contentDisposition) {
+        const filenameMatch = contentDisposition.match(/filename="?(.+)"?/i);
+        if (filenameMatch) {
+          filename = filenameMatch[1];
+        }
+      }
+      
+      link.setAttribute('download', filename);
+      document.body.appendChild(link);
+      link.click();
+      link.remove();
+      window.URL.revokeObjectURL(url);
+
+      return { success: true };
+    } catch (error) {
+      console.error('Export vehicles to Excel error:', error);
+      return { success: false, error: getErrorMessage(error) };
+    }
+  }
 }
 
 export const vehicleService = new VehicleService();

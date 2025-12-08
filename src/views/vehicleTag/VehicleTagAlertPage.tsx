@@ -9,7 +9,7 @@ import CardBody from '../../components/ui/cards/CardBody';
 import Button from '../../components/ui/buttons/Button';
 import Spinner from '../../components/ui/common/Spinner';
 import Alert from '../../components/ui/common/Alert';
-import type { VehicleTag, AlertType } from '../../types/vehicleTag';
+import type { VehicleTag, VehicleTagAlert, AlertType } from '../../types/vehicleTag';
 import { AlertTypeLabels } from '../../types/vehicleTag';
 
 const VehicleTagAlertPage: React.FC = () => {
@@ -18,7 +18,10 @@ const VehicleTagAlertPage: React.FC = () => {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [submitting, setSubmitting] = useState(false);
+  const [cooldownRemaining, setCooldownRemaining] = useState<number>(0);
+  const [isInCooldown, setIsInCooldown] = useState(false);
   const canvasRef = useRef<HTMLCanvasElement>(null);
+  const countdownIntervalRef = useRef<ReturnType<typeof setInterval> | null>(null);
 
   useEffect(() => {
     if (!vtid) {
@@ -28,6 +31,13 @@ const VehicleTagAlertPage: React.FC = () => {
     }
 
     loadTag();
+    
+    // Cleanup countdown interval on unmount
+    return () => {
+      if (countdownIntervalRef.current) {
+        clearInterval(countdownIntervalRef.current);
+      }
+    };
   }, [vtid]);
 
   const loadTag = async () => {
@@ -41,6 +51,10 @@ const VehicleTagAlertPage: React.FC = () => {
 
       if (result.success && result.data) {
         setTag(result.data);
+        // If vehicle is active, check for latest alert to determine cooldown
+        if (result.data.is_active) {
+          await loadLatestAlert();
+        }
       } else {
         setError(result.error || 'Failed to load vehicle tag');
       }
@@ -49,6 +63,78 @@ const VehicleTagAlertPage: React.FC = () => {
     } finally {
       setLoading(false);
     }
+  };
+
+  const loadLatestAlert = async () => {
+    if (!vtid) return;
+
+    try {
+      const result = await vehicleTagService.getLatestAlertByVtid(vtid);
+      
+      if (result.success && result.data) {
+        checkCooldown(result.data);
+      } else {
+        setIsInCooldown(false);
+        setCooldownRemaining(0);
+      }
+    } catch (error) {
+      console.error('Error loading latest alert:', error);
+      setIsInCooldown(false);
+      setCooldownRemaining(0);
+    }
+  };
+
+  const checkCooldown = (alert: VehicleTagAlert) => {
+    const alertTime = new Date(alert.created_at).getTime();
+    const currentTime = new Date().getTime();
+    const timeDiff = currentTime - alertTime;
+    const tenMinutesInMs = 10 * 60 * 1000; // 10 minutes in milliseconds
+
+    if (timeDiff < tenMinutesInMs) {
+      const remaining = Math.ceil((tenMinutesInMs - timeDiff) / 1000); // remaining seconds
+      setCooldownRemaining(remaining);
+      setIsInCooldown(true);
+      startCountdown(remaining);
+    } else {
+      setIsInCooldown(false);
+      setCooldownRemaining(0);
+    }
+  };
+
+  const startCountdown = (initialSeconds: number) => {
+    // Clear any existing interval
+    if (countdownIntervalRef.current) {
+      clearInterval(countdownIntervalRef.current);
+    }
+
+    let remaining = initialSeconds;
+    setCooldownRemaining(remaining);
+
+    countdownIntervalRef.current = setInterval(() => {
+      remaining -= 1;
+      
+      if (remaining <= 0) {
+        setCooldownRemaining(0);
+        setIsInCooldown(false);
+        if (countdownIntervalRef.current) {
+          clearInterval(countdownIntervalRef.current);
+          countdownIntervalRef.current = null;
+        }
+      } else {
+        setCooldownRemaining(remaining);
+      }
+    }, 1000);
+  };
+
+  const formatCountdown = (seconds: number): string => {
+    const minutes = Math.floor(seconds / 60);
+    const secs = seconds % 60;
+    return `${minutes}:${secs.toString().padStart(2, '0')}`;
+  };
+
+  const handleRefresh = () => {
+    if (!vtid) return;
+    loadTag();
   };
 
   const requestLocationPermission = async (retryCount = 0): Promise<{ lat: number; lng: number } | null> => {
@@ -350,6 +436,8 @@ const VehicleTagAlertPage: React.FC = () => {
           'Alert Sent',
           'Your alert is sent to respective person successfully.'
         );
+        // Reload latest alert to update cooldown
+        await loadLatestAlert();
       } else {
         // Handle backend errors gracefully - don't show validation errors for missing fields
         const errorMsg = alertResult.error || 'Failed to send alert';
@@ -403,7 +491,7 @@ const VehicleTagAlertPage: React.FC = () => {
     );
   }
 
-  if (error || !tag) {
+  if (error && !tag) {
     return (
       <Container>
         <Alert variant="error">{error || 'Vehicle tag not found'}</Alert>
@@ -411,9 +499,22 @@ const VehicleTagAlertPage: React.FC = () => {
     );
   }
 
+  if (!tag) {
+    return (
+      <Container>
+        <div className="flex justify-center items-center min-h-screen">
+          <Spinner />
+        </div>
+      </Container>
+    );
+  }
+
   const userInfo = typeof tag.user_info === 'object' && tag.user_info !== null
     ? tag.user_info
     : null;
+
+  // Check if vehicle is inactive
+  const isInactive = !tag.is_active;
 
   return (
     <Container>
@@ -452,37 +553,94 @@ const VehicleTagAlertPage: React.FC = () => {
           </CardBody>
         </Card>
 
+        {/* Inactive Vehicle UI */}
+        {isInactive && (
+          <Card className="mb-4 border-orange-500">
+            <CardBody>
+              <div className="flex items-center space-x-3">
+                <div className="flex-shrink-0">
+                  <svg className="w-8 h-8 text-orange-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" />
+                  </svg>
+                </div>
+                <div className="flex-1">
+                  <h3 className="text-lg font-semibold text-orange-800">Vehicle Tag Inactive</h3>
+                  <p className="text-sm text-orange-600 mt-1">
+                    This vehicle tag is currently inactive. Alert functionality is not available.
+                  </p>
+                </div>
+              </div>
+            </CardBody>
+          </Card>
+        )}
+
+        {/* Cooldown UI */}
+        {!isInactive && isInCooldown && (
+          <Card className="mb-4 border-yellow-500 bg-yellow-50">
+            <CardBody>
+              <div className="flex items-center justify-between">
+                <div className="flex items-center space-x-3 flex-1">
+                  <div className="flex-shrink-0">
+                    <svg className="w-6 h-6 text-yellow-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
+                    </svg>
+                  </div>
+                  <div className="flex-1">
+                    <p className="text-sm font-medium text-yellow-800">
+                      Recently Alert was sent please wait
+                    </p>
+                    <p className="text-lg font-bold text-yellow-900 mt-1">
+                      {formatCountdown(cooldownRemaining)} remaining
+                    </p>
+                  </div>
+                </div>
+                <Button
+                  onClick={handleRefresh}
+                  variant="outline"
+                  className="ml-4"
+                >
+                  Refresh
+                </Button>
+              </div>
+            </CardBody>
+          </Card>
+        )}
+
         {/* Report Vehicle Emergency Link */}
-        <div className="mb-4">
-          <a
-            href="#alerts"
-            className="text-green-600 hover:text-green-700 font-medium"
-            onClick={(e) => {
-              e.preventDefault();
-              document.getElementById('alerts')?.scrollIntoView({ behavior: 'smooth' });
-            }}
-          >
-            Report Vehicle Emergency
-          </a>
-        </div>
+        {!isInactive && (
+          <div className="mb-4">
+            <a
+              href="#alerts"
+              className="text-green-600 hover:text-green-700 font-medium"
+              onClick={(e) => {
+                e.preventDefault();
+                document.getElementById('alerts')?.scrollIntoView({ behavior: 'smooth' });
+              }}
+            >
+              Report Vehicle Emergency
+            </a>
+          </div>
+        )}
 
         {/* Alert Buttons */}
-        <div id="alerts" className="space-y-3">
-          {Object.entries(AlertTypeLabels).map(([alertType, label]) => {
-            const isAccident = alertType === 'accident_alert';
-            return (
-              <Button
-                key={alertType}
-                onClick={() => handleAlertClick(alertType as AlertType)}
-                disabled={submitting}
-                variant={isAccident ? 'danger' : 'success'}
-                className="w-full py-4 text-lg"
-              >
-                {label}
-              </Button>
-            );
-          })}
-        </div>
+        {!isInactive && (
+          <div id="alerts" className="space-y-3">
+            {Object.entries(AlertTypeLabels).map(([alertType, label]) => {
+              const isAccident = alertType === 'accident_alert';
+              return (
+                <Button
+                  key={alertType}
+                  onClick={() => handleAlertClick(alertType as AlertType)}
+                  disabled={submitting || isInCooldown}
+                  variant={isAccident ? 'danger' : 'success'}
+                  className="w-full py-4 text-lg"
+                >
+                  {label}
+                </Button>
+              );
+            })}
+          </div>
+        )}
 
         {/* Footer */}
         <div className="mt-8 text-center text-sm text-gray-500">

@@ -1,7 +1,7 @@
 import React, { useState, useEffect, useCallback } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { notificationService } from '../../../api/services/notificationService';
-import { confirmDelete, showSuccess, showError } from '../../../utils/sweetAlert';
+import { confirmDelete, showSuccess, showError, confirmAction } from '../../../utils/sweetAlert';
 import type { Notification } from '../../../types/notification';
 import Container from '../../../components/ui/layout/Container';
 import Card from '../../../components/ui/cards/Card';
@@ -21,6 +21,7 @@ import Alert from '../../../components/ui/common/Alert';
 import AddIcon from '@mui/icons-material/Add';
 import SearchIcon from '@mui/icons-material/Search';
 import RefreshIcon from '@mui/icons-material/Refresh';
+import SendIcon from '@mui/icons-material/Send';
 
 const NotificationIndexPage: React.FC = () => {
   const navigate = useNavigate();
@@ -29,6 +30,7 @@ const NotificationIndexPage: React.FC = () => {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [searchQuery, setSearchQuery] = useState('');
+  const [sendingNotificationId, setSendingNotificationId] = useState<number | null>(null);
 
   const loadNotifications = useCallback(async () => {
     try {
@@ -88,6 +90,31 @@ const NotificationIndexPage: React.FC = () => {
         }
       } catch (error) {
         showError('Error deleting notification', (error as Error).message);
+      }
+    }
+  };
+
+  const handleSendNotification = async (notification: Notification) => {
+    const confirmed = await confirmAction(
+      'Send Push Notification',
+      `Are you sure you want to send push notification "${notification.title}" to all target users?`
+    );
+
+    if (confirmed) {
+      try {
+        setSendingNotificationId(notification.id);
+        const result = await notificationService.sendNotification(notification.id);
+        
+        if (result.success) {
+          const count = result.data?.sent_to_count || 0;
+          showSuccess('Push notification sent successfully', `Notification sent to ${count} user(s)`);
+        } else {
+          showError('Failed to send notification', result.error);
+        }
+      } catch (error) {
+        showError('Error sending notification', (error as Error).message);
+      } finally {
+        setSendingNotificationId(null);
       }
     }
   };
@@ -231,6 +258,17 @@ const NotificationIndexPage: React.FC = () => {
                         <TableCell>
                           <ActionButtonGroup>
                             <ViewActionButton onClick={() => handleViewNotification(notification)} />
+                            <Button
+                              onClick={() => handleSendNotification(notification)}
+                              disabled={sendingNotificationId === notification.id}
+                              loading={sendingNotificationId === notification.id}
+                              variant="success"
+                              size="sm"
+                              icon={<SendIcon className="w-4 h-4" />}
+                              title="Send Push Notification"
+                            >
+                              Send
+                            </Button>
                             <DeleteActionButton onClick={() => handleDeleteNotification(notification)} />
                           </ActionButtonGroup>
                         </TableCell>

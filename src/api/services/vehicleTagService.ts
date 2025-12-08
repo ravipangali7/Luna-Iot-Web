@@ -198,6 +198,23 @@ class VehicleTagService {
     }
   }
 
+  async getLatestAlertByVtid(vtid: string): Promise<{ success: boolean; data?: VehicleTagAlert; error?: string }> {
+    try {
+      const response = await apiClient.get(`/api/vehicle-tag/${vtid}/latest-alert/`, {
+        timeout: 30000,
+      });
+
+      if (response.data.success) {
+        return { success: true, data: response.data.data || undefined };
+      } else {
+        return { success: false, error: response.data.message || 'Failed to fetch latest alert' };
+      }
+    } catch (error) {
+      console.error('Get latest alert error:', error);
+      return { success: false, error: getErrorMessage(error) };
+    }
+  }
+
   getQrImageUrl(vtid: string): string {
     const baseURL = apiClient.defaults.baseURL || '';
     return `${baseURL}/api/vehicle-tag/${vtid}/qr/`;

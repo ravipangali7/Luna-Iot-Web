@@ -1,6 +1,7 @@
 import React, { useState, useEffect, useCallback } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { notificationService } from '../../../api/services/notificationService';
+import { confirmAction, showSuccess, showError } from '../../../utils/sweetAlert';
 import type { Notification } from '../../../types/notification';
 import Container from '../../../components/ui/layout/Container';
 import Card from '../../../components/ui/cards/Card';
@@ -11,6 +12,7 @@ import Badge from '../../../components/ui/common/Badge';
 import Spinner from '../../../components/ui/common/Spinner';
 import Alert from '../../../components/ui/common/Alert';
 import ArrowBackIcon from '@mui/icons-material/ArrowBack';
+import SendIcon from '@mui/icons-material/Send';
 
 const NotificationShowPage: React.FC = () => {
   const { id } = useParams<{ id: string }>();
@@ -18,6 +20,7 @@ const NotificationShowPage: React.FC = () => {
   const [notification, setNotification] = useState<Notification | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const [sending, setSending] = useState(false);
 
   const loadNotification = useCallback(async () => {
     if (!id) return;
@@ -42,6 +45,33 @@ const NotificationShowPage: React.FC = () => {
 
   const handleBack = () => {
     navigate('/notices/notifications');
+  };
+
+  const handleSendNotification = async () => {
+    if (!notification) return;
+
+    const confirmed = await confirmAction(
+      'Send Push Notification',
+      `Are you sure you want to send push notification "${notification.title}" to all target users?`
+    );
+
+    if (confirmed) {
+      try {
+        setSending(true);
+        const result = await notificationService.sendNotification(notification.id);
+        
+        if (result.success) {
+          const count = result.data?.sent_to_count || 0;
+          showSuccess('Push notification sent successfully', `Notification sent to ${count} user(s)`);
+        } else {
+          showError('Failed to send notification', result.error);
+        }
+      } catch (error) {
+        showError('Error sending notification', (error as Error).message);
+      } finally {
+        setSending(false);
+      }
+    }
   };
 
   const getTypeBadge = (type: string) => {
@@ -105,6 +135,15 @@ const NotificationShowPage: React.FC = () => {
               <p className="text-gray-600">Notification Details</p>
             </div>
           </div>
+          <Button
+            onClick={handleSendNotification}
+            disabled={sending}
+            loading={sending}
+            variant="success"
+            icon={<SendIcon className="w-4 h-4" />}
+          >
+            Send Notification
+          </Button>
         </div>
 
         <Card>

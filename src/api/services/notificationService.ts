@@ -99,6 +99,23 @@ class NotificationService {
       return { success: false, error: getErrorMessage(error) };
     }
   }
+
+  async sendNotification(id: number): Promise<{ success: boolean; data?: { sent_to_count: number }; error?: string }> {
+    try {
+      const response = await apiClient.post(`/api/shared/notification/${id}/send`, {}, {
+        timeout: 60000 // 60 seconds for sending to many users
+      });
+      
+      if (response.data.success) {
+        return { success: true, data: response.data.data };
+      } else {
+        return { success: false, error: response.data.message || 'Failed to send notification' };
+      }
+    } catch (error) {
+      console.error('Send notification error:', error);
+      return { success: false, error: getErrorMessage(error) };
+    }
+  }
 }
 
 export const notificationService = new NotificationService();

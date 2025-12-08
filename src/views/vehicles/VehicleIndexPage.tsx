@@ -42,6 +42,7 @@ import { ROLES } from '../../utils/roleUtils';
 import { getSearchVariants } from '../../utils/numeralUtils';
 import RefreshIcon from '@mui/icons-material/Refresh';
 import PowerSettingsNewIcon from '@mui/icons-material/PowerSettingsNew';
+import FileDownloadIcon from '@mui/icons-material/FileDownload';
 import { AuthContext } from '../../contexts/AuthContext';
 
 const VehicleIndexPage: React.FC = () => {
@@ -63,6 +64,7 @@ const VehicleIndexPage: React.FC = () => {
   const [isInExpireFilterMode, setIsInExpireFilterMode] = useState(false);
   const [vehicleTypeFilter, setVehicleTypeFilter] = useState<string | null>(null);
   const [isInVehicleTypeFilterMode, setIsInVehicleTypeFilterMode] = useState(false);
+  const [isExporting, setIsExporting] = useState(false);
   
   // Pagination state
   const [currentPage, setCurrentPage] = useState(1);
@@ -911,7 +913,32 @@ const VehicleIndexPage: React.FC = () => {
     }
   };
 
+  const handleExportExcel = async () => {
+    try {
+      setIsExporting(true);
+      setError(null);
 
+      // Determine which filters are active
+      // If in search mode, use search query; if in expire filter mode, use expire filter; if in vehicle type filter mode, use vehicle type filter
+      // If none are active, export all vehicles (no filters)
+      const query = isInSearchMode && searchQuery ? searchQuery : undefined;
+      const expirePeriod = isInExpireFilterMode && expireFilter ? expireFilter : undefined;
+      const vehicleType = isInVehicleTypeFilterMode && vehicleTypeFilter ? vehicleTypeFilter : undefined;
+
+      const result = await vehicleService.exportVehiclesToExcel(query, expirePeriod, vehicleType);
+
+      if (result.success) {
+        showSuccess('Vehicles exported to Excel successfully');
+      } else {
+        showError(result.error || 'Failed to export vehicles to Excel');
+      }
+    } catch (error) {
+      console.error('Export Excel error:', error);
+      showError('Failed to export vehicles to Excel: ' + (error as Error).message);
+    } finally {
+      setIsExporting(false);
+    }
+  };
 
   const getCustomerInfo = (vehicle: Vehicle) => {
     if (vehicle.mainCustomer && vehicle.mainCustomer.user) {
@@ -1065,9 +1092,20 @@ const VehicleIndexPage: React.FC = () => {
             <h1 className="text-2xl font-bold text-gray-900">Vehicles</h1>
             <p className="text-gray-600">Manage your vehicle fleet</p>
           </div>
-          <Button onClick={() => navigate('/vehicles/create')}>
-            Add Vehicle
-          </Button>
+          <div className="flex gap-2">
+            <Button 
+              onClick={handleExportExcel}
+              disabled={isExporting}
+              loading={isExporting}
+              variant="secondary"
+              icon={!isExporting ? <FileDownloadIcon className="w-4 h-4" /> : undefined}
+            >
+              {isExporting ? 'Exporting...' : 'Export Excel'}
+            </Button>
+            <Button onClick={() => navigate('/vehicles/create')}>
+              Add Vehicle
+            </Button>
+          </div>
         </div>
 
         {/* Error Alert */}
