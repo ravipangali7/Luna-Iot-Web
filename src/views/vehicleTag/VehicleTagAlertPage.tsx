@@ -71,14 +71,30 @@ const VehicleTagAlertPage: React.FC = () => {
     try {
       const result = await vehicleTagService.getLatestAlertByVtid(vtid);
       
-      if (result.success && result.data) {
-        checkCooldown(result.data);
+      console.log('[Cooldown] loadLatestAlert result:', {
+        success: result.success,
+        hasData: !!result.data,
+        data: result.data,
+        error: result.error
+      });
+      
+      // Explicitly check for null (no alerts) vs undefined (error)
+      if (result.success) {
+        if (result.data !== null && result.data !== undefined) {
+          checkCooldown(result.data);
+        } else {
+          // No alerts found - not in cooldown
+          console.log('[Cooldown] No alerts found, setting cooldown to false');
+          setIsInCooldown(false);
+          setCooldownRemaining(0);
+        }
       } else {
+        console.warn('[Cooldown] Failed to load latest alert:', result.error);
         setIsInCooldown(false);
         setCooldownRemaining(0);
       }
     } catch (error) {
-      console.error('Error loading latest alert:', error);
+      console.error('[Cooldown] Error loading latest alert:', error);
       setIsInCooldown(false);
       setCooldownRemaining(0);
     }
@@ -86,11 +102,17 @@ const VehicleTagAlertPage: React.FC = () => {
 
   const checkCooldown = (alert: VehicleTagAlert) => {
     try {
+      console.log('[Cooldown] checkCooldown called with alert:', {
+        id: alert.id,
+        created_at: alert.created_at,
+        alert_type: alert.alert
+      });
+
       const alertTime = new Date(alert.created_at).getTime();
       
       // Check if date parsing was successful
       if (isNaN(alertTime)) {
-        console.error('Invalid date format for alert.created_at:', alert.created_at);
+        console.error('[Cooldown] Invalid date format for alert.created_at:', alert.created_at);
         setIsInCooldown(false);
         setCooldownRemaining(0);
         return;
@@ -100,17 +122,28 @@ const VehicleTagAlertPage: React.FC = () => {
       const timeDiff = currentTime - alertTime;
       const tenMinutesInMs = 10 * 60 * 1000; // 10 minutes in milliseconds
 
+      console.log('[Cooldown] Time calculation:', {
+        alertTime: new Date(alertTime).toISOString(),
+        currentTime: new Date(currentTime).toISOString(),
+        timeDiffMs: timeDiff,
+        timeDiffMinutes: (timeDiff / 1000 / 60).toFixed(2),
+        tenMinutesInMs,
+        isInCooldown: timeDiff < tenMinutesInMs && timeDiff >= 0
+      });
+
       if (timeDiff < tenMinutesInMs && timeDiff >= 0) {
         const remaining = Math.ceil((tenMinutesInMs - timeDiff) / 1000); // remaining seconds
+        console.log('[Cooldown] Setting cooldown - remaining seconds:', remaining);
         setCooldownRemaining(remaining);
         setIsInCooldown(true);
         startCountdown(remaining);
       } else {
+        console.log('[Cooldown] Not in cooldown - timeDiff:', timeDiff, 'ms');
         setIsInCooldown(false);
         setCooldownRemaining(0);
       }
     } catch (error) {
-      console.error('Error checking cooldown:', error);
+      console.error('[Cooldown] Error checking cooldown:', error);
       // On error, assume not in cooldown to allow alerts
       setIsInCooldown(false);
       setCooldownRemaining(0);
@@ -124,30 +157,44 @@ const VehicleTagAlertPage: React.FC = () => {
     try {
       const result = await vehicleTagService.getLatestAlertByVtid(vtid);
       
+      console.log('[Cooldown] isCurrentlyInCooldown result:', {
+        success: result.success,
+        hasData: !!result.data,
+        data: result.data
+      });
+      
       if (result.success && result.data) {
         try {
           const alertTime = new Date(result.data.created_at).getTime();
           
           // Check if date parsing was successful
           if (isNaN(alertTime)) {
-            console.error('Invalid date format for alert.created_at:', result.data.created_at);
+            console.error('[Cooldown] Invalid date format for alert.created_at:', result.data.created_at);
             return false;
           }
 
           const currentTime = new Date().getTime();
           const timeDiff = currentTime - alertTime;
           const tenMinutesInMs = 10 * 60 * 1000; // 10 minutes in milliseconds
+          const inCooldown = timeDiff < tenMinutesInMs && timeDiff >= 0;
 
-          return timeDiff < tenMinutesInMs && timeDiff >= 0;
+          console.log('[Cooldown] isCurrentlyInCooldown calculation:', {
+            timeDiffMs: timeDiff,
+            timeDiffMinutes: (timeDiff / 1000 / 60).toFixed(2),
+            inCooldown
+          });
+
+          return inCooldown;
         } catch (error) {
-          console.error('Error parsing alert date:', error);
+          console.error('[Cooldown] Error parsing alert date:', error);
           return false;
         }
       }
       
+      console.log('[Cooldown] No alert data, returning false');
       return false;
     } catch (error) {
-      console.error('Error checking cooldown status:', error);
+      console.error('[Cooldown] Error checking cooldown status:', error);
       return false;
     }
   };
@@ -509,12 +556,18 @@ const VehicleTagAlertPage: React.FC = () => {
       }
 
       // Both permissions granted and cooldown check passed - submit alert
+      console.log('[Cooldown] Submitting alert...');
       const alertResult = await vehicleTagService.createAlert({
         vtid,
         alert: alertType,
         latitude: currentLocation.lat,
         longitude: currentLocation.lng,
         person_image: imageFile,
+      });
+
+      console.log('[Cooldown] Alert submission result:', {
+        success: alertResult.success,
+        error: alertResult.error
       });
 
       if (alertResult.success) {
@@ -525,9 +578,19 @@ const VehicleTagAlertPage: React.FC = () => {
         // Reload latest alert to update cooldown
         await loadLatestAlert();
       } else {
-        // Handle backend errors gracefully - don't show validation errors for missing fields
+        // Handle backend errors gracefully
         const errorMsg = alertResult.error || 'Failed to send alert';
-        if (errorMsg.includes('latitude') || errorMsg.includes('longitude') || errorMsg.includes('person_image')) {
+        
+        // Check if error is related to cooldown
+        if (errorMsg.includes('wait') || errorMsg.includes('recent alert') || errorMsg.includes('10 minutes')) {
+          console.log('[Cooldown] Backend rejected due to cooldown:', errorMsg);
+          // Reload latest alert to update UI state
+          await loadLatestAlert();
+          showError(
+            'Cooldown Active',
+            errorMsg || 'Please wait before sending another alert. A recent alert was sent less than 10 minutes ago.'
+          );
+        } else if (errorMsg.includes('latitude') || errorMsg.includes('longitude') || errorMsg.includes('person_image')) {
           showError(
             'Permission Required',
             'Please grant location and camera permissions to send alerts. Check your browser settings and try again.'
@@ -539,7 +602,18 @@ const VehicleTagAlertPage: React.FC = () => {
     } catch (error: any) {
       // Handle network/API errors - check if it's a validation error
       const errorMsg = error?.message || 'An unexpected error occurred';
-      if (errorMsg.includes('latitude') || errorMsg.includes('longitude') || errorMsg.includes('person_image') || errorMsg.includes('required')) {
+      console.error('[Cooldown] Error in handleAlertClick:', error);
+      
+      // Check if error is related to cooldown
+      if (errorMsg.includes('wait') || errorMsg.includes('recent alert') || errorMsg.includes('10 minutes')) {
+        console.log('[Cooldown] Backend rejected due to cooldown (catch block):', errorMsg);
+        // Reload latest alert to update UI state
+        await loadLatestAlert();
+        showError(
+          'Cooldown Active',
+          errorMsg || 'Please wait before sending another alert. A recent alert was sent less than 10 minutes ago.'
+        );
+      } else if (errorMsg.includes('latitude') || errorMsg.includes('longitude') || errorMsg.includes('person_image') || errorMsg.includes('required')) {
         showError(
           'Permission Required',
           'Please grant location and camera permissions to send alerts. Check your browser settings and try again.'
