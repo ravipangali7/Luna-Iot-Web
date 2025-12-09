@@ -85,19 +85,70 @@ const VehicleTagAlertPage: React.FC = () => {
   };
 
   const checkCooldown = (alert: VehicleTagAlert) => {
-    const alertTime = new Date(alert.created_at).getTime();
-    const currentTime = new Date().getTime();
-    const timeDiff = currentTime - alertTime;
-    const tenMinutesInMs = 10 * 60 * 1000; // 10 minutes in milliseconds
+    try {
+      const alertTime = new Date(alert.created_at).getTime();
+      
+      // Check if date parsing was successful
+      if (isNaN(alertTime)) {
+        console.error('Invalid date format for alert.created_at:', alert.created_at);
+        setIsInCooldown(false);
+        setCooldownRemaining(0);
+        return;
+      }
 
-    if (timeDiff < tenMinutesInMs) {
-      const remaining = Math.ceil((tenMinutesInMs - timeDiff) / 1000); // remaining seconds
-      setCooldownRemaining(remaining);
-      setIsInCooldown(true);
-      startCountdown(remaining);
-    } else {
+      const currentTime = new Date().getTime();
+      const timeDiff = currentTime - alertTime;
+      const tenMinutesInMs = 10 * 60 * 1000; // 10 minutes in milliseconds
+
+      if (timeDiff < tenMinutesInMs && timeDiff >= 0) {
+        const remaining = Math.ceil((tenMinutesInMs - timeDiff) / 1000); // remaining seconds
+        setCooldownRemaining(remaining);
+        setIsInCooldown(true);
+        startCountdown(remaining);
+      } else {
+        setIsInCooldown(false);
+        setCooldownRemaining(0);
+      }
+    } catch (error) {
+      console.error('Error checking cooldown:', error);
+      // On error, assume not in cooldown to allow alerts
       setIsInCooldown(false);
       setCooldownRemaining(0);
+    }
+  };
+
+  // Helper function to check if currently in cooldown based on latest alert
+  const isCurrentlyInCooldown = async (): Promise<boolean> => {
+    if (!vtid) return false;
+
+    try {
+      const result = await vehicleTagService.getLatestAlertByVtid(vtid);
+      
+      if (result.success && result.data) {
+        try {
+          const alertTime = new Date(result.data.created_at).getTime();
+          
+          // Check if date parsing was successful
+          if (isNaN(alertTime)) {
+            console.error('Invalid date format for alert.created_at:', result.data.created_at);
+            return false;
+          }
+
+          const currentTime = new Date().getTime();
+          const timeDiff = currentTime - alertTime;
+          const tenMinutesInMs = 10 * 60 * 1000; // 10 minutes in milliseconds
+
+          return timeDiff < tenMinutesInMs && timeDiff >= 0;
+        } catch (error) {
+          console.error('Error parsing alert date:', error);
+          return false;
+        }
+      }
+      
+      return false;
+    } catch (error) {
+      console.error('Error checking cooldown status:', error);
+      return false;
     }
   };
 
@@ -373,6 +424,15 @@ const VehicleTagAlertPage: React.FC = () => {
   const handleAlertClick = async (alertType: AlertType) => {
     if (!vtid || !tag) return;
 
+    // Check cooldown at the start - early return if in cooldown
+    if (isInCooldown) {
+      showError(
+        'Cooldown Active',
+        `Please wait ${formatCountdown(cooldownRemaining)} before sending another alert.`
+      );
+      return;
+    }
+
     const alertLabel = AlertTypeLabels[alertType];
     
     // Show confirmation first
@@ -391,6 +451,19 @@ const VehicleTagAlertPage: React.FC = () => {
 
     try {
       setSubmitting(true);
+
+      // Re-check cooldown status before proceeding (in case time passed during confirmation)
+      const stillInCooldown = await isCurrentlyInCooldown();
+      if (stillInCooldown) {
+        // Reload latest alert to update UI state
+        await loadLatestAlert();
+        showError(
+          'Cooldown Active',
+          'A recent alert was detected. Please wait before sending another alert.'
+        );
+        setSubmitting(false);
+        return;
+      }
 
       // Request location permission (required) - keep asking until granted
       let currentLocation: { lat: number; lng: number } | null = null;
@@ -422,7 +495,20 @@ const VehicleTagAlertPage: React.FC = () => {
         }
       }
 
-      // Both permissions granted - submit alert
+      // Re-check cooldown status before submitting (user might have taken time granting permissions)
+      const stillInCooldownBeforeSubmit = await isCurrentlyInCooldown();
+      if (stillInCooldownBeforeSubmit) {
+        // Reload latest alert to update UI state
+        await loadLatestAlert();
+        showError(
+          'Cooldown Active',
+          'A recent alert was detected. Please wait before sending another alert.'
+        );
+        setSubmitting(false);
+        return;
+      }
+
+      // Both permissions granted and cooldown check passed - submit alert
       const alertResult = await vehicleTagService.createAlert({
         vtid,
         alert: alertType,
