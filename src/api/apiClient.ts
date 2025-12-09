@@ -22,12 +22,15 @@ apiClient.interceptors.request.use(
       '/api/vehicle-tag/alert/',  // Vehicle tag alert creation (public)
     ];
     
-    // Check if this is a public vehicle tag endpoint (get tag by VTID or QR image)
+    // Check if this is a public vehicle tag endpoint
+    // Public endpoints: get tag by VTID, get latest alert, get QR code, create alert
     const url = config.url || '';
     const isVehicleTagPublicEndpoint = url.includes('/api/vehicle-tag/') && (
-      url.includes('/alert/') ||  // Alert creation endpoint
-      /\/api\/vehicle-tag\/VTID\d+\/$/.test(url) ||  // Get tag by VTID (e.g., /api/vehicle-tag/VTID83/)
-      /\/api\/vehicle-tag\/VTID\d+\/qr\//.test(url)  // Get QR image (e.g., /api/vehicle-tag/VTID83/qr/)
+      url.includes('/alert/') ||  // Alert creation endpoint (e.g., /api/vehicle-tag/alert/)
+      // Match any VTID format followed by: /, /latest-alert/, or /qr/
+      // Examples: /api/vehicle-tag/VTID84/, /api/vehicle-tag/VTID84/latest-alert/, /api/vehicle-tag/VTID84/qr/
+      /\/api\/vehicle-tag\/[^\/]+\/(latest-alert\/|qr\/)$/.test(url) ||  // Matches /latest-alert/ or /qr/
+      /\/api\/vehicle-tag\/[^\/]+\/$/.test(url)  // Matches trailing slash (get tag by VTID)
     );
     
     const isPublicEndpoint = publicEndpoints.some(endpoint => 
