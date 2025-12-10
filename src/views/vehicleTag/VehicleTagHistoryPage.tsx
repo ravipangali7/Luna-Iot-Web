@@ -48,10 +48,42 @@ const VehicleTagHistoryPage: React.FC = () => {
         setAlerts(result.data.alerts);
         setPagination(result.data.pagination);
       } else {
-        setError(result.error || 'Failed to load alert history');
+        // Check if it's an authentication or permission error
+        const errorMessage = result.error || 'Failed to load alert history';
+        
+        // Handle specific error cases
+        if (errorMessage.includes('Authentication required') || 
+            errorMessage.includes('Invalid token') ||
+            errorMessage.includes('Phone and token required')) {
+          // Authentication error - show message but don't trigger global logout
+          // The apiClient interceptor will handle actual logout if needed
+          setError('Authentication failed. Please try refreshing the page or logging in again.');
+        } else if (errorMessage.includes('Access denied') || 
+                   errorMessage.includes('Insufficient permissions')) {
+          // Permission error
+          setError('You do not have permission to access this page. Super Admin access is required.');
+        } else {
+          setError(errorMessage);
+        }
       }
-    } catch (error) {
-      setError('An unexpected error occurred: ' + (error as Error).message);
+    } catch (error: any) {
+      // Handle axios errors specifically
+      if (error?.response?.status === 401) {
+        const errorMessage = error.response?.data?.message || 'Authentication failed';
+        // Check if it's a real auth failure or something else
+        if (errorMessage.includes('Invalid token') || 
+            errorMessage.includes('Phone and token required') ||
+            errorMessage.includes('Authentication required')) {
+          setError('Authentication failed. Please try refreshing the page or logging in again.');
+        } else {
+          // Might be a permission issue or other problem
+          setError('Unable to load vehicle tag history. Please check your permissions.');
+        }
+      } else if (error?.response?.status === 403) {
+        setError('You do not have permission to access this page. Super Admin access is required.');
+      } else {
+        setError('An unexpected error occurred: ' + (error?.message || 'Unknown error'));
+      }
     } finally {
       setLoading(false);
     }
