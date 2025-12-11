@@ -27,41 +27,68 @@ apiClient.interceptors.request.use(
     const url = config.url || '';
     const isVehicleTagPublicEndpoint = url.includes('/api/vehicle-tag/') && (
       url.includes('/alert/') ||  // Alert creation endpoint (e.g., /api/vehicle-tag/alert/)
-      // Match any VTID format followed by: /, /latest-alert/, or /qr/
+      // Match VTID format (VTID followed by digits) followed by: /, /latest-alert/, or /qr/
       // Examples: /api/vehicle-tag/VTID84/, /api/vehicle-tag/VTID84/latest-alert/, /api/vehicle-tag/VTID84/qr/
-      /\/api\/vehicle-tag\/[^\/]+\/(latest-alert\/|qr\/)$/.test(url) ||  // Matches /latest-alert/ or /qr/
-      /\/api\/vehicle-tag\/[^\/]+\/$/.test(url)  // Matches trailing slash (get tag by VTID)
+      // DO NOT match: /api/vehicle-tag/generate/, /api/vehicle-tag/history/, etc.
+      /\/api\/vehicle-tag\/VTID\d+\/(latest-alert\/|qr\/)$/.test(url) ||  // Matches /latest-alert/ or /qr/
+      /\/api\/vehicle-tag\/VTID\d+\/$/.test(url)  // Matches trailing slash (get tag by VTID)
     );
     
     const isPublicEndpoint = publicEndpoints.some(endpoint => 
       url.includes(endpoint)
     ) || isVehicleTagPublicEndpoint;
     
+    // Debug logging for vehicle tag endpoints
+    if (url.includes('/api/vehicle-tag/')) {
+      console.log('[API Client] Request interceptor for vehicle tag endpoint:', {
+        url,
+        isPublicEndpoint,
+        isVehicleTagPublicEndpoint,
+        publicEndpointsMatch: publicEndpoints.some(endpoint => url.includes(endpoint)),
+      });
+    }
+    
     if (!isPublicEndpoint) {
       const token = localStorage.getItem('token');
       const phone = localStorage.getItem('phone');
       
       if (token && phone) {
+        // Ensure headers are set correctly
+        config.headers = config.headers || {};
         config.headers['x-token'] = token;
         config.headers['x-phone'] = phone;
         
-        // Debug logging for vehicle tag history endpoint
-        if (url.includes('/api/vehicle-tag/history/')) {
-          console.log('[API Client] Adding auth headers for vehicle tag history:', {
+        // Debug logging for vehicle tag endpoints
+        if (url.includes('/api/vehicle-tag/')) {
+          console.log('[API Client] Adding auth headers for vehicle tag endpoint:', {
             url,
             hasToken: !!token,
             hasPhone: !!phone,
+            headers: {
+              'x-token': token ? 'SET' : 'NOT SET',
+              'x-phone': phone ? 'SET' : 'NOT SET',
+            },
+            actualHeaders: {
+              'x-token': config.headers['x-token'] ? 'SET' : 'NOT SET',
+              'x-phone': config.headers['x-phone'] ? 'SET' : 'NOT SET',
+            },
           });
         }
       } else {
         // Debug logging when credentials are missing
-        if (url.includes('/api/vehicle-tag/history/')) {
-          console.warn('[API Client] Missing credentials for vehicle tag history:', {
+        if (url.includes('/api/vehicle-tag/')) {
+          console.warn('[API Client] Missing credentials for vehicle tag endpoint:', {
             url,
             hasToken: !!token,
             hasPhone: !!phone,
+            localStorageKeys: Object.keys(localStorage).filter(k => k.includes('token') || k.includes('phone')),
           });
         }
+      }
+    } else {
+      // Debug logging for public endpoints
+      if (url.includes('/api/vehicle-tag/')) {
+        console.log('[API Client] Skipping auth headers for public vehicle tag endpoint:', url);
       }
     }
     return config;
@@ -110,8 +137,8 @@ apiClient.interceptors.response.use(
       // Check if the request was to a protected endpoint (should have had auth headers)
       const isProtectedEndpoint = !requestUrl.includes('/api/core/auth/') && 
                                    !requestUrl.includes('/api/vehicle-tag/alert/') &&
-                                   !requestUrl.match(/\/api\/vehicle-tag\/[^\/]+\/(latest-alert\/|qr\/)$/) &&
-                                   !requestUrl.match(/\/api\/vehicle-tag\/[^\/]+\/$/);
+                                   !requestUrl.match(/\/api\/vehicle-tag\/VTID\d+\/(latest-alert\/|qr\/)$/) &&
+                                   !requestUrl.match(/\/api\/vehicle-tag\/VTID\d+\/$/);
       
       // Only log out on actual authentication failures
       // Authentication failures: "Invalid token", "Phone and token required", "User matching query does not exist"
