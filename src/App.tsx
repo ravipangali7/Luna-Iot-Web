@@ -31,6 +31,12 @@ import { SwitchIndexPage, SwitchCreatePage, SwitchEditPage } from './views/alert
 import { ContactIndexPage, ContactCreatePage, ContactEditPage } from './views/alertSystem/contacts';
 import { AlertTypeIndexPage, AlertTypeCreatePage, AlertTypeEditPage } from './views/alertSystem/alertTypes';
 import { AlertHistoryIndexPage, AlertHistoryViewPage } from './views/alertHistory';
+import { CommunitySirenIndexPage, CommunitySirenShowPage } from './views/communitySiren';
+import { BuzzerIndexPage as CommunitySirenBuzzerIndexPage, BuzzerCreatePage as CommunitySirenBuzzerCreatePage, BuzzerEditPage as CommunitySirenBuzzerEditPage, BuzzerViewPage as CommunitySirenBuzzerViewPage } from './views/communitySiren/buzzers';
+import { SwitchIndexPage as CommunitySirenSwitchIndexPage, SwitchCreatePage as CommunitySirenSwitchCreatePage, SwitchEditPage as CommunitySirenSwitchEditPage, SwitchViewPage as CommunitySirenSwitchViewPage } from './views/communitySiren/switches';
+import { ContactIndexPage as CommunitySirenContactIndexPage, ContactCreatePage as CommunitySirenContactCreatePage, ContactEditPage as CommunitySirenContactEditPage, ContactViewPage as CommunitySirenContactViewPage } from './views/communitySiren/contacts';
+import { MemberIndexPage, MemberCreatePage, MemberEditPage } from './views/communitySiren/members';
+import { CommunitySirenHistoryIndexPage, CommunitySirenHistoryViewPage } from './views/communitySirenHistory';
 import { SubscriptionPlanIndexPage, SubscriptionPlanCreatePage, SubscriptionPlanEditPage } from './views/subscriptionPlans';
 import { ProductCatalogPage, CartPage, OrderCreatePage, OrderIndexPage, OrderShowPage } from './views/deviceOrders';
 import { UserIndexPage, UserShowPage, UserCreatePage, UserEditPage } from './views/users';
@@ -685,6 +691,113 @@ const AppRoutes: React.FC = () => {
         <Route path="alert-history/:id" element={
           <ModuleBasedRoute allowedRoles={[ROLES.SUPER_ADMIN]} moduleType="alert-system">
             <AlertHistoryViewPage />
+          </ModuleBasedRoute>
+        } />
+
+        {/* Community Siren Routes - Super Admin or Institute Module access */}
+        <Route path="community-siren" element={
+          <ModuleBasedRoute allowedRoles={[ROLES.SUPER_ADMIN]} moduleType="community-siren">
+            <CommunitySirenIndexPage />
+          </ModuleBasedRoute>
+        } />
+        <Route path="community-siren/:id" element={
+          <ModuleBasedRoute allowedRoles={[ROLES.SUPER_ADMIN]} moduleType="community-siren">
+            <CommunitySirenShowPage />
+          </ModuleBasedRoute>
+        } />
+
+        {/* Community Siren Buzzer Routes */}
+        <Route path="community-siren/:instituteId/buzzers" element={
+          <ModuleBasedRoute allowedRoles={[ROLES.SUPER_ADMIN]} moduleType="community-siren">
+            <CommunitySirenBuzzerIndexPage />
+          </ModuleBasedRoute>
+        } />
+        <Route path="community-siren/:instituteId/buzzers/create" element={
+          <ModuleBasedRoute allowedRoles={[ROLES.SUPER_ADMIN]} moduleType="community-siren">
+            <CommunitySirenBuzzerCreatePage />
+          </ModuleBasedRoute>
+        } />
+        <Route path="community-siren/:instituteId/buzzers/:id/edit" element={
+          <ModuleBasedRoute allowedRoles={[ROLES.SUPER_ADMIN]} moduleType="community-siren">
+            <CommunitySirenBuzzerEditPage />
+          </ModuleBasedRoute>
+        } />
+        <Route path="community-siren/:instituteId/buzzers/:id" element={
+          <ModuleBasedRoute allowedRoles={[ROLES.SUPER_ADMIN]} moduleType="community-siren">
+            <CommunitySirenBuzzerViewPage />
+          </ModuleBasedRoute>
+        } />
+
+        {/* Community Siren Switch Routes */}
+        <Route path="community-siren/:instituteId/switches" element={
+          <ModuleBasedRoute allowedRoles={[ROLES.SUPER_ADMIN]} moduleType="community-siren">
+            <CommunitySirenSwitchIndexPage />
+          </ModuleBasedRoute>
+        } />
+        <Route path="community-siren/:instituteId/switches/create" element={
+          <ModuleBasedRoute allowedRoles={[ROLES.SUPER_ADMIN]} moduleType="community-siren">
+            <CommunitySirenSwitchCreatePage />
+          </ModuleBasedRoute>
+        } />
+        <Route path="community-siren/:instituteId/switches/:id/edit" element={
+          <ModuleBasedRoute allowedRoles={[ROLES.SUPER_ADMIN]} moduleType="community-siren">
+            <CommunitySirenSwitchEditPage />
+          </ModuleBasedRoute>
+        } />
+        <Route path="community-siren/:instituteId/switches/:id" element={
+          <ModuleBasedRoute allowedRoles={[ROLES.SUPER_ADMIN]} moduleType="community-siren">
+            <CommunitySirenSwitchViewPage />
+          </ModuleBasedRoute>
+        } />
+
+        {/* Community Siren Contact Routes */}
+        <Route path="community-siren/:instituteId/contacts" element={
+          <ModuleBasedRoute allowedRoles={[ROLES.SUPER_ADMIN]} moduleType="community-siren">
+            <CommunitySirenContactIndexPage />
+          </ModuleBasedRoute>
+        } />
+        <Route path="community-siren/:instituteId/contacts/create" element={
+          <ModuleBasedRoute allowedRoles={[ROLES.SUPER_ADMIN]} moduleType="community-siren">
+            <CommunitySirenContactCreatePage />
+          </ModuleBasedRoute>
+        } />
+        <Route path="community-siren/:instituteId/contacts/:id/edit" element={
+          <ModuleBasedRoute allowedRoles={[ROLES.SUPER_ADMIN]} moduleType="community-siren">
+            <CommunitySirenContactEditPage />
+          </ModuleBasedRoute>
+        } />
+        <Route path="community-siren/:instituteId/contacts/:id" element={
+          <ModuleBasedRoute allowedRoles={[ROLES.SUPER_ADMIN]} moduleType="community-siren">
+            <CommunitySirenContactViewPage />
+          </ModuleBasedRoute>
+        } />
+
+        {/* Community Siren Member Routes */}
+        <Route path="community-siren/:instituteId/members" element={
+          <ModuleBasedRoute allowedRoles={[ROLES.SUPER_ADMIN]} moduleType="community-siren">
+            <MemberIndexPage />
+          </ModuleBasedRoute>
+        } />
+        <Route path="community-siren/:instituteId/members/create" element={
+          <ModuleBasedRoute allowedRoles={[ROLES.SUPER_ADMIN]} moduleType="community-siren">
+            <MemberCreatePage />
+          </ModuleBasedRoute>
+        } />
+        <Route path="community-siren/:instituteId/members/:id/edit" element={
+          <ModuleBasedRoute allowedRoles={[ROLES.SUPER_ADMIN]} moduleType="community-siren">
+            <MemberEditPage />
+          </ModuleBasedRoute>
+        } />
+
+        {/* Community Siren History Routes - Super Admin or Institute Module access */}
+        <Route path="community-siren-history" element={
+          <ModuleBasedRoute allowedRoles={[ROLES.SUPER_ADMIN]} moduleType="community-siren">
+            <CommunitySirenHistoryIndexPage />
+          </ModuleBasedRoute>
+        } />
+        <Route path="community-siren-history/:id" element={
+          <ModuleBasedRoute allowedRoles={[ROLES.SUPER_ADMIN]} moduleType="community-siren">
+            <CommunitySirenHistoryViewPage />
           </ModuleBasedRoute>
         } />
 

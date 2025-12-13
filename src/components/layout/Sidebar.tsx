@@ -3,6 +3,7 @@ import { useNavigate, useLocation } from 'react-router-dom';
 import { useAuth } from '../../hooks/useAuth';
 import { useSchoolAccess } from '../../hooks/useSchoolAccess';
 import { useAlertSystemAccess } from '../../hooks/useAlertSystemAccess';
+import { useCommunitySirenAccess } from '../../hooks/useCommunitySirenAccess';
 import { useGarbageAccess } from '../../hooks/useGarbageAccess';
 import { usePublicVehicleAccess } from '../../hooks/usePublicVehicleAccess';
 import Button from '../ui/buttons/Button';
@@ -33,6 +34,7 @@ const Sidebar: React.FC<SidebarProps> = ({ isOpen, onToggle }) => {
   const { user, logout, canAny, canAll } = useAuth();
   const { hasAccess: hasSchoolAccess } = useSchoolAccess();
   const { hasAccess: hasAlertSystemAccess } = useAlertSystemAccess();
+  const { hasAccess: hasCommunitySirenAccess } = useCommunitySirenAccess();
   const { hasAccess: hasGarbageAccess } = useGarbageAccess();
   const { hasAccess: hasPublicVehicleAccess } = usePublicVehicleAccess();
   const [expandedItems, setExpandedItems] = useState<Set<string>>(new Set());
@@ -554,6 +556,41 @@ const Sidebar: React.FC<SidebarProps> = ({ isOpen, onToggle }) => {
       ]
     },
     {
+      id: 'community-siren-group',
+      label: 'Community Siren',
+      path: '/community-siren',
+      allowedRoles: ['Super Admin'],
+      icon: (
+        <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15.536 8.464a5 5 0 010 7.072m2.828-9.9a9 9 0 010 12.728M5.586 15H4a1 1 0 01-1-1v-4a1 1 0 011-1h1.586l4.707-4.707C10.923 3.663 12 4.109 12 5v14c0 .891-1.077 1.337-1.707.707L5.586 15z" />
+        </svg>
+      ),
+      children: [
+        {
+          id: 'community-siren',
+          label: 'Community Siren',
+          path: '/community-siren',
+          allowedRoles: ['Super Admin'],
+          icon: (
+            <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
+            </svg>
+          )
+        },
+        {
+          id: 'community-siren-history',
+          label: 'History',
+          path: '/community-siren-history',
+          allowedRoles: ['Super Admin'],
+          icon: (
+            <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
+            </svg>
+          )
+        }
+      ]
+    },
+    {
       id: 'phone-call-group',
       label: 'Phone Call',
       path: '/phone-call/campaigns',
@@ -767,6 +804,21 @@ const Sidebar: React.FC<SidebarProps> = ({ isOpen, onToggle }) => {
           return false;
         }
 
+        // Special handling for Community Siren item: check both role-based and module-based access
+        if (item.id === 'community-siren-group' || item.id === 'community-siren' || item.id === 'community-siren-history') {
+          // Check if user is Super Admin (role-based)
+          if (user.roles && user.roles.length > 0) {
+            const userRoleNames = user.roles.map(role => role.name);
+            const isSuperAdmin = userRoleNames.includes(ROLES.SUPER_ADMIN);
+            
+            // Show if Super Admin OR has community siren module access
+            if (isSuperAdmin || hasCommunitySirenAccess) {
+              return true;
+            }
+          }
+          return false;
+        }
+
         // Special handling for Garbage item: check both role-based and module-based access
         if (item.id === 'garbage') {
           // Check if user is Super Admin (role-based)
@@ -846,7 +898,7 @@ const Sidebar: React.FC<SidebarProps> = ({ isOpen, onToggle }) => {
     };
 
     return filterItems(navigationItems);
-  }, [user, canAny, canAll, hasSchoolAccess, hasAlertSystemAccess, hasGarbageAccess, hasPublicVehicleAccess, navigationItems]);
+  }, [user, canAny, canAll, hasSchoolAccess, hasAlertSystemAccess, hasCommunitySirenAccess, hasGarbageAccess, hasPublicVehicleAccess, navigationItems]);
 
   const handleLogout = async () => {
     logout();

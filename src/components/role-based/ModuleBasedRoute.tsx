@@ -4,13 +4,14 @@ import { useAuth } from '../../hooks/useAuth';
 import { useSchoolAccess } from '../../hooks/useSchoolAccess';
 import { useGarbageAccess } from '../../hooks/useGarbageAccess';
 import { useAlertSystemAccess } from '../../hooks/useAlertSystemAccess';
+import { useCommunitySirenAccess } from '../../hooks/useCommunitySirenAccess';
 import { usePublicVehicleAccess } from '../../hooks/usePublicVehicleAccess';
 import { hasRole } from '../../utils/roleUtils';
 
 interface ModuleBasedRouteProps {
   children: React.ReactNode;
   allowedRoles?: string[];
-  moduleType?: 'school' | 'alert-system' | 'garbage' | 'public-vehicle'; // Type of module to check access for
+  moduleType?: 'school' | 'alert-system' | 'community-siren' | 'garbage' | 'public-vehicle'; // Type of module to check access for
   fallbackPath?: string;
   fallbackComponent?: React.ReactNode;
 }
@@ -26,9 +27,10 @@ const ModuleBasedRoute: React.FC<ModuleBasedRouteProps> = ({
   const { hasAccess: hasSchoolAccess, loading: schoolAccessLoading } = useSchoolAccess();
   const { hasAccess: hasGarbageAccess, loading: garbageAccessLoading } = useGarbageAccess();
   const { hasAccess: hasAlertSystemAccess, loading: alertSystemAccessLoading } = useAlertSystemAccess();
+  const { hasAccess: hasCommunitySirenAccess, loading: communitySirenAccessLoading } = useCommunitySirenAccess();
   const { hasAccess: hasPublicVehicleAccess, loading: publicVehicleAccessLoading } = usePublicVehicleAccess();
 
-  if (isLoading || (moduleType === 'school' && schoolAccessLoading) || (moduleType === 'garbage' && garbageAccessLoading) || (moduleType === 'alert-system' && alertSystemAccessLoading) || (moduleType === 'public-vehicle' && publicVehicleAccessLoading)) {
+  if (isLoading || (moduleType === 'school' && schoolAccessLoading) || (moduleType === 'garbage' && garbageAccessLoading) || (moduleType === 'alert-system' && alertSystemAccessLoading) || (moduleType === 'community-siren' && communitySirenAccessLoading) || (moduleType === 'public-vehicle' && publicVehicleAccessLoading)) {
     return (
       <div className="min-h-screen flex items-center justify-center">
         <div className="text-lg">Loading...</div>
@@ -51,6 +53,8 @@ const ModuleBasedRoute: React.FC<ModuleBasedRouteProps> = ({
     hasModuleAccess = hasGarbageAccess;
   } else if (moduleType === 'alert-system') {
     hasModuleAccess = hasAlertSystemAccess;
+  } else if (moduleType === 'community-siren') {
+    hasModuleAccess = hasCommunitySirenAccess;
   } else if (moduleType === 'public-vehicle') {
     hasModuleAccess = hasPublicVehicleAccess;
   }
