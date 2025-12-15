@@ -777,7 +777,7 @@ const VehicleTagAlertPage: React.FC = () => {
                 document.getElementById('alerts')?.scrollIntoView({ behavior: 'smooth' });
               }}
             >
-              Report Vehicle Emergency
+              गाडी आपतकालीन रिपोर्ट
             </a>
           </div>
         )}
@@ -801,6 +801,53 @@ const VehicleTagAlertPage: React.FC = () => {
             })}
           </div>
         )}
+
+        {/* Download App Button */}
+        <div className="mt-8 mb-6">
+          <a
+            href="https://mylunago.com/download/"
+            target="_blank"
+            rel="noopener noreferrer"
+            className="block w-full"
+          >
+            <div className="bg-gradient-to-r from-blue-500 via-purple-500 to-indigo-600 hover:from-blue-600 hover:via-purple-600 hover:to-indigo-700 text-white rounded-2xl shadow-xl hover:shadow-2xl transition-all duration-300 transform hover:scale-[1.02] p-5 flex items-center justify-center space-x-4 border-2 border-white/20">
+              <div className="bg-white/20 rounded-xl p-2">
+                <svg
+                  className="w-8 h-8"
+                  fill="none"
+                  stroke="currentColor"
+                  viewBox="0 0 24 24"
+                  xmlns="http://www.w3.org/2000/svg"
+                >
+                  <path
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                    strokeWidth={2}
+                    d="M12 18h.01M8 21h8a2 2 0 002-2V5a2 2 0 00-2-2H8a2 2 0 00-2 2v14a2 2 0 002 2z"
+                  />
+                </svg>
+              </div>
+              <div className="flex flex-col items-start">
+                <span className="text-sm font-medium opacity-90">Get the App</span>
+                <span className="text-xl font-bold">Download App</span>
+              </div>
+              <svg
+                className="w-5 h-5 ml-auto"
+                fill="none"
+                stroke="currentColor"
+                viewBox="0 0 24 24"
+                xmlns="http://www.w3.org/2000/svg"
+              >
+                <path
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                  strokeWidth={2}
+                  d="M9 5l7 7-7 7"
+                />
+              </svg>
+            </div>
+          </a>
+        </div>
 
         {/* Footer */}
         <div className="mt-8 text-center text-sm text-gray-500">

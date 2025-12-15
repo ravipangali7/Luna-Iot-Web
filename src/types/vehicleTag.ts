@@ -32,13 +32,13 @@ export const AlertType = {
 export type AlertType = typeof AlertType[keyof typeof AlertType];
 
 export const AlertTypeLabels: Record<AlertType, string> = {
-  [AlertType.WRONG_PARKING]: 'Wrong Parking',
-  [AlertType.BLOCKING_ROAD]: 'Blocking The Road',
-  [AlertType.NOT_LOCKED_IGNITION_ON]: 'Not Locked / Ignition ON',
-  [AlertType.VEHICLE_TOW_ALERT]: 'Vehicle Tow Alert',
-  [AlertType.TRAFFIC_RULE_VIOLATION]: 'Traffic Rule Violation',
-  [AlertType.FIRE_PHYSICAL_THREAT]: 'Fire & Physical Threat',
-  [AlertType.ACCIDENT_ALERT]: 'Accident Alert (Inform Family)',
+  [AlertType.WRONG_PARKING]: 'गलत पार्किङ',
+  [AlertType.BLOCKING_ROAD]: 'सडक अवरुद्ध',
+  [AlertType.NOT_LOCKED_IGNITION_ON]: 'लक नभएको / इग्निसन चालू',
+  [AlertType.VEHICLE_TOW_ALERT]: 'गाडी टो गर्ने चेतावनी',
+  [AlertType.TRAFFIC_RULE_VIOLATION]: 'यातायात नियम उल्लङ्घन',
+  [AlertType.FIRE_PHYSICAL_THREAT]: 'आगो र शारीरिक खतरा',
+  [AlertType.ACCIDENT_ALERT]: 'दुर्घटना चेतावनी (परिवारलाई सूचना)',
 };
 
 export interface VehicleTagUserInfo {
