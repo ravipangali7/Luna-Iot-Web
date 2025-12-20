@@ -31,7 +31,13 @@ const MemberIndexPage: React.FC = () => {
     try {
       setLoading(true);
       setError(null);
-      const membersData = await communitySirenMembersService.getAll();
+      const instituteIdNum = Number(instituteId);
+      if (!instituteIdNum || isNaN(instituteIdNum)) {
+        setError('Invalid institute ID');
+        setLoading(false);
+        return;
+      }
+      const membersData = await communitySirenMembersService.getByInstitute(instituteIdNum);
       setMembers(membersData);
     } catch (err: unknown) {
       console.error('Error fetching members:', err);
@@ -40,7 +46,7 @@ const MemberIndexPage: React.FC = () => {
     } finally {
       setLoading(false);
     }
-  }, []);
+  }, [instituteId]);
 
   useEffect(() => {
     // Allow access if user has general community-siren access or is admin

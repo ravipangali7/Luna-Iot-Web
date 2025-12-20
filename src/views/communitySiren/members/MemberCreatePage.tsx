@@ -101,8 +101,16 @@ const MemberCreatePage: React.FC = () => {
       setSubmitting(true);
       setError(null);
 
+      const instituteIdNum = Number(instituteId);
+      if (!instituteIdNum || isNaN(instituteIdNum)) {
+        setError('Invalid institute ID');
+        setSubmitting(false);
+        return;
+      }
+
       const payload: CommunitySirenMembersCreate = {
-        user: selectedUser!
+        user: selectedUser!,
+        institute: instituteIdNum
       };
 
       await communitySirenMembersService.create(payload);

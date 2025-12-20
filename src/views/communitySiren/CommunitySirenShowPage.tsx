@@ -60,7 +60,7 @@ const CommunitySirenShowPage: React.FC = () => {
         communitySirenBuzzerService.getByInstitute(instituteId),
         communitySirenSwitchService.getByInstitute(instituteId),
         communitySirenContactService.getByInstitute(instituteId),
-        communitySirenMembersService.getAll()
+        communitySirenMembersService.getByInstitute(instituteId)
       ]);
 
       setBuzzers((buzzersData || []).map(buzzer => ({
@@ -72,7 +72,6 @@ const CommunitySirenShowPage: React.FC = () => {
         device_name: switchItem.device_imei // Map device_imei to device_name for compatibility
       })));
       setContacts(contactsData || []);
-      // Filter members - we'll show all members for now, but could filter by institute if needed
       setMembers(membersData || []);
     } catch (err) {
       console.error('Error fetching data:', err);

@@ -1,7 +1,7 @@
 import React, { useState, useEffect, useCallback } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { useCommunitySirenAccess } from '../../../hooks/useCommunitySirenAccess';
-import { communitySirenMembersService, type CommunitySirenMembers } from '../../../api/services/communitySirenService';
+import { communitySirenMembersService, type CommunitySirenMembers, type CommunitySirenMembersUpdate } from '../../../api/services/communitySirenService';
 import { userService } from '../../../api/services/userService';
 import Container from '../../../components/ui/layout/Container';
 import Card from '../../../components/ui/cards/Card';
@@ -109,8 +109,16 @@ const MemberEditPage: React.FC = () => {
       setSubmitting(true);
       setError(null);
 
-      const payload = {
-        user: selectedUser!
+      const instituteIdNum = Number(instituteId);
+      if (!instituteIdNum || isNaN(instituteIdNum)) {
+        setError('Invalid institute ID');
+        setSubmitting(false);
+        return;
+      }
+
+      const payload: CommunitySirenMembersUpdate = {
+        user: selectedUser!,
+        institute: instituteIdNum
       };
 
       await communitySirenMembersService.update(Number(id), payload);

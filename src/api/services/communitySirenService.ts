@@ -40,6 +40,8 @@ export interface CommunitySirenMembers {
   user: number;
   user_name: string;
   user_phone: string;
+  institute: number;
+  institute_name: string;
   created_at: string;
   updated_at: string;
 }
@@ -119,10 +121,12 @@ export interface CommunitySirenSwitchUpdate {
 
 export interface CommunitySirenMembersCreate {
   user: number;
+  institute: number;
 }
 
 export interface CommunitySirenMembersUpdate {
   user?: number;
+  institute?: number;
 }
 
 export interface CommunitySirenContactCreate {
@@ -291,6 +295,11 @@ export const communitySirenMembersService = {
 
   getById: async (id: number): Promise<CommunitySirenMembers> => {
     const response = await apiClient.get<CommunitySirenApiResponse<CommunitySirenMembers>>(`/api/community-siren/community-siren-members/${id}/`);
+    return response.data.data;
+  },
+
+  getByInstitute: async (instituteId: number): Promise<CommunitySirenMembers[]> => {
+    const response = await apiClient.get<CommunitySirenApiResponse<CommunitySirenMembers[]>>(`/api/community-siren/community-siren-members/by-institute/${instituteId}/`);
     return response.data.data;
   },
 
