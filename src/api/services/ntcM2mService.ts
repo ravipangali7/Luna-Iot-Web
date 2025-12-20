@@ -20,8 +20,13 @@ export interface NtcM2mReportResponse {
 
 export const ntcM2mService = {
   fetchReport: async (): Promise<NtcM2mReportResponse['data']> => {
+    // Use longer timeout for this specific endpoint (5 minutes)
     const response = await apiClient.post<NtcM2mReportResponse>(
-      '/api/shared/ntc-m2m/fetch-report/'
+      '/api/shared/ntc-m2m/fetch-report/',
+      {},
+      {
+        timeout: 300000, // 5 minutes - automation can take a while
+      }
     );
     return response.data.data;
   },
