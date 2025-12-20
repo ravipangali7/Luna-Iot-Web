@@ -71,6 +71,7 @@ import { NotificationIndexPage, NotificationCreatePage, NotificationShowPage } f
 import { BannerIndexPage, BannerCreatePage, BannerEditPage, BannerShowPage } from './views/notices/banners';
 import SettingsPage from './views/settings/SettingsPage';
 import { VehicleTagIndexPage, BulkTagPage, VehicleTagAlertPage, VehicleTagHistoryPage } from './views/vehicleTag';
+import { NtcM2mReportPage } from './views/ntcM2m';
 import RoleBasedRoute from './components/role-based/RoleBasedRoute';
 import ModuleBasedRoute from './components/role-based/ModuleBasedRoute';
 import { ROLES } from './utils/roleUtils';
@@ -940,6 +941,13 @@ const AppRoutes: React.FC = () => {
         <Route path="settings" element={
           <RoleBasedRoute allowedRoles={[ROLES.SUPER_ADMIN]}>
             <SettingsPage />
+          </RoleBasedRoute>
+        } />
+
+        {/* NTC M2M Report Route - Super Admin only */}
+        <Route path="ntc-m2m/report" element={
+          <RoleBasedRoute allowedRoles={[ROLES.SUPER_ADMIN]}>
+            <NtcM2mReportPage />
           </RoleBasedRoute>
         } />
       </Route>
