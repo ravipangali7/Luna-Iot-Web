@@ -24,6 +24,8 @@ import Button from '../../components/ui/buttons/Button';
 import Badge from '../../components/ui/common/Badge';
 import Spinner from '../../components/ui/common/Spinner';
 import Alert from '../../components/ui/common/Alert';
+import Tooltip from '../../components/ui/common/Tooltip';
+import VehicleUtils from '../../utils/vehicleUtils';
 import { confirmDelete, showSuccess, showError } from '../../utils/sweetAlert';
 
 
@@ -155,6 +157,13 @@ const CommunitySirenShowPage: React.FC = () => {
     });
   };
 
+  const getLastData = (status: { last_updated?: string } | undefined) => {
+    if (!status || !status.last_updated) {
+      return 'No data';
+    }
+    return VehicleUtils.getTimeAgoFromUTC(status.last_updated);
+  };
+
 
   if (accessLoading || loading) {
     return (
@@ -284,6 +293,8 @@ const CommunitySirenShowPage: React.FC = () => {
                      <TableHeader>Title</TableHeader>
                      <TableHeader>Device</TableHeader>
                      <TableHeader>Delay (s)</TableHeader>
+                     <TableHeader>Status</TableHeader>
+                     <TableHeader>Last Data ago</TableHeader>
                      <TableHeader>Created At</TableHeader>
                      <TableHeader>Actions</TableHeader>
                    </TableRow>
@@ -294,6 +305,48 @@ const CommunitySirenShowPage: React.FC = () => {
                        <TableCell className="font-medium text-gray-900">{item.title}</TableCell>
                        <TableCell className="text-gray-600">{item.device_name || item.device_imei}</TableCell>
                        <TableCell className="text-gray-600">{item.delay}</TableCell>
+                       <TableCell>
+                         <div className="flex flex-col gap-2">
+                           <div>
+                             <Badge 
+                               variant={item.buzzer_status ? 'success' : 'danger'} 
+                               size="sm"
+                             >
+                               {item.buzzer_status ? 'ACTIVE' : 'INACTIVE'}
+                             </Badge>
+                           </div>
+                           {item.buzzer_status && (
+                             <div className="flex items-center gap-1">
+                               <Tooltip content={`Battery: ${item.buzzer_status.battery}/6`}>
+                                 <div className="flex items-center cursor-pointer hover:opacity-80 transition-opacity">
+                                   {VehicleUtils.getBattery(item.buzzer_status.battery, 18)}
+                                 </div>
+                               </Tooltip>
+                               <Tooltip content={`Signal: ${item.buzzer_status.signal}/4`}>
+                                 <div className="flex items-center cursor-pointer hover:opacity-80 transition-opacity">
+                                   {VehicleUtils.getSignal(item.buzzer_status.signal, 18)}
+                                 </div>
+                               </Tooltip>
+                               <Tooltip content={item.buzzer_status.ignition ? 'Ignition: ON' : 'Ignition: OFF'}>
+                                 <div className="flex items-center cursor-pointer hover:opacity-80 transition-opacity">
+                                   {VehicleUtils.getIgnition(item.buzzer_status.ignition, 18)}
+                                 </div>
+                               </Tooltip>
+                               <Tooltip content={item.buzzer_status.charging ? 'Charging: ON' : 'Charging: OFF'}>
+                                 <div className="flex items-center cursor-pointer hover:opacity-80 transition-opacity">
+                                   {VehicleUtils.getCharging(item.buzzer_status.charging, 18)}
+                                 </div>
+                               </Tooltip>
+                             </div>
+                           )}
+                           {!item.buzzer_status && (
+                             <span className="text-xs text-gray-400">No data</span>
+                           )}
+                         </div>
+                       </TableCell>
+                       <TableCell className="text-sm">
+                         {getLastData(item.buzzer_status)}
+                       </TableCell>
                        <TableCell className="text-gray-600">{formatDate(item.created_at)}</TableCell>
                        <TableCell>
                          <div className="flex space-x-2">
@@ -351,6 +404,8 @@ const CommunitySirenShowPage: React.FC = () => {
                      <TableHeader>Title</TableHeader>
                      <TableHeader>Device</TableHeader>
                      <TableHeader>Primary Phone</TableHeader>
+                     <TableHeader>Status</TableHeader>
+                     <TableHeader>Last Data ago</TableHeader>
                      <TableHeader>Created At</TableHeader>
                      <TableHeader>Actions</TableHeader>
                    </TableRow>
@@ -361,6 +416,48 @@ const CommunitySirenShowPage: React.FC = () => {
                        <TableCell className="font-medium text-gray-900">{item.title}</TableCell>
                        <TableCell className="text-gray-600">{item.device_name || item.device_imei}</TableCell>
                        <TableCell className="text-gray-600">{item.primary_phone}</TableCell>
+                       <TableCell>
+                         <div className="flex flex-col gap-2">
+                           <div>
+                             <Badge 
+                               variant={item.switch_status ? 'success' : 'danger'} 
+                               size="sm"
+                             >
+                               {item.switch_status ? 'ACTIVE' : 'INACTIVE'}
+                             </Badge>
+                           </div>
+                           {item.switch_status && (
+                             <div className="flex items-center gap-1">
+                               <Tooltip content={`Battery: ${item.switch_status.battery}/6`}>
+                                 <div className="flex items-center cursor-pointer hover:opacity-80 transition-opacity">
+                                   {VehicleUtils.getBattery(item.switch_status.battery, 18)}
+                                 </div>
+                               </Tooltip>
+                               <Tooltip content={`Signal: ${item.switch_status.signal}/4`}>
+                                 <div className="flex items-center cursor-pointer hover:opacity-80 transition-opacity">
+                                   {VehicleUtils.getSignal(item.switch_status.signal, 18)}
+                                 </div>
+                               </Tooltip>
+                               <Tooltip content={item.switch_status.ignition ? 'Ignition: ON' : 'Ignition: OFF'}>
+                                 <div className="flex items-center cursor-pointer hover:opacity-80 transition-opacity">
+                                   {VehicleUtils.getIgnition(item.switch_status.ignition, 18)}
+                                 </div>
+                               </Tooltip>
+                               <Tooltip content={item.switch_status.charging ? 'Charging: ON' : 'Charging: OFF'}>
+                                 <div className="flex items-center cursor-pointer hover:opacity-80 transition-opacity">
+                                   {VehicleUtils.getCharging(item.switch_status.charging, 18)}
+                                 </div>
+                               </Tooltip>
+                             </div>
+                           )}
+                           {!item.switch_status && (
+                             <span className="text-xs text-gray-400">No data</span>
+                           )}
+                         </div>
+                       </TableCell>
+                       <TableCell className="text-sm">
+                         {getLastData(item.switch_status)}
+                       </TableCell>
                        <TableCell className="text-gray-600">{formatDate(item.created_at)}</TableCell>
                        <TableCell>
                          <div className="flex space-x-2">

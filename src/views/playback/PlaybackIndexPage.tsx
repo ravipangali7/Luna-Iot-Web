@@ -318,10 +318,69 @@ const PlaybackIndexPage: React.FC = () => {
         }
       }
 
-      setTrips(trips);
-      setTripSegments(segments);
+      // Step 1: Calculate timestamps for all trip pairs using the same method as stop points
+      // This ensures trips use the exact same accurate times that stop points use
+      const tripTimestamps: Array<{
+        arrivalTime: string | null;
+        departureTime: string | null;
+      }> = [];
 
-      // Calculate stop points between trips
+      for (let i = 0; i < trips.length - 1; i++) {
+        const trip = trips[i];
+        const nextTrip = trips[i + 1];
+        const timestamps = getStopPointTimestamps(trip, nextTrip, history);
+        tripTimestamps.push(timestamps);
+      }
+
+      // Step 2: Update trips IMMEDIATELY after timestamp calculation (matching Flutter logic)
+      // This ensures trip times match stop point times exactly, just like in Flutter app
+      const updatedTrips = trips.map((trip, index) => {
+        const updatedTrip = { ...trip };
+
+        // For trip's end time: use arrival time from stop point between this trip and next trip
+        // This is when the vehicle arrived at the stop point (same as stop point arrival time)
+        // Matching Flutter: trip.endTime = arrivalTime from getStopPointTimestamps(trip, nextTrip)
+        if (index < trips.length - 1 && index < tripTimestamps.length) {
+          const timestamps = tripTimestamps[index];
+          // Always update if we have arrival time (this is the accurate stop point time)
+          if (timestamps.arrivalTime) {
+            updatedTrip.endTime = timestamps.arrivalTime;
+          }
+        }
+
+        // For trip's start time: use departure time from stop point between previous trip and this trip
+        // This is when the vehicle departed from the previous stop point (same as stop point departure time)
+        // Matching Flutter: trip.startTime = departureTime from getStopPointTimestamps(prevTrip, trip)
+        if (index > 0 && (index - 1) < tripTimestamps.length) {
+          const timestamps = tripTimestamps[index - 1];
+          // Always update if we have departure time (this is the accurate stop point time)
+          if (timestamps.departureTime) {
+            updatedTrip.startTime = timestamps.departureTime;
+          }
+        }
+
+        return updatedTrip;
+      });
+
+      // Step 3: Update trip segments using the updated trip times directly (for display)
+      // This ensures segments use the exact same times as the updated trips
+      const updatedSegments = segments.map((segment, index) => {
+        const trip = updatedTrips[index]; // Use updated trip, not original
+        if (!trip) return segment;
+
+        // Use the updated trip's startTime and endTime directly
+        // This ensures segments match trips exactly
+        const updatedSegment = {
+          ...segment,
+          startTime: trip.startTime, // Use updated trip's start time
+          endTime: trip.endTime,     // Use updated trip's end time
+        };
+
+        return updatedSegment;
+      });
+
+      // Step 4: Calculate stop points between trips (only include those with duration >= 1 minute)
+      // Use the same timestamps we already calculated, and use updated trips
       const calculatedStopPoints: Array<{
         trip: Trip;
         nextTrip: Trip | null;
@@ -332,10 +391,10 @@ const PlaybackIndexPage: React.FC = () => {
         lng: number;
       }> = [];
 
-      for (let i = 0; i < trips.length - 1; i++) {
-        const trip = trips[i];
-        const nextTrip = trips[i + 1];
-        const timestamps = getStopPointTimestamps(trip, nextTrip, history);
+      for (let i = 0; i < updatedTrips.length - 1; i++) {
+        const trip = updatedTrips[i]; // Use updated trip
+        const nextTrip = updatedTrips[i + 1]; // Use updated trip
+        const timestamps = tripTimestamps[i];
         const duration = calculateStopDuration(timestamps.arrivalTime, timestamps.departureTime);
 
         // Only include stop points with duration >= 1 minute
@@ -354,23 +413,82 @@ const PlaybackIndexPage: React.FC = () => {
 
       setStopPoints(calculatedStopPoints);
 
-      // Load addresses for segments
+      // Step 5: Final update - ensure trips use stop point timestamps (same source as stop points)
+      // This double-checks that trips match stop points exactly
+      const finalUpdatedTrips = updatedTrips.map((trip, index) => {
+        const finalTrip = { ...trip };
+
+        // For trip's end time: prefer stop point arrival time, fallback to timestamp
+        if (index < updatedTrips.length - 1 && index < tripTimestamps.length) {
+          // First try to get from stop point (if it exists and has the time)
+          const stopPoint = calculatedStopPoints.find(sp => sp.trip.tripNumber === trip.tripNumber);
+          if (stopPoint?.arrivalTime) {
+            finalTrip.endTime = stopPoint.arrivalTime;
+          } else {
+            // Use timestamp directly (same calculation as stop points)
+            const timestamps = tripTimestamps[index];
+            if (timestamps?.arrivalTime) {
+              finalTrip.endTime = timestamps.arrivalTime;
+            }
+          }
+        }
+
+        // For trip's start time: prefer stop point departure time, fallback to timestamp
+        if (index > 0 && (index - 1) < tripTimestamps.length) {
+          // First try to get from previous trip's stop point
+          const prevTrip = updatedTrips[index - 1];
+          const stopPoint = calculatedStopPoints.find(sp => sp.trip.tripNumber === prevTrip.tripNumber);
+          if (stopPoint?.departureTime) {
+            finalTrip.startTime = stopPoint.departureTime;
+          } else {
+            // Use timestamp directly (same calculation as stop points)
+            const timestamps = tripTimestamps[index - 1];
+            if (timestamps?.departureTime) {
+              finalTrip.startTime = timestamps.departureTime;
+            }
+          }
+        }
+
+        return finalTrip;
+      });
+
+      // Step 6: Update segments to match final updated trips exactly
+      const finalUpdatedSegments = updatedSegments.map((segment, index) => {
+        const trip = finalUpdatedTrips[index];
+        if (!trip) return segment;
+        // Use trip's times directly - they now match stop point times
+        return {
+          ...segment,
+          startTime: trip.startTime,
+          endTime: trip.endTime,
+        };
+      });
+
+      // Set final updated trips and segments (these now match stop point times)
+      setTrips(finalUpdatedTrips);
+      setTripSegments(finalUpdatedSegments);
+
+      // Load addresses for segments (preserve the updated times)
       setLoadingAddresses(true);
-      for (let i = 0; i < segments.length; i++) {
-        const segment = segments[i];
+      const segmentsWithAddresses = [...finalUpdatedSegments]; // Use final segments with correct times
+      for (let i = 0; i < finalUpdatedSegments.length; i++) {
+        const segment = finalUpdatedSegments[i];
         try {
           const startAddress = await GeoUtils.getReverseGeoCode(segment.startLat, segment.startLng);
           const endAddress = await GeoUtils.getReverseGeoCode(segment.endLat, segment.endLng);
           
-          setTripSegments(prev => prev.map((s, index) => 
-            index === i 
-              ? { ...s, startLocation: startAddress, endLocation: endAddress }
-              : s
-          ));
+          // Update addresses while preserving all other properties including updated times
+          segmentsWithAddresses[i] = {
+            ...segment,
+            startLocation: startAddress,
+            endLocation: endAddress
+          };
         } catch (error) {
           console.error('Error loading address for segment:', error);
         }
       }
+      // Set all segments at once with addresses and correct times
+      setTripSegments(segmentsWithAddresses);
       setLoadingAddresses(false);
     };
 
@@ -416,6 +534,7 @@ const PlaybackIndexPage: React.FC = () => {
     } finally {
       setLoadingHistory(false);
     }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [selectedVehicle, startDateTime, endDateTime, vehicles]);
 
   // Handle URL parameters for pre-selecting vehicle
@@ -468,23 +587,75 @@ const PlaybackIndexPage: React.FC = () => {
     _nextTrip: Trip | null,
     allHistoryData: History[]
   ): { arrivalTime: string | null; departureTime: string | null } => {
-    const stopLatitude = trip.endLatitude;
-    const stopLongitude = trip.endLongitude;
+    // Use the trip's last point coordinates (more accurate than trip.endLatitude/endLongitude)
+    const tripEndPoint = trip.tripPoints && trip.tripPoints.length > 0 
+      ? trip.tripPoints[trip.tripPoints.length - 1]
+      : null;
+    const stopLatitude = tripEndPoint?.latitude ?? trip.endLatitude;
+    const stopLongitude = tripEndPoint?.longitude ?? trip.endLongitude;
 
     // Find location history records
     const locationHistory = allHistoryData.filter(
       (data) => data.type === 'location' && data.latitude && data.longitude
     );
 
-    // Find the arrival record (exact match with stop point coordinates)
+    // Find the arrival record (match with stop point coordinates)
+    // Use a small tolerance for floating point comparison (0.0001 degrees ≈ 11 meters)
+    // We want the FIRST location record at this coordinate (when vehicle first arrived at stop)
+    const TOLERANCE = 0.0001;
     let arrivalRecord: History | null = null;
+    
+    // Find all matching location records (close to stop coordinates)
+    // Only consider records that are at or before the trip's end time
+    const tripEndTime = trip.endTime ? new Date(trip.endTime).getTime() : null;
+    const matchingRecords: History[] = [];
     for (const record of locationHistory) {
       if (
-        record.latitude === stopLatitude &&
-        record.longitude === stopLongitude
+        record.latitude != null &&
+        record.longitude != null &&
+        record.createdAt &&
+        Math.abs(record.latitude - stopLatitude) < TOLERANCE &&
+        Math.abs(record.longitude - stopLongitude) < TOLERANCE
       ) {
-        arrivalRecord = record;
-        break;
+        const recordTime = new Date(record.createdAt).getTime();
+        // Only include records that are at or before the trip's end time
+        // This ensures we find the arrival at the stop, not some earlier unrelated visit
+        if (tripEndTime === null || recordTime <= tripEndTime) {
+          matchingRecords.push(record);
+        }
+      }
+    }
+    
+    // Use the LAST matching record that's at or before trip end time
+    // This is when the vehicle arrived at the stop (the last location record before/at trip end)
+    // This matches the trip's end point, which is when it arrived at the stop
+    if (matchingRecords.length > 0) {
+      matchingRecords.sort((a, b) => {
+        const timeA = a.createdAt ? new Date(a.createdAt).getTime() : 0;
+        const timeB = b.createdAt ? new Date(b.createdAt).getTime() : 0;
+        return timeB - timeA; // Descending order (most recent first, but still <= trip end)
+      });
+      arrivalRecord = matchingRecords[0];
+    }
+    
+    // If still not found, try to find the closest location point to the stop point
+    if (!arrivalRecord && locationHistory.length > 0) {
+      let closestRecord: History | null = null;
+      let minDistance = Infinity;
+      for (const record of locationHistory) {
+        if (record.latitude != null && record.longitude != null) {
+          const distance = Math.sqrt(
+            Math.pow(record.latitude - stopLatitude, 2) +
+            Math.pow(record.longitude - stopLongitude, 2)
+          );
+          if (distance < minDistance && distance < 0.001) { // Within 111 meters
+            minDistance = distance;
+            closestRecord = record;
+          }
+        }
+      }
+      if (closestRecord) {
+        arrivalRecord = closestRecord;
       }
     }
 
@@ -966,8 +1137,17 @@ const PlaybackIndexPage: React.FC = () => {
                         {/* Start time and location */}
                         <div className="mb-3">
                           <div className="text-sm font-bold text-gray-800">
-                            {new Date(segment.startTime).toISOString().split('T')[0]},
-                            {new Date(segment.startTime).toISOString().split('T')[1].split('.')[0]}
+                            {(() => {
+                              const startDate = new Date(segment.startTime);
+                              // Use local time formatting (same as stop point modal) instead of UTC
+                              const year = startDate.getFullYear();
+                              const month = (startDate.getMonth() + 1).toString().padStart(2, '0');
+                              const day = startDate.getDate().toString().padStart(2, '0');
+                              const hours = startDate.getHours().toString().padStart(2, '0');
+                              const minutes = startDate.getMinutes().toString().padStart(2, '0');
+                              const seconds = startDate.getSeconds().toString().padStart(2, '0');
+                              return `${year}-${month}-${day},${hours}:${minutes}:${seconds}`;
+                            })()}
               </div>
                           <div className="text-sm text-gray-600 mt-1">
                             {segment.startLocation}
@@ -977,8 +1157,17 @@ const PlaybackIndexPage: React.FC = () => {
                         {/* End time and location */}
                         <div className="mb-3">
                           <div className="text-sm font-bold text-gray-800">
-                            {new Date(segment.endTime).toISOString().split('T')[0]},
-                            {new Date(segment.endTime).toISOString().split('T')[1].split('.')[0]}
+                            {(() => {
+                              const endDate = new Date(segment.endTime);
+                              // Use local time formatting (same as stop point modal) instead of UTC
+                              const year = endDate.getFullYear();
+                              const month = (endDate.getMonth() + 1).toString().padStart(2, '0');
+                              const day = endDate.getDate().toString().padStart(2, '0');
+                              const hours = endDate.getHours().toString().padStart(2, '0');
+                              const minutes = endDate.getMinutes().toString().padStart(2, '0');
+                              const seconds = endDate.getSeconds().toString().padStart(2, '0');
+                              return `${year}-${month}-${day},${hours}:${minutes}:${seconds}`;
+                            })()}
                   </div>
                           <div className="text-sm text-gray-600 mt-1">
                             {segment.endLocation}
@@ -1042,7 +1231,7 @@ const PlaybackIndexPage: React.FC = () => {
               </div>
                     </Card>
                   </div>
-        ))}
+                ))}
       </div>
             </Card>
           </div>

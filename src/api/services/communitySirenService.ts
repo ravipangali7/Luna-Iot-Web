@@ -12,6 +12,14 @@ export interface CommunitySirenBuzzer {
   delay: number;
   institute: number;
   institute_name: string;
+  buzzer_status?: {
+    battery: number;
+    signal: number;
+    ignition: boolean;
+    charging: boolean;
+    relay: boolean;
+    last_updated?: string;
+  };
   created_at: string;
   updated_at: string;
 }
@@ -31,6 +39,14 @@ export interface CommunitySirenSwitch {
   image: string | null;
   institute: number;
   institute_name: string;
+  switch_status?: {
+    battery: number;
+    signal: number;
+    ignition: boolean;
+    charging: boolean;
+    relay: boolean;
+    last_updated?: string;
+  };
   created_at: string;
   updated_at: string;
 }
