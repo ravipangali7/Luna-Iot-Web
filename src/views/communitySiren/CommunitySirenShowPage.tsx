@@ -2,9 +2,9 @@ import React, { useState, useEffect, useCallback } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { useCommunitySirenAccess } from '../../hooks/useCommunitySirenAccess';
 import { instituteService, type Institute } from '../../api/services/instituteService';
-import { 
-  communitySirenBuzzerService, 
-  communitySirenSwitchService, 
+import {
+  communitySirenBuzzerService,
+  communitySirenSwitchService,
   communitySirenContactService,
   communitySirenMembersService,
   type CommunitySirenBuzzer,
@@ -21,6 +21,7 @@ import TableBody from '../../components/ui/tables/TableBody';
 import TableRow from '../../components/ui/tables/TableRow';
 import TableCell from '../../components/ui/tables/TableCell';
 import Button from '../../components/ui/buttons/Button';
+import Input from '../../components/ui/forms/Input';
 import Badge from '../../components/ui/common/Badge';
 import Spinner from '../../components/ui/common/Spinner';
 import Alert from '../../components/ui/common/Alert';
@@ -33,7 +34,7 @@ const CommunitySirenShowPage: React.FC = () => {
   const { id } = useParams<{ id: string }>();
   const navigate = useNavigate();
   const { hasAccess, loading: accessLoading, isAdmin, hasAccessToInstitute } = useCommunitySirenAccess(Number(id));
-  
+
   const [institute, setInstitute] = useState<Institute | null>(null);
   const [buzzers, setBuzzers] = useState<CommunitySirenBuzzer[]>([]);
   const [switches, setSwitches] = useState<CommunitySirenSwitch[]>([]);
@@ -41,6 +42,8 @@ const CommunitySirenShowPage: React.FC = () => {
   const [members, setMembers] = useState<CommunitySirenMembers[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const [memberSearchTerm, setMemberSearchTerm] = useState('');
+  const [contactSearchTerm, setContactSearchTerm] = useState('');
 
   const fetchData = useCallback(async () => {
     try {
@@ -48,14 +51,14 @@ const CommunitySirenShowPage: React.FC = () => {
       setError(null);
 
       const instituteId = Number(id);
-      
-       // Fetch institute details
-       const instituteData = await instituteService.getInstituteById(instituteId);
-       setInstitute(instituteData.data ? {
-         ...instituteData.data,
-         phone: instituteData.data.phone || '',
-         address: instituteData.data.address || ''
-       } : null);
+
+      // Fetch institute details
+      const instituteData = await instituteService.getInstituteById(instituteId);
+      setInstitute(instituteData.data ? {
+        ...instituteData.data,
+        phone: instituteData.data.phone || '',
+        address: instituteData.data.address || ''
+      } : null);
 
       // Fetch all community siren data for this institute
       const [buzzersData, switchesData, contactsData, membersData] = await Promise.all([
@@ -119,34 +122,34 @@ const CommunitySirenShowPage: React.FC = () => {
   };
 
   const handleDelete = async (type: string, itemId: number, name: string) => {
-     const confirmed = await confirmDelete(
-       `Delete ${type.charAt(0).toUpperCase() + type.slice(1)}`,
-       `Are you sure you want to delete "${name}"? This action cannot be undone.`
-     );
+    const confirmed = await confirmDelete(
+      `Delete ${type.charAt(0).toUpperCase() + type.slice(1)}`,
+      `Are you sure you want to delete "${name}"? This action cannot be undone.`
+    );
 
-     if (confirmed) {
-       try {
-         switch (type) {
-           case 'buzzers':
-             await communitySirenBuzzerService.delete(itemId);
-             break;
-           case 'switches':
-             await communitySirenSwitchService.delete(itemId);
-             break;
-           case 'contacts':
-             await communitySirenContactService.delete(itemId);
-             break;
-           case 'members':
-             await communitySirenMembersService.delete(itemId);
-             break;
-         }
-         showSuccess(`${type.charAt(0).toUpperCase() + type.slice(1)} deleted successfully`);
-         fetchData();
-       } catch (err) {
-         console.error(`Error deleting ${type}:`, err);
-         showError(`Failed to delete ${type}. Please try again.`);
-       }
-     }
+    if (confirmed) {
+      try {
+        switch (type) {
+          case 'buzzers':
+            await communitySirenBuzzerService.delete(itemId);
+            break;
+          case 'switches':
+            await communitySirenSwitchService.delete(itemId);
+            break;
+          case 'contacts':
+            await communitySirenContactService.delete(itemId);
+            break;
+          case 'members':
+            await communitySirenMembersService.delete(itemId);
+            break;
+        }
+        showSuccess(`${type.charAt(0).toUpperCase() + type.slice(1)} deleted successfully`);
+        fetchData();
+      } catch (err) {
+        console.error(`Error deleting ${type}:`, err);
+        showError(`Failed to delete ${type}. Please try again.`);
+      }
+    }
   };
 
   const formatDate = (dateString: string) => {
@@ -163,6 +166,18 @@ const CommunitySirenShowPage: React.FC = () => {
     }
     return VehicleUtils.getTimeAgoFromUTC(status.last_updated);
   };
+
+  // Filter members based on search term
+  const filteredMembers = members.filter(member =>
+    (member.user_name || '').toLowerCase().includes(memberSearchTerm.toLowerCase()) ||
+    member.user_phone.toLowerCase().includes(memberSearchTerm.toLowerCase())
+  );
+
+  // Filter contacts based on search term
+  const filteredContacts = contacts.filter(contact =>
+    (contact.name || '').toLowerCase().includes(contactSearchTerm.toLowerCase()) ||
+    contact.phone.toLowerCase().includes(contactSearchTerm.toLowerCase())
+  );
 
 
   if (accessLoading || loading) {
@@ -287,104 +302,104 @@ const CommunitySirenShowPage: React.FC = () => {
                 No buzzers found. Click "Add Buzzer" to create one.
               </div>
             ) : (
-               <Table striped hover>
-                 <TableHead>
-                   <TableRow>
-                     <TableHeader>Title</TableHeader>
-                     <TableHeader>Device</TableHeader>
-                     <TableHeader>Delay (s)</TableHeader>
-                     <TableHeader>Status</TableHeader>
-                     <TableHeader>Last Data ago</TableHeader>
-                     <TableHeader>Created At</TableHeader>
-                     <TableHeader>Actions</TableHeader>
-                   </TableRow>
-                 </TableHead>
-                 <TableBody>
-                   {buzzers.map(item => (
-                     <TableRow key={item.id}>
-                       <TableCell className="font-medium text-gray-900">{item.title}</TableCell>
-                       <TableCell className="text-gray-600">{item.device_name || item.device_imei}</TableCell>
-                       <TableCell className="text-gray-600">{item.delay}</TableCell>
-                       <TableCell>
-                         <div className="flex flex-col gap-2">
-                           <div>
-                             <Badge 
-                               variant={item.buzzer_status ? 'success' : 'danger'} 
-                               size="sm"
-                             >
-                               {item.buzzer_status ? 'ACTIVE' : 'INACTIVE'}
-                             </Badge>
-                           </div>
-                           {item.buzzer_status && (
-                             <div className="flex items-center gap-1">
-                               <Tooltip content={`Battery: ${item.buzzer_status.battery}/6`}>
-                                 <div className="flex items-center cursor-pointer hover:opacity-80 transition-opacity">
-                                   {VehicleUtils.getBattery(item.buzzer_status.battery, 18)}
-                                 </div>
-                               </Tooltip>
-                               <Tooltip content={`Signal: ${item.buzzer_status.signal}/4`}>
-                                 <div className="flex items-center cursor-pointer hover:opacity-80 transition-opacity">
-                                   {VehicleUtils.getSignal(item.buzzer_status.signal, 18)}
-                                 </div>
-                               </Tooltip>
-                               <Tooltip content={item.buzzer_status.ignition ? 'Ignition: ON' : 'Ignition: OFF'}>
-                                 <div className="flex items-center cursor-pointer hover:opacity-80 transition-opacity">
-                                   {VehicleUtils.getIgnition(item.buzzer_status.ignition, 18)}
-                                 </div>
-                               </Tooltip>
-                               <Tooltip content={item.buzzer_status.charging ? 'Charging: ON' : 'Charging: OFF'}>
-                                 <div className="flex items-center cursor-pointer hover:opacity-80 transition-opacity">
-                                   {VehicleUtils.getCharging(item.buzzer_status.charging, 18)}
-                                 </div>
-                               </Tooltip>
-                             </div>
-                           )}
-                           {!item.buzzer_status && (
-                             <span className="text-xs text-gray-400">No data</span>
-                           )}
-                         </div>
-                       </TableCell>
-                       <TableCell className="text-sm">
-                         {getLastData(item.buzzer_status)}
-                       </TableCell>
-                       <TableCell className="text-gray-600">{formatDate(item.created_at)}</TableCell>
-                       <TableCell>
-                         <div className="flex space-x-2">
-                          
-                           {isAdmin && (
-                             <Button
-                               variant="secondary"
-                               size="sm"
-                               onClick={() => handleEdit('buzzers', item.id)}
-                               icon={
-                                 <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z" />
-                                 </svg>
-                               }
-                             >
-                               Edit
-                             </Button>
-                           )}
-                           {isAdmin && (
-                             <Button
-                               variant="danger"
-                               size="sm"
-                               onClick={() => handleDelete('buzzers', item.id, item.title)}
-                               icon={
-                                 <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
-                                 </svg>
-                               }
-                             >
-                               Delete
-                             </Button>
-                           )}
-                         </div>
-                       </TableCell>
-                     </TableRow>
-                   ))}
-                 </TableBody>
-               </Table>
+              <Table striped hover>
+                <TableHead>
+                  <TableRow>
+                    <TableHeader>Title</TableHeader>
+                    <TableHeader>Device</TableHeader>
+                    <TableHeader>Delay (s)</TableHeader>
+                    <TableHeader>Status</TableHeader>
+                    <TableHeader>Last Data ago</TableHeader>
+                    <TableHeader>Created At</TableHeader>
+                    <TableHeader>Actions</TableHeader>
+                  </TableRow>
+                </TableHead>
+                <TableBody>
+                  {buzzers.map(item => (
+                    <TableRow key={item.id}>
+                      <TableCell className="font-medium text-gray-900">{item.title}</TableCell>
+                      <TableCell className="text-gray-600">{item.device_name || item.device_imei}</TableCell>
+                      <TableCell className="text-gray-600">{item.delay}</TableCell>
+                      <TableCell>
+                        <div className="flex flex-col gap-2">
+                          <div>
+                            <Badge
+                              variant={item.buzzer_status ? 'success' : 'danger'}
+                              size="sm"
+                            >
+                              {item.buzzer_status ? 'ACTIVE' : 'INACTIVE'}
+                            </Badge>
+                          </div>
+                          {item.buzzer_status && (
+                            <div className="flex items-center gap-1">
+                              <Tooltip content={`Battery: ${item.buzzer_status.battery}/6`}>
+                                <div className="flex items-center cursor-pointer hover:opacity-80 transition-opacity">
+                                  {VehicleUtils.getBattery(item.buzzer_status.battery, 18)}
+                                </div>
+                              </Tooltip>
+                              <Tooltip content={`Signal: ${item.buzzer_status.signal}/4`}>
+                                <div className="flex items-center cursor-pointer hover:opacity-80 transition-opacity">
+                                  {VehicleUtils.getSignal(item.buzzer_status.signal, 18)}
+                                </div>
+                              </Tooltip>
+                              <Tooltip content={item.buzzer_status.ignition ? 'Ignition: ON' : 'Ignition: OFF'}>
+                                <div className="flex items-center cursor-pointer hover:opacity-80 transition-opacity">
+                                  {VehicleUtils.getIgnition(item.buzzer_status.ignition, 18)}
+                                </div>
+                              </Tooltip>
+                              <Tooltip content={item.buzzer_status.charging ? 'Charging: ON' : 'Charging: OFF'}>
+                                <div className="flex items-center cursor-pointer hover:opacity-80 transition-opacity">
+                                  {VehicleUtils.getCharging(item.buzzer_status.charging, 18)}
+                                </div>
+                              </Tooltip>
+                            </div>
+                          )}
+                          {!item.buzzer_status && (
+                            <span className="text-xs text-gray-400">No data</span>
+                          )}
+                        </div>
+                      </TableCell>
+                      <TableCell className="text-sm">
+                        {getLastData(item.buzzer_status)}
+                      </TableCell>
+                      <TableCell className="text-gray-600">{formatDate(item.created_at)}</TableCell>
+                      <TableCell>
+                        <div className="flex space-x-2">
+
+                          {isAdmin && (
+                            <Button
+                              variant="secondary"
+                              size="sm"
+                              onClick={() => handleEdit('buzzers', item.id)}
+                              icon={
+                                <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z" />
+                                </svg>
+                              }
+                            >
+                              Edit
+                            </Button>
+                          )}
+                          {isAdmin && (
+                            <Button
+                              variant="danger"
+                              size="sm"
+                              onClick={() => handleDelete('buzzers', item.id, item.title)}
+                              icon={
+                                <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
+                                </svg>
+                              }
+                            >
+                              Delete
+                            </Button>
+                          )}
+                        </div>
+                      </TableCell>
+                    </TableRow>
+                  ))}
+                </TableBody>
+              </Table>
             )}
           </div>
         </Card>
@@ -398,104 +413,104 @@ const CommunitySirenShowPage: React.FC = () => {
                 No switches found. Click "Add Switch" to create one.
               </div>
             ) : (
-               <Table striped hover>
-                 <TableHead>
-                   <TableRow>
-                     <TableHeader>Title</TableHeader>
-                     <TableHeader>Device</TableHeader>
-                     <TableHeader>Primary Phone</TableHeader>
-                     <TableHeader>Status</TableHeader>
-                     <TableHeader>Last Data ago</TableHeader>
-                     <TableHeader>Created At</TableHeader>
-                     <TableHeader>Actions</TableHeader>
-                   </TableRow>
-                 </TableHead>
-                 <TableBody>
-                   {switches.map(item => (
-                     <TableRow key={item.id}>
-                       <TableCell className="font-medium text-gray-900">{item.title}</TableCell>
-                       <TableCell className="text-gray-600">{item.device_name || item.device_imei}</TableCell>
-                       <TableCell className="text-gray-600">{item.primary_phone}</TableCell>
-                       <TableCell>
-                         <div className="flex flex-col gap-2">
-                           <div>
-                             <Badge 
-                               variant={item.switch_status ? 'success' : 'danger'} 
-                               size="sm"
-                             >
-                               {item.switch_status ? 'ACTIVE' : 'INACTIVE'}
-                             </Badge>
-                           </div>
-                           {item.switch_status && (
-                             <div className="flex items-center gap-1">
-                               <Tooltip content={`Battery: ${item.switch_status.battery}/6`}>
-                                 <div className="flex items-center cursor-pointer hover:opacity-80 transition-opacity">
-                                   {VehicleUtils.getBattery(item.switch_status.battery, 18)}
-                                 </div>
-                               </Tooltip>
-                               <Tooltip content={`Signal: ${item.switch_status.signal}/4`}>
-                                 <div className="flex items-center cursor-pointer hover:opacity-80 transition-opacity">
-                                   {VehicleUtils.getSignal(item.switch_status.signal, 18)}
-                                 </div>
-                               </Tooltip>
-                               <Tooltip content={item.switch_status.ignition ? 'Ignition: ON' : 'Ignition: OFF'}>
-                                 <div className="flex items-center cursor-pointer hover:opacity-80 transition-opacity">
-                                   {VehicleUtils.getIgnition(item.switch_status.ignition, 18)}
-                                 </div>
-                               </Tooltip>
-                               <Tooltip content={item.switch_status.charging ? 'Charging: ON' : 'Charging: OFF'}>
-                                 <div className="flex items-center cursor-pointer hover:opacity-80 transition-opacity">
-                                   {VehicleUtils.getCharging(item.switch_status.charging, 18)}
-                                 </div>
-                               </Tooltip>
-                             </div>
-                           )}
-                           {!item.switch_status && (
-                             <span className="text-xs text-gray-400">No data</span>
-                           )}
-                         </div>
-                       </TableCell>
-                       <TableCell className="text-sm">
-                         {getLastData(item.switch_status)}
-                       </TableCell>
-                       <TableCell className="text-gray-600">{formatDate(item.created_at)}</TableCell>
-                       <TableCell>
-                         <div className="flex space-x-2">
-                          
-                           {isAdmin && (
-                             <Button
-                               variant="secondary"
-                               size="sm"
-                               onClick={() => handleEdit('switches', item.id)}
-                               icon={
-                                 <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z" />
-                                 </svg>
-                               }
-                             >
-                               Edit
-                             </Button>
-                           )}
-                           {isAdmin && (
-                             <Button
-                               variant="danger"
-                               size="sm"
-                               onClick={() => handleDelete('switches', item.id, item.title)}
-                               icon={
-                                 <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
-                                 </svg>
-                               }
-                             >
-                               Delete
-                             </Button>
-                           )}
-                         </div>
-                       </TableCell>
-                     </TableRow>
-                   ))}
-                 </TableBody>
-               </Table>
+              <Table striped hover>
+                <TableHead>
+                  <TableRow>
+                    <TableHeader>Title</TableHeader>
+                    <TableHeader>Device</TableHeader>
+                    <TableHeader>Primary Phone</TableHeader>
+                    <TableHeader>Status</TableHeader>
+                    <TableHeader>Last Data ago</TableHeader>
+                    <TableHeader>Created At</TableHeader>
+                    <TableHeader>Actions</TableHeader>
+                  </TableRow>
+                </TableHead>
+                <TableBody>
+                  {switches.map(item => (
+                    <TableRow key={item.id}>
+                      <TableCell className="font-medium text-gray-900">{item.title}</TableCell>
+                      <TableCell className="text-gray-600">{item.device_name || item.device_imei}</TableCell>
+                      <TableCell className="text-gray-600">{item.primary_phone}</TableCell>
+                      <TableCell>
+                        <div className="flex flex-col gap-2">
+                          <div>
+                            <Badge
+                              variant={item.switch_status ? 'success' : 'danger'}
+                              size="sm"
+                            >
+                              {item.switch_status ? 'ACTIVE' : 'INACTIVE'}
+                            </Badge>
+                          </div>
+                          {item.switch_status && (
+                            <div className="flex items-center gap-1">
+                              <Tooltip content={`Battery: ${item.switch_status.battery}/6`}>
+                                <div className="flex items-center cursor-pointer hover:opacity-80 transition-opacity">
+                                  {VehicleUtils.getBattery(item.switch_status.battery, 18)}
+                                </div>
+                              </Tooltip>
+                              <Tooltip content={`Signal: ${item.switch_status.signal}/4`}>
+                                <div className="flex items-center cursor-pointer hover:opacity-80 transition-opacity">
+                                  {VehicleUtils.getSignal(item.switch_status.signal, 18)}
+                                </div>
+                              </Tooltip>
+                              <Tooltip content={item.switch_status.ignition ? 'Ignition: ON' : 'Ignition: OFF'}>
+                                <div className="flex items-center cursor-pointer hover:opacity-80 transition-opacity">
+                                  {VehicleUtils.getIgnition(item.switch_status.ignition, 18)}
+                                </div>
+                              </Tooltip>
+                              <Tooltip content={item.switch_status.charging ? 'Charging: ON' : 'Charging: OFF'}>
+                                <div className="flex items-center cursor-pointer hover:opacity-80 transition-opacity">
+                                  {VehicleUtils.getCharging(item.switch_status.charging, 18)}
+                                </div>
+                              </Tooltip>
+                            </div>
+                          )}
+                          {!item.switch_status && (
+                            <span className="text-xs text-gray-400">No data</span>
+                          )}
+                        </div>
+                      </TableCell>
+                      <TableCell className="text-sm">
+                        {getLastData(item.switch_status)}
+                      </TableCell>
+                      <TableCell className="text-gray-600">{formatDate(item.created_at)}</TableCell>
+                      <TableCell>
+                        <div className="flex space-x-2">
+
+                          {isAdmin && (
+                            <Button
+                              variant="secondary"
+                              size="sm"
+                              onClick={() => handleEdit('switches', item.id)}
+                              icon={
+                                <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z" />
+                                </svg>
+                              }
+                            >
+                              Edit
+                            </Button>
+                          )}
+                          {isAdmin && (
+                            <Button
+                              variant="danger"
+                              size="sm"
+                              onClick={() => handleDelete('switches', item.id, item.title)}
+                              icon={
+                                <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
+                                </svg>
+                              }
+                            >
+                              Delete
+                            </Button>
+                          )}
+                        </div>
+                      </TableCell>
+                    </TableRow>
+                  ))}
+                </TableBody>
+              </Table>
             )}
           </div>
         </Card>
@@ -503,71 +518,91 @@ const CommunitySirenShowPage: React.FC = () => {
         {/* Contacts Table */}
         <Card className="mb-6">
           <div className="p-6">
-            <h3 className="text-lg font-semibold text-gray-900 mb-4">Contacts ({contacts.length})</h3>
+            <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 mb-4">
+              <h3 className="text-lg font-semibold text-gray-900">Contacts ({filteredContacts.length}{contacts.length !== filteredContacts.length ? ` of ${contacts.length}` : ''})</h3>
+            
+
+            {/* Search Input */}
+            {contacts.length > 0 && (
+              <div className="mb-4 max-w-md">
+                <Input
+                  type="text"
+                  placeholder="Search contacts..."
+                  value={contactSearchTerm}
+                  onChange={(value) => setContactSearchTerm(value)}
+                />
+              </div>
+            )}
+            </div>
+
             {contacts.length === 0 ? (
               <div className="text-center py-8 text-gray-500">
                 No contacts found. Click "Add Contact" to create one.
               </div>
+            ) : filteredContacts.length === 0 ? (
+              <div className="text-center py-8 text-gray-500">
+                No contacts match your search criteria.
+              </div>
             ) : (
-               <Table striped hover>
-                 <TableHead>
-                   <TableRow>
-                     <TableHeader>Name</TableHeader>
-                     <TableHeader>Phone</TableHeader>
-                     <TableHeader>Notifications</TableHeader>
-                     <TableHeader>Created At</TableHeader>
-                     <TableHeader>Actions</TableHeader>
-                   </TableRow>
-                 </TableHead>
-                 <TableBody>
-                   {contacts.map(item => (
-                     <TableRow key={item.id}>
-                       <TableCell className="font-medium text-gray-900">{item.name}</TableCell>
-                       <TableCell className="text-gray-600">{item.phone}</TableCell>
-                       <TableCell>
-                         <div className="flex space-x-2">
-                           {item.is_sms && <Badge variant="success" size="sm">SMS</Badge>}
-                           {item.is_call && <Badge variant="info" size="sm">Call</Badge>}
-                         </div>
-                       </TableCell>
-                       <TableCell className="text-gray-600">{formatDate(item.created_at)}</TableCell>
-                       <TableCell>
-                         <div className="flex space-x-2">
-                          
-                           {(isAdmin || hasAccess) && (
-                             <Button
-                               variant="secondary"
-                               size="sm"
-                               onClick={() => handleEdit('contacts', item.id)}
-                               icon={
-                                 <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z" />
-                                 </svg>
-                               }
-                             >
-                               Edit
-                             </Button>
-                           )}
-                           {(isAdmin || hasAccess) && (
-                             <Button
-                               variant="danger"
-                               size="sm"
-                               onClick={() => handleDelete('contacts', item.id, item.name)}
-                               icon={
-                                 <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
-                                 </svg>
-                               }
-                             >
-                               Delete
-                             </Button>
-                           )}
-                         </div>
-                       </TableCell>
-                     </TableRow>
-                   ))}
-                 </TableBody>
-               </Table>
+              <Table striped hover>
+                <TableHead>
+                  <TableRow>
+                    <TableHeader>Name</TableHeader>
+                    <TableHeader>Phone</TableHeader>
+                    <TableHeader>Notifications</TableHeader>
+                    <TableHeader>Created At</TableHeader>
+                    <TableHeader>Actions</TableHeader>
+                  </TableRow>
+                </TableHead>
+                <TableBody>
+                  {filteredContacts.map(item => (
+                    <TableRow key={item.id}>
+                      <TableCell className="font-medium text-gray-900">{item.name}</TableCell>
+                      <TableCell className="text-gray-600">{item.phone}</TableCell>
+                      <TableCell>
+                        <div className="flex space-x-2">
+                          {item.is_sms && <Badge variant="success" size="sm">SMS</Badge>}
+                          {item.is_call && <Badge variant="info" size="sm">Call</Badge>}
+                        </div>
+                      </TableCell>
+                      <TableCell className="text-gray-600">{formatDate(item.created_at)}</TableCell>
+                      <TableCell>
+                        <div className="flex space-x-2">
+
+                          {(isAdmin || hasAccess) && (
+                            <Button
+                              variant="secondary"
+                              size="sm"
+                              onClick={() => handleEdit('contacts', item.id)}
+                              icon={
+                                <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z" />
+                                </svg>
+                              }
+                            >
+                              Edit
+                            </Button>
+                          )}
+                          {(isAdmin || hasAccess) && (
+                            <Button
+                              variant="danger"
+                              size="sm"
+                              onClick={() => handleDelete('contacts', item.id, item.name)}
+                              icon={
+                                <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
+                                </svg>
+                              }
+                            >
+                              Delete
+                            </Button>
+                          )}
+                        </div>
+                      </TableCell>
+                    </TableRow>
+                  ))}
+                </TableBody>
+              </Table>
             )}
           </div>
         </Card>
@@ -575,64 +610,85 @@ const CommunitySirenShowPage: React.FC = () => {
         {/* Members Table */}
         <Card className="mb-6">
           <div className="p-6">
-            <h3 className="text-lg font-semibold text-gray-900 mb-4">Members ({members.length})</h3>
+            <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 mb-4">
+              <h3 className="text-lg font-semibold text-gray-900">Members ({filteredMembers.length}{members.length !== filteredMembers.length ? ` of ${members.length}` : ''})</h3>
+
+
+              {/* Search Input */}
+              {members.length > 0 && (
+                <div className="mb-4 max-w-md">
+                  <Input
+                    type="text"
+                    placeholder="Search members..."
+                    value={memberSearchTerm}
+                    onChange={(value) => setMemberSearchTerm(value)}
+                  />
+                </div>
+              )}
+
+            </div>
+
             {members.length === 0 ? (
               <div className="text-center py-8 text-gray-500">
                 No members found. Click "Add Member" to create one.
               </div>
+            ) : filteredMembers.length === 0 ? (
+              <div className="text-center py-8 text-gray-500">
+                No members match your search criteria.
+              </div>
             ) : (
-               <Table striped hover>
-                 <TableHead>
-                   <TableRow>
-                     <TableHeader>Name</TableHeader>
-                     <TableHeader>Phone</TableHeader>
-                     <TableHeader>Created At</TableHeader>
-                     <TableHeader>Actions</TableHeader>
-                   </TableRow>
-                 </TableHead>
-                 <TableBody>
-                   {members.map(item => (
-                     <TableRow key={item.id}>
-                       <TableCell className="font-medium text-gray-900">{item.user_name || 'N/A'}</TableCell>
-                       <TableCell className="text-gray-600">{item.user_phone}</TableCell>
-                       <TableCell className="text-gray-600">{formatDate(item.created_at)}</TableCell>
-                       <TableCell>
-                         <div className="flex space-x-2">
-                          
-                           {(isAdmin || hasAccess) && (
-                             <Button
-                               variant="secondary"
-                               size="sm"
-                               onClick={() => handleEdit('members', item.id)}
-                               icon={
-                                 <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z" />
-                                 </svg>
-                               }
-                             >
-                               Edit
-                             </Button>
-                           )}
-                           {(isAdmin || hasAccess) && (
-                             <Button
-                               variant="danger"
-                               size="sm"
-                               onClick={() => handleDelete('members', item.id, item.user_name || 'Member')}
-                               icon={
-                                 <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
-                                 </svg>
-                               }
-                             >
-                               Delete
-                             </Button>
-                           )}
-                         </div>
-                       </TableCell>
-                     </TableRow>
-                   ))}
-                 </TableBody>
-               </Table>
+              <Table striped hover>
+                <TableHead>
+                  <TableRow>
+                    <TableHeader>Name</TableHeader>
+                    <TableHeader>Phone</TableHeader>
+                    <TableHeader>Created At</TableHeader>
+                    <TableHeader>Actions</TableHeader>
+                  </TableRow>
+                </TableHead>
+                <TableBody>
+                  {filteredMembers.map(item => (
+                    <TableRow key={item.id}>
+                      <TableCell className="font-medium text-gray-900">{item.user_name || 'N/A'}</TableCell>
+                      <TableCell className="text-gray-600">{item.user_phone}</TableCell>
+                      <TableCell className="text-gray-600">{formatDate(item.created_at)}</TableCell>
+                      <TableCell>
+                        <div className="flex space-x-2">
+
+                          {(isAdmin || hasAccess) && (
+                            <Button
+                              variant="secondary"
+                              size="sm"
+                              onClick={() => handleEdit('members', item.id)}
+                              icon={
+                                <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z" />
+                                </svg>
+                              }
+                            >
+                              Edit
+                            </Button>
+                          )}
+                          {(isAdmin || hasAccess) && (
+                            <Button
+                              variant="danger"
+                              size="sm"
+                              onClick={() => handleDelete('members', item.id, item.user_name || 'Member')}
+                              icon={
+                                <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
+                                </svg>
+                              }
+                            >
+                              Delete
+                            </Button>
+                          )}
+                        </div>
+                      </TableCell>
+                    </TableRow>
+                  ))}
+                </TableBody>
+              </Table>
             )}
           </div>
         </Card>
