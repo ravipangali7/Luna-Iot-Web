@@ -258,6 +258,17 @@ const Sidebar: React.FC<SidebarProps> = ({ isOpen, onToggle }) => {
         </svg>
       )
     },
+    {
+      id: 'm2m-sim',
+      label: 'M2M SIM',
+      path: '/m2m-sim',
+      allowedRoles: ['Super Admin', 'Dealer'],
+      icon: (
+        <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
+        </svg>
+      )
+    },
     
     {
       id: 'vehicle-tag',
@@ -738,17 +749,6 @@ const Sidebar: React.FC<SidebarProps> = ({ isOpen, onToggle }) => {
           )
         }
       ]
-    },
-    {
-      id: 'ntc-m2m-report',
-      label: 'NTC M2M Report',
-      path: '/ntc-m2m/report',
-      allowedRoles: ['Super Admin'],
-      icon: (
-        <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
-        </svg>
-      )
     },
     {
       id: 'settings',

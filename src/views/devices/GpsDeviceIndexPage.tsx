@@ -582,6 +582,9 @@ const GpsDeviceIndexPage: React.FC = () => {
                       <TableHeader>Vehicle Info</TableHeader>
                       <TableHeader>Customer Info</TableHeader>
                       <RoleBasedWidget allowedRoles={[ROLES.SUPER_ADMIN]}>
+                        <TableHeader>Last Recharge/M2M SIM</TableHeader>
+                      </RoleBasedWidget>
+                      <RoleBasedWidget allowedRoles={[ROLES.SUPER_ADMIN]}>
                         <TableHeader>Actions</TableHeader>
                       </RoleBasedWidget>
                     </TableRow>
@@ -652,6 +655,30 @@ const GpsDeviceIndexPage: React.FC = () => {
                             )}
                           </div>
                         </TableCell>
+                        <RoleBasedWidget allowedRoles={[ROLES.SUPER_ADMIN]}>
+                          <TableCell className="text-sm">
+                            {device.simBalance ? (
+                              <div 
+                                className="flex flex-col gap-1 cursor-pointer hover:bg-gray-50 p-1 rounded transition-colors"
+                                onClick={() => navigate(`/m2m-sim?phone=${device.simBalance?.phone_number}`)}
+                                title="Click to view M2M SIM details"
+                              >
+                                <Badge variant="success" size="sm" className="w-fit">M2M SIM</Badge>
+                                <div className="text-xs">
+                                  <div>Expiry: {device.simBalance.balance_expiry ? new Date(device.simBalance.balance_expiry).toLocaleDateString() : 'N/A'}</div>
+                                  <div className="text-gray-600">Synced: {new Date(device.simBalance.last_synced_at).toLocaleDateString()}</div>
+                                  {device.simBalance.free_resources_summary && device.simBalance.free_resources_summary.length > 0 && (
+                                    <div className="text-blue-600 font-medium">
+                                      {device.simBalance.free_resources_summary.length} resource{device.simBalance.free_resources_summary.length > 1 ? 's' : ''}
+                                    </div>
+                                  )}
+                                </div>
+                              </div>
+                            ) : (
+                              <span className="text-xs text-gray-400">No data</span>
+                            )}
+                          </TableCell>
+                        </RoleBasedWidget>
                         <RoleBasedWidget allowedRoles={[ROLES.SUPER_ADMIN]}>
                           <TableCell>
                             <ActionButtonGroup>

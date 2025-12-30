@@ -102,6 +102,7 @@ export interface Vehicle {
   latestStatus?: Status | null;
   latestLocation?: Location | null;
   latestRecharge?: Recharge | null;
+  simBalance?: import('./simBalance').SimBalanceSummary | null;
   todayKm?: number;
   ownershipType?: string; // 'Own', 'Shared', or 'Customer'
   userVehicles?: UserVehicle[];

@@ -1311,13 +1311,30 @@ const VehicleIndexPage: React.FC = () => {
                         </TableCell>
                         <RoleBasedWidget allowedRoles={[ROLES.SUPER_ADMIN]}>
                           <TableCell className="text-sm">
-                            {vehicle.latestRecharge ? (
+                            {vehicle.simBalance ? (
+                              <div 
+                                className="flex flex-col gap-1 cursor-pointer hover:bg-gray-50 p-1 rounded transition-colors"
+                                onClick={() => navigate(`/m2m-sim?phone=${vehicle.simBalance?.phone_number}`)}
+                                title="Click to view M2M SIM details"
+                              >
+                                <Badge variant="success" size="sm" className="w-fit">M2M SIM</Badge>
+                                <div className="text-xs">
+                                  <div>Expiry: {vehicle.simBalance.balance_expiry ? new Date(vehicle.simBalance.balance_expiry).toLocaleDateString() : 'N/A'}</div>
+                                  <div className="text-gray-600">Synced: {formatTimeAgo(vehicle.simBalance.last_synced_at)}</div>
+                                  {vehicle.simBalance.free_resources_summary && vehicle.simBalance.free_resources_summary.length > 0 && (
+                                    <div className="text-blue-600 font-medium">
+                                      {vehicle.simBalance.free_resources_summary.length} resource{vehicle.simBalance.free_resources_summary.length > 1 ? 's' : ''}
+                                    </div>
+                                  )}
+                                </div>
+                              </div>
+                            ) : vehicle.latestRecharge ? (
                               <div className="flex flex-col gap-1">
                                 <Badge variant="info" size="sm" className="w-fit">रु{vehicle.latestRecharge.amount}</Badge>
                                 <span className="text-xs text-gray-600">{formatTimeAgo(vehicle.latestRecharge.createdAt)}</span>
                               </div>
                             ) : (
-                              <span className="text-xs text-gray-400">No recharge</span>
+                              <span className="text-xs text-gray-400">No data</span>
                             )}
                           </TableCell>
                         </RoleBasedWidget>

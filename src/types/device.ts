@@ -71,6 +71,7 @@ export interface Device {
   userDevices: UserDevice[];
   vehicles?: Vehicle[];
   latestStatus?: DeviceStatus | null;
+  simBalance?: import('./simBalance').SimBalanceSummary | null;
   institute?: {
     id: number;
     name: string;

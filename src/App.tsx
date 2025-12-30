@@ -16,6 +16,7 @@ import SosDeviceIndexPage from './views/devices/SosDeviceIndexPage';
 import { VehicleIndexPage, VehicleCreatePage, VehicleEditPage } from './views/vehicles';
 import { VehicleAccessIndexPage, VehicleAccessCreatePage, VehicleAccessEditPage, VehicleAccessManagePage } from './views/vehicleAccess';
 import { RechargeIndexPage, RechargeCreatePage } from './views/recharges';
+import { M2mSimIndexPage } from './views/m2mSim';
 import { ReportIndexPage } from './views/reports';
 import { PlaybackIndexPage } from './views/playback';
 import { InstituteIndexPage, InstituteCreatePage, InstituteEditPage, InstituteShowPage } from './views/institute';
@@ -71,7 +72,6 @@ import { NotificationIndexPage, NotificationCreatePage, NotificationShowPage } f
 import { BannerIndexPage, BannerCreatePage, BannerEditPage, BannerShowPage } from './views/notices/banners';
 import SettingsPage from './views/settings/SettingsPage';
 import { VehicleTagIndexPage, BulkTagPage, VehicleTagAlertPage, VehicleTagHistoryPage } from './views/vehicleTag';
-import { NtcM2mReportPage } from './views/ntcM2m';
 import RoleBasedRoute from './components/role-based/RoleBasedRoute';
 import ModuleBasedRoute from './components/role-based/ModuleBasedRoute';
 import { ROLES } from './utils/roleUtils';
@@ -289,6 +289,13 @@ const AppRoutes: React.FC = () => {
         <Route path="recharges/create" element={
           <RoleBasedRoute allowedRoles={[ROLES.SUPER_ADMIN]}>
             <RechargeCreatePage />
+          </RoleBasedRoute>
+        } />
+
+        {/* M2M SIM Routes - Super Admin and Dealer only */}
+        <Route path="m2m-sim" element={
+          <RoleBasedRoute allowedRoles={[ROLES.SUPER_ADMIN, ROLES.DEALER]}>
+            <M2mSimIndexPage />
           </RoleBasedRoute>
         } />
 
@@ -941,13 +948,6 @@ const AppRoutes: React.FC = () => {
         <Route path="settings" element={
           <RoleBasedRoute allowedRoles={[ROLES.SUPER_ADMIN]}>
             <SettingsPage />
-          </RoleBasedRoute>
-        } />
-
-        {/* NTC M2M Report Route - Super Admin only */}
-        <Route path="ntc-m2m/report" element={
-          <RoleBasedRoute allowedRoles={[ROLES.SUPER_ADMIN]}>
-            <NtcM2mReportPage />
           </RoleBasedRoute>
         } />
       </Route>

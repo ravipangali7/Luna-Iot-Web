@@ -9,7 +9,7 @@ export const apiClient = axios.create({
     'Accept': 'application/json',
   },
   withCredentials: true, // Enable cookies/session for cart functionality
-  timeout: 300000, // 5 minutes (300 seconds) for long-running operations like NTC M2M automation
+  timeout: 300000, // 5 minutes (300 seconds) for long-running operations
 });
 
 // Request interceptor to add auth headers
