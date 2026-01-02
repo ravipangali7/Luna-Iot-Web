@@ -336,6 +336,10 @@ const PlaybackIndexPage: React.FC = () => {
       // This ensures trip times match stop point times exactly, just like in Flutter app
       const updatedTrips = trips.map((trip, index) => {
         const updatedTrip = { ...trip };
+        
+        // Preserve original trip point timestamps as fallback
+        const originalStartTime = trip.startTime;
+        const originalEndTime = trip.endTime;
 
         // For trip's end time: use arrival time from stop point between this trip and next trip
         // This is when the vehicle arrived at the stop point (same as stop point arrival time)
@@ -345,6 +349,12 @@ const PlaybackIndexPage: React.FC = () => {
           // Always update if we have arrival time (this is the accurate stop point time)
           if (timestamps.arrivalTime) {
             updatedTrip.endTime = timestamps.arrivalTime;
+          }
+        } else if (index === trips.length - 1) {
+          // Last trip: ensure endTime comes from last point if no stop point arrival time
+          // This prevents last trip from having unupdated endTime
+          if (!updatedTrip.endTime || updatedTrip.endTime === '') {
+            updatedTrip.endTime = originalEndTime;
           }
         }
 
@@ -356,6 +366,12 @@ const PlaybackIndexPage: React.FC = () => {
           // Always update if we have departure time (this is the accurate stop point time)
           if (timestamps.departureTime) {
             updatedTrip.startTime = timestamps.departureTime;
+          }
+        } else if (index === 0) {
+          // First trip: ensure startTime comes from first point if no stop point departure time
+          // This prevents first trip from having unupdated startTime
+          if (!updatedTrip.startTime || updatedTrip.startTime === '') {
+            updatedTrip.startTime = originalStartTime;
           }
         }
 
@@ -417,8 +433,13 @@ const PlaybackIndexPage: React.FC = () => {
       // This double-checks that trips match stop points exactly
       const finalUpdatedTrips = updatedTrips.map((trip, index) => {
         const finalTrip = { ...trip };
+        
+        // Preserve original trip point timestamps as fallback
+        const originalTrip = trips[index];
+        const originalStartTime = originalTrip?.startTime || trip.startTime;
+        const originalEndTime = originalTrip?.endTime || trip.endTime;
 
-        // For trip's end time: prefer stop point arrival time, fallback to timestamp
+        // For trip's end time: prefer stop point arrival time, fallback to timestamp, then original
         if (index < updatedTrips.length - 1 && index < tripTimestamps.length) {
           // First try to get from stop point (if it exists and has the time)
           const stopPoint = calculatedStopPoints.find(sp => sp.trip.tripNumber === trip.tripNumber);
@@ -429,11 +450,19 @@ const PlaybackIndexPage: React.FC = () => {
             const timestamps = tripTimestamps[index];
             if (timestamps?.arrivalTime) {
               finalTrip.endTime = timestamps.arrivalTime;
+            } else {
+              // Fallback to original end time if no stop point timestamp available
+              finalTrip.endTime = originalEndTime;
             }
+          }
+        } else if (index === updatedTrips.length - 1) {
+          // Last trip: ensure endTime comes from last point if no stop point arrival time
+          if (!finalTrip.endTime || finalTrip.endTime === '') {
+            finalTrip.endTime = originalEndTime;
           }
         }
 
-        // For trip's start time: prefer stop point departure time, fallback to timestamp
+        // For trip's start time: prefer stop point departure time, fallback to timestamp, then original
         if (index > 0 && (index - 1) < tripTimestamps.length) {
           // First try to get from previous trip's stop point
           const prevTrip = updatedTrips[index - 1];
@@ -445,7 +474,15 @@ const PlaybackIndexPage: React.FC = () => {
             const timestamps = tripTimestamps[index - 1];
             if (timestamps?.departureTime) {
               finalTrip.startTime = timestamps.departureTime;
+            } else {
+              // Fallback to original start time if no stop point timestamp available
+              finalTrip.startTime = originalStartTime;
             }
+          }
+        } else if (index === 0) {
+          // First trip: ensure startTime comes from first point if no stop point departure time
+          if (!finalTrip.startTime || finalTrip.startTime === '') {
+            finalTrip.startTime = originalStartTime;
           }
         }
 
@@ -464,15 +501,71 @@ const PlaybackIndexPage: React.FC = () => {
         };
       });
 
-      // Set final updated trips and segments (these now match stop point times)
-      setTrips(finalUpdatedTrips);
-      setTripSegments(finalUpdatedSegments);
+      // Step 7: Safety validation - ensure no trip has identical start/end times when there's movement
+      const validatedTrips = finalUpdatedTrips.map((trip, index) => {
+        const validatedTrip = { ...trip };
+        
+        // Check if trip has movement (distance > 0 or duration > 0)
+        const hasMovement = trip.distance > 0 || trip.duration > 0;
+        
+        if (hasMovement && trip.startTime && trip.endTime) {
+          // If start and end times are identical, fix them using original trip point timestamps
+          if (trip.startTime === trip.endTime) {
+            const originalTrip = trips[index];
+            if (originalTrip) {
+              // Use original first point timestamp for startTime
+              if (originalTrip.tripPoints && originalTrip.tripPoints.length > 0) {
+                const firstPoint = originalTrip.tripPoints[0];
+                if (firstPoint?.createdAt) {
+                  validatedTrip.startTime = firstPoint.createdAt;
+                }
+              }
+              
+              // Use original last point timestamp for endTime
+              if (originalTrip.tripPoints && originalTrip.tripPoints.length > 0) {
+                const lastPoint = originalTrip.tripPoints[originalTrip.tripPoints.length - 1];
+                if (lastPoint?.createdAt) {
+                  validatedTrip.endTime = lastPoint.createdAt;
+                }
+              }
+              
+              // If still identical after using original points, ensure they're different
+              if (validatedTrip.startTime === validatedTrip.endTime && originalTrip.tripPoints && originalTrip.tripPoints.length > 1) {
+                // Use the first point for start and last point for end
+                const firstPointTime = originalTrip.tripPoints[0]?.createdAt;
+                const lastPointTime = originalTrip.tripPoints[originalTrip.tripPoints.length - 1]?.createdAt;
+                if (firstPointTime && lastPointTime && firstPointTime !== lastPointTime) {
+                  validatedTrip.startTime = firstPointTime;
+                  validatedTrip.endTime = lastPointTime;
+                }
+              }
+            }
+          }
+        }
+        
+        return validatedTrip;
+      });
+
+      // Update segments to match validated trips
+      const validatedSegments = finalUpdatedSegments.map((segment, index) => {
+        const trip = validatedTrips[index];
+        if (!trip) return segment;
+        return {
+          ...segment,
+          startTime: trip.startTime,
+          endTime: trip.endTime,
+        };
+      });
+
+      // Set final validated trips and segments (these now match stop point times and have no identical times)
+      setTrips(validatedTrips);
+      setTripSegments(validatedSegments);
 
       // Load addresses for segments (preserve the updated times)
       setLoadingAddresses(true);
-      const segmentsWithAddresses = [...finalUpdatedSegments]; // Use final segments with correct times
-      for (let i = 0; i < finalUpdatedSegments.length; i++) {
-        const segment = finalUpdatedSegments[i];
+      const segmentsWithAddresses = [...validatedSegments]; // Use validated segments with correct times
+      for (let i = 0; i < validatedSegments.length; i++) {
+        const segment = validatedSegments[i];
         try {
           const startAddress = await GeoUtils.getReverseGeoCode(segment.startLat, segment.startLng);
           const endAddress = await GeoUtils.getReverseGeoCode(segment.endLat, segment.endLng);
