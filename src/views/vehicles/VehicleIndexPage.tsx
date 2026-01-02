@@ -39,6 +39,7 @@ import Tooltip from '../../components/ui/common/Tooltip';
 import Pagination from '../../components/ui/pagination/Pagination';
 import RoleBasedWidget from '../../components/role-based/RoleBasedWidget';
 import { ROLES } from '../../utils/roleUtils';
+import { formatMbExpiryTimeRemaining } from '../../utils/dateUtils';
 import { getSearchVariants } from '../../utils/numeralUtils';
 import RefreshIcon from '@mui/icons-material/Refresh';
 import PowerSettingsNewIcon from '@mui/icons-material/PowerSettingsNew';
@@ -1319,12 +1320,11 @@ const VehicleIndexPage: React.FC = () => {
                               >
                                 <Badge variant="success" size="sm" className="w-fit">M2M SIM</Badge>
                                 <div className="text-xs">
-                                  <div>Expiry: {vehicle.simBalance.balance_expiry ? new Date(vehicle.simBalance.balance_expiry).toLocaleDateString() : 'N/A'}</div>
-                                  <div className="text-gray-600">Synced: {formatTimeAgo(vehicle.simBalance.last_synced_at)}</div>
-                                  {vehicle.simBalance.free_resources_summary && vehicle.simBalance.free_resources_summary.length > 0 && (
-                                    <div className="text-blue-600 font-medium">
-                                      {vehicle.simBalance.free_resources_summary.length} resource{vehicle.simBalance.free_resources_summary.length > 1 ? 's' : ''}
-                                    </div>
+                                  {vehicle.simBalance.remaining_mb !== null && vehicle.simBalance.remaining_mb !== undefined && (
+                                    <div>Remaining MB: <span className="font-medium">{vehicle.simBalance.remaining_mb}MB</span></div>
+                                  )}
+                                  {vehicle.simBalance.mb_expiry_date && (
+                                    <div>MB Expiry: <span className="font-medium">{formatMbExpiryTimeRemaining(vehicle.simBalance.mb_expiry_date)}</span></div>
                                   )}
                                 </div>
                               </div>

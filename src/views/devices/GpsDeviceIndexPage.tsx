@@ -31,6 +31,7 @@ import Alert from '../../components/ui/common/Alert';
 import Pagination from '../../components/ui/pagination/Pagination';
 import RoleBasedWidget from '../../components/role-based/RoleBasedWidget';
 import { ROLES } from '../../utils/roleUtils';
+import { formatMbExpiryTimeRemaining } from '../../utils/dateUtils';
 import RefreshIcon from '@mui/icons-material/Refresh';
 import { AuthContext } from '../../contexts/AuthContext';
 
@@ -665,14 +666,18 @@ const GpsDeviceIndexPage: React.FC = () => {
                               >
                                 <Badge variant="success" size="sm" className="w-fit">M2M SIM</Badge>
                                 <div className="text-xs">
-                                  <div>Expiry: {device.simBalance.balance_expiry ? new Date(device.simBalance.balance_expiry).toLocaleDateString() : 'N/A'}</div>
-                                  <div className="text-gray-600">Synced: {new Date(device.simBalance.last_synced_at).toLocaleDateString()}</div>
-                                  {device.simBalance.free_resources_summary && device.simBalance.free_resources_summary.length > 0 && (
-                                    <div className="text-blue-600 font-medium">
-                                      {device.simBalance.free_resources_summary.length} resource{device.simBalance.free_resources_summary.length > 1 ? 's' : ''}
-                                    </div>
+                                  {device.simBalance.remaining_mb !== null && device.simBalance.remaining_mb !== undefined && (
+                                    <div>Remaining MB: <span className="font-medium">{device.simBalance.remaining_mb}MB</span></div>
+                                  )}
+                                  {device.simBalance.mb_expiry_date && (
+                                    <div>MB Expiry: <span className="font-medium">{formatMbExpiryTimeRemaining(device.simBalance.mb_expiry_date)}</span></div>
                                   )}
                                 </div>
+                              </div>
+                            ) : device.latestRecharge ? (
+                              <div className="flex flex-col gap-1">
+                                <Badge variant="info" size="sm" className="w-fit">रु{device.latestRecharge.amount}</Badge>
+                                <span className="text-xs text-gray-600">{new Date(device.latestRecharge.createdAt).toLocaleDateString()}</span>
                               </div>
                             ) : (
                               <span className="text-xs text-gray-400">No data</span>

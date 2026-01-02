@@ -22,10 +22,9 @@ import Alert from '../../components/ui/common/Alert';
 import Badge from '../../components/ui/common/Badge';
 import RoleBasedWidget from '../../components/role-based/RoleBasedWidget';
 import { ROLES } from '../../utils/roleUtils';
+import { formatExpiryTimeRemaining, formatMbExpiryTimeRemaining } from '../../utils/dateUtils';
 import RefreshIcon from '@mui/icons-material/Refresh';
 import UploadFileIcon from '@mui/icons-material/UploadFile';
-import ExpandMoreIcon from '@mui/icons-material/ExpandMore';
-import ExpandLessIcon from '@mui/icons-material/ExpandLess';
 
 const M2mSimIndexPage: React.FC = () => {
   const [searchParams] = useSearchParams();
@@ -41,7 +40,6 @@ const M2mSimIndexPage: React.FC = () => {
   const [currentPage, setCurrentPage] = useState(1);
   const [totalPages, setTotalPages] = useState(1);
   const [totalCount, setTotalCount] = useState(0);
-  const [expandedRows, setExpandedRows] = useState<Set<number>>(new Set());
   const [selectedFile, setSelectedFile] = useState<File | null>(null);
   const [highlightedPhone, setHighlightedPhone] = useState<string | null>(null);
 
@@ -160,15 +158,6 @@ const M2mSimIndexPage: React.FC = () => {
     }
   };
 
-  const toggleRowExpansion = (id: number) => {
-    const newExpanded = new Set(expandedRows);
-    if (newExpanded.has(id)) {
-      newExpanded.delete(id);
-    } else {
-      newExpanded.add(id);
-    }
-    setExpandedRows(newExpanded);
-  };
 
   const formatDate = (dateString: string | null) => {
     if (!dateString) return 'N/A';
@@ -190,14 +179,6 @@ const M2mSimIndexPage: React.FC = () => {
     return `Rs. ${numBalance.toFixed(2)}`;
   };
 
-  const getResourceTypeBadge = (type: string) => {
-    const colors: Record<string, 'info' | 'success' | 'warning' | 'secondary'> = {
-      DATA: 'info',
-      SMS: 'success',
-      VOICE: 'warning',
-    };
-    return <Badge variant={colors[type] || 'secondary'}>{type}</Badge>;
-  };
 
   const filteredSimBalances = simBalances.filter(sim => {
     if (!searchQuery) return true;
@@ -340,75 +321,58 @@ const M2mSimIndexPage: React.FC = () => {
               <Table striped hover>
                 <TableHead>
                   <TableRow>
-                    <TableHeader></TableHeader>
                     <TableHeader>Phone Number</TableHeader>
                     <TableHeader>Device IMEI</TableHeader>
                     <TableHeader>State</TableHeader>
                     <TableHeader>Balance</TableHeader>
                     <TableHeader>Balance Expiry</TableHeader>
-                    <TableHeader>Free Resources</TableHeader>
+                    <TableHeader>MB Plan</TableHeader>
+                    <TableHeader>Remaining MB</TableHeader>
+                    <TableHeader>MB Expiry Date</TableHeader>
                     <TableHeader>Last Synced</TableHeader>
                     <TableHeader>Actions</TableHeader>
                   </TableRow>
                 </TableHead>
                 <TableBody>
                   {filteredSimBalances.map((sim) => (
-                    <React.Fragment key={sim.id}>
-                      <TableRow className={highlightedPhone && sim.phone_number === highlightedPhone ? 'bg-yellow-50 border-l-4 border-yellow-400' : ''}>
-                        <TableCell>
-                          <Button
-                            variant="outline"
-                            size="sm"
-                            onClick={() => toggleRowExpansion(sim.id)}
-                            icon={expandedRows.has(sim.id) ? <ExpandLessIcon /> : <ExpandMoreIcon />}
+                    <TableRow key={sim.id} className={highlightedPhone && sim.phone_number === highlightedPhone ? 'bg-yellow-50 border-l-4 border-yellow-400' : ''}>
+                      <TableCell className="font-medium">{sim.phone_number}</TableCell>
+                      <TableCell>{sim.device_imei || 'N/A'}</TableCell>
+                      <TableCell>
+                        <Badge variant={sim.state === 'ACTIVE' ? 'success' : 'danger'}>{sim.state}</Badge>
+                      </TableCell>
+                      <TableCell>{formatBalance(sim.balance)}</TableCell>
+                      <TableCell>{formatExpiryTimeRemaining(sim.balance_expiry)}</TableCell>
+                      <TableCell>
+                        {sim.mb !== null && sim.mb !== undefined ? (
+                          <span className="font-medium">{sim.mb}MB</span>
+                        ) : (
+                          <span className="text-gray-400">N/A</span>
+                        )}
+                      </TableCell>
+                      <TableCell>
+                        {sim.remaining_mb !== null && sim.remaining_mb !== undefined ? (
+                          <span className="font-medium">{sim.remaining_mb}MB</span>
+                        ) : (
+                          <span className="text-gray-400">N/A</span>
+                        )}
+                      </TableCell>
+                      <TableCell>
+                        {sim.mb_expiry_date ? (
+                          <span className="font-medium">{formatMbExpiryTimeRemaining(sim.mb_expiry_date)}</span>
+                        ) : (
+                          <span className="text-gray-400">N/A</span>
+                        )}
+                      </TableCell>
+                      <TableCell>{formatDate(sim.last_synced_at)}</TableCell>
+                      <TableCell>
+                        <RoleBasedWidget allowedRoles={[ROLES.SUPER_ADMIN]}>
+                          <DeleteActionButton
+                            onClick={() => handleDelete(sim.id, sim.phone_number)}
                           />
-                        </TableCell>
-                        <TableCell className="font-medium">{sim.phone_number}</TableCell>
-                        <TableCell>{sim.device_imei || 'N/A'}</TableCell>
-                        <TableCell>
-                          <Badge variant={sim.state === 'ACTIVE' ? 'success' : 'danger'}>{sim.state}</Badge>
-                        </TableCell>
-                        <TableCell>{formatBalance(sim.balance)}</TableCell>
-                        <TableCell>{formatDate(sim.balance_expiry)}</TableCell>
-                        <TableCell>
-                          {sim.free_resources.length > 0 ? (
-                            <Badge variant="info">{sim.free_resources.length} resources</Badge>
-                          ) : (
-                            <span className="text-gray-400">None</span>
-                          )}
-                        </TableCell>
-                        <TableCell>{formatDate(sim.last_synced_at)}</TableCell>
-                        <TableCell>
-                          <RoleBasedWidget allowedRoles={[ROLES.SUPER_ADMIN]}>
-                            <DeleteActionButton
-                              onClick={() => handleDelete(sim.id, sim.phone_number)}
-                            />
-                          </RoleBasedWidget>
-                        </TableCell>
-                      </TableRow>
-                      {expandedRows.has(sim.id) && sim.free_resources.length > 0 && (
-                        <TableRow>
-                          <TableCell colSpan={9}>
-                            <div className="p-4 bg-gray-50">
-                              <h4 className="font-semibold mb-2">Free Resources:</h4>
-                              <div className="space-y-2">
-                                {sim.free_resources.map((resource) => (
-                                  <div key={resource.id} className="flex items-center gap-4 p-2 bg-white rounded border">
-                                    <div className="flex-1">
-                                      <div className="font-medium">{resource.name}</div>
-                                      <div className="text-sm text-gray-600">
-                                        Remaining: {resource.remaining} | Expiry: {formatDate(resource.expiry)}
-                                      </div>
-                                    </div>
-                                    <div>{getResourceTypeBadge(resource.resource_type)}</div>
-                                  </div>
-                                ))}
-                              </div>
-                            </div>
-                          </TableCell>
-                        </TableRow>
-                      )}
-                    </React.Fragment>
+                        </RoleBasedWidget>
+                      </TableCell>
+                    </TableRow>
                   ))}
                 </TableBody>
               </Table>

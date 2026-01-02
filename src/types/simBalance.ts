@@ -1,13 +1,3 @@
-export interface SimFreeResource {
-  id: number;
-  name: string;
-  resource_type: 'DATA' | 'SMS' | 'VOICE';
-  remaining: string;
-  expiry: string;
-  created_at: string;
-  updated_at: string;
-}
-
 export interface SimBalance {
   id: number;
   device?: {
@@ -27,8 +17,10 @@ export interface SimBalance {
   state: string;
   balance: number;
   balance_expiry: string | null;
+  mb?: number | null;
+  remaining_mb?: number | null;
+  mb_expiry_date?: string | null;
   last_synced_at: string;
-  free_resources: SimFreeResource[];
   created_at: string;
   updated_at: string;
 }
@@ -68,13 +60,10 @@ export interface SimBalanceSummary {
   phone_number: string;
   balance: number;
   balance_expiry: string | null;
+  mb?: number | null;
+  remaining_mb?: number | null;
+  mb_expiry_date?: string | null;
   last_synced_at: string;
   state: string;
-  free_resources_summary: Array<{
-    name: string;
-    type: string;
-    remaining: string;
-    expiry: string;
-  }>;
 }
 
