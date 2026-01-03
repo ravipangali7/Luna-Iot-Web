@@ -67,6 +67,7 @@ import DueTransactionEditPage from './views/dueTransactions/DueTransactionEditPa
 import { LunaTagIndexPage, LunaTagCreatePage, LunaTagEditPage } from './views/lunaTags';
 import { UserLunaTagIndexPage, UserLunaTagCreatePage, UserLunaTagEditPage } from './views/userLunaTags';
 import { CampaignIndexPage, CampaignCreatePage, CampaignEditPage, CampaignViewPage } from './views/phoneCall';
+import { PhoneBookIndexPage, PhoneBookCreatePage, PhoneBookEditPage, PhoneBookViewPage, PhoneBookNumberCreatePage, PhoneBookNumberEditPage } from './views/phoneBook';
 import { PopupIndexPage, PopupCreatePage, PopupEditPage, PopupShowPage } from './views/notices/popups';
 import { NotificationIndexPage, NotificationCreatePage, NotificationShowPage } from './views/notices/notifications';
 import { BannerIndexPage, BannerCreatePage, BannerEditPage, BannerShowPage } from './views/notices/banners';
@@ -829,6 +830,38 @@ const AppRoutes: React.FC = () => {
           <RoleBasedRoute allowedRoles={[ROLES.SUPER_ADMIN]}>
             <CampaignEditPage />
           </RoleBasedRoute>
+        } />
+
+        {/* Phone Book Routes - All authenticated users */}
+        <Route path="phone-call/phone-books" element={
+          <ProtectedRoute>
+            <PhoneBookIndexPage />
+          </ProtectedRoute>
+        } />
+        <Route path="phone-call/phone-books/create" element={
+          <ProtectedRoute>
+            <PhoneBookCreatePage />
+          </ProtectedRoute>
+        } />
+        <Route path="phone-call/phone-books/:id" element={
+          <ProtectedRoute>
+            <PhoneBookViewPage />
+          </ProtectedRoute>
+        } />
+        <Route path="phone-call/phone-books/:id/edit" element={
+          <ProtectedRoute>
+            <PhoneBookEditPage />
+          </ProtectedRoute>
+        } />
+        <Route path="phone-call/phone-books/:id/numbers/create" element={
+          <ProtectedRoute>
+            <PhoneBookNumberCreatePage />
+          </ProtectedRoute>
+        } />
+        <Route path="phone-call/phone-books/:id/numbers/:numberId/edit" element={
+          <ProtectedRoute>
+            <PhoneBookNumberEditPage />
+          </ProtectedRoute>
         } />
 
         {/* School Routes - Super Admin or users with school module access */}

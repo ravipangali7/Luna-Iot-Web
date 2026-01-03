@@ -415,6 +415,22 @@ class InstituteServiceAPI {
       return { success: false, error: getErrorMessage(error) };
     }
   }
+
+  // Get institutes accessible to the current user
+  async getUserAccessibleInstitutes(): Promise<{ success: boolean; data?: Institute[]; error?: string }> {
+    try {
+      const response = await apiClient.get('/api/core/institute/modules/user-institutes/');
+      
+      if (response.data.success) {
+        return { success: true, data: response.data.data };
+      } else {
+        return { success: false, error: response.data.message || 'Failed to fetch user accessible institutes' };
+      }
+    } catch (error) {
+      console.error('Get user accessible institutes error:', error);
+      return { success: false, error: getErrorMessage(error) };
+    }
+  }
 }
 
 export const instituteService = new InstituteServiceAPI();

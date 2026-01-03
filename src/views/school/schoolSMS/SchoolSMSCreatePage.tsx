@@ -1,15 +1,16 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
 import Container from '../../../components/ui/layout/Container';
 import Card from '../../../components/ui/cards/Card';
 import Button from '../../../components/ui/buttons/Button';
-import Input from '../../../components/ui/forms/Input';
 import TextArea from '../../../components/ui/forms/TextArea';
 import Spinner from '../../../components/ui/common/Spinner';
 import Alert from '../../../components/ui/common/Alert';
 import { showSuccess, showError } from '../../../utils/sweetAlert';
 import { schoolService } from '../../../api/services/schoolService';
-import type { SchoolSMSFormData } from '../../../types/school';
+import { phoneBookService } from '../../../api/services/phoneBookService';
+import type { SchoolSMSFormData, SchoolBusList } from '../../../types/school';
+import type { PhoneBook } from '../../../types/phoneBook';
 
 const SchoolSMSCreatePage: React.FC = () => {
   const navigate = useNavigate();
@@ -21,6 +22,200 @@ const SchoolSMSCreatePage: React.FC = () => {
   });
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  
+  // Data states
+  const [phoneBooks, setPhoneBooks] = useState<PhoneBook[]>([]);
+  const [schoolBuses, setSchoolBuses] = useState<SchoolBusList[]>([]);
+  const [loadingData, setLoadingData] = useState(true);
+  
+  // Selection states
+  const [selectedPhoneBooks, setSelectedPhoneBooks] = useState<Set<number>>(new Set());
+  const [selectedSchoolBuses, setSelectedSchoolBuses] = useState<Set<number>>(new Set());
+  
+  // Track phone numbers by source for removal
+  const [phoneNumbersBySource, setPhoneNumbersBySource] = useState<{
+    phoneBooks: { [key: number]: string[] };
+    schoolBuses: { [key: number]: string[] };
+  }>({
+    phoneBooks: {},
+    schoolBuses: {}
+  });
+
+  // Fetch phone books and school buses
+  const fetchData = useCallback(async () => {
+    if (!instituteId) return;
+    
+    try {
+      setLoadingData(true);
+      const [phoneBooksResult, schoolBusesResult] = await Promise.all([
+        phoneBookService.getByInstitute(Number(instituteId)),
+        schoolService.getSchoolBusesByInstitute(Number(instituteId))
+      ]);
+      
+      if (phoneBooksResult.success && phoneBooksResult.data) {
+        setPhoneBooks(phoneBooksResult.data);
+      }
+      
+      if (schoolBusesResult.success && schoolBusesResult.data) {
+        setSchoolBuses(schoolBusesResult.data);
+      }
+    } catch (err) {
+      console.error('Error fetching data:', err);
+    } finally {
+      setLoadingData(false);
+    }
+  }, [instituteId]);
+
+  useEffect(() => {
+    fetchData();
+  }, [fetchData]);
+
+  // Track manual phone numbers (not from selections)
+  const manualPhoneNumbersRef = React.useRef<string[]>([]);
+
+  // Update phone numbers textarea from all sources
+  const updatePhoneNumbersField = useCallback(() => {
+    const allNumbers: string[] = [];
+    
+    // Collect from phone books
+    Object.values(phoneNumbersBySource.phoneBooks).forEach(numbers => {
+      allNumbers.push(...numbers);
+    });
+    
+    // Collect from school buses
+    Object.values(phoneNumbersBySource.schoolBuses).forEach(numbers => {
+      allNumbers.push(...numbers);
+    });
+    
+    // Get numbers from selections (for comparison)
+    const selectionNumbers = new Set(allNumbers);
+    
+    // Preserve manually entered numbers that aren't from selections
+    const manualNumbers = manualPhoneNumbersRef.current.filter(num => !selectionNumbers.has(num));
+    
+    // Combine: manual numbers + selection numbers (remove duplicates)
+    const combinedNumbers = [...manualNumbers, ...allNumbers];
+    const uniqueNumbers = Array.from(new Set(combinedNumbers));
+    
+    setFormData(prev => ({
+      ...prev,
+      phoneNumbers: uniqueNumbers.join(', ')
+    }));
+  }, [phoneNumbersBySource]);
+
+  useEffect(() => {
+    updatePhoneNumbersField();
+  }, [updatePhoneNumbersField]);
+
+  // Track manual edits to phone numbers
+  const handlePhoneNumbersChange = (value: string) => {
+    setFormData(prev => ({ ...prev, phoneNumbers: value }));
+    
+    // Update manual numbers ref
+    const currentNumbers = value
+      .split(',')
+      .map(phone => phone.trim())
+      .filter(phone => phone.length > 0);
+    
+    // Get all selection numbers
+    const allSelectionNumbers: string[] = [];
+    Object.values(phoneNumbersBySource.phoneBooks).forEach(numbers => {
+      allSelectionNumbers.push(...numbers);
+    });
+    Object.values(phoneNumbersBySource.schoolBuses).forEach(numbers => {
+      allSelectionNumbers.push(...numbers);
+    });
+    const selectionNumbersSet = new Set(allSelectionNumbers);
+    
+    // Store only manual numbers (not from selections)
+    manualPhoneNumbersRef.current = currentNumbers.filter(num => !selectionNumbersSet.has(num));
+  };
+
+  // Handle phone book toggle
+  const handlePhoneBookToggle = async (phoneBookId: number) => {
+    const isSelected = selectedPhoneBooks.has(phoneBookId);
+    
+    if (isSelected) {
+      // Deselect: Remove phone numbers from this phone book
+      setSelectedPhoneBooks(prev => {
+        const newSet = new Set(prev);
+        newSet.delete(phoneBookId);
+        return newSet;
+      });
+      
+      setPhoneNumbersBySource(prev => {
+        const newSource = { ...prev };
+        delete newSource.phoneBooks[phoneBookId];
+        return newSource;
+      });
+    } else {
+      // Select: Fetch phone book numbers and add them
+      try {
+        const result = await phoneBookService.getNumbers(phoneBookId);
+        
+        if (result.success && result.data) {
+          const phoneNumbers = result.data.map(num => num.phone);
+          
+          setSelectedPhoneBooks(prev => new Set(prev).add(phoneBookId));
+          
+          setPhoneNumbersBySource(prev => ({
+            ...prev,
+            phoneBooks: {
+              ...prev.phoneBooks,
+              [phoneBookId]: phoneNumbers
+            }
+          }));
+        }
+      } catch (err) {
+        console.error('Error fetching phone book numbers:', err);
+        showError('Failed to load phone book numbers');
+      }
+    }
+  };
+
+  // Handle school bus toggle
+  const handleSchoolBusToggle = async (busId: number) => {
+    const isSelected = selectedSchoolBuses.has(busId);
+    
+    if (isSelected) {
+      // Deselect: Remove phone numbers from this bus
+      setSelectedSchoolBuses(prev => {
+        const newSet = new Set(prev);
+        newSet.delete(busId);
+        return newSet;
+      });
+      
+      setPhoneNumbersBySource(prev => {
+        const newSource = { ...prev };
+        delete newSource.schoolBuses[busId];
+        return newSource;
+      });
+    } else {
+      // Select: Fetch school parents for this bus and add their phone numbers
+      try {
+        const result = await schoolService.getSchoolParentsByBus(busId);
+        
+        if (result.success && result.data) {
+          const phoneNumbers = result.data
+            .map(parent => parent.parent_phone)
+            .filter(phone => phone && phone.trim().length > 0);
+          
+          setSelectedSchoolBuses(prev => new Set(prev).add(busId));
+          
+          setPhoneNumbersBySource(prev => ({
+            ...prev,
+            schoolBuses: {
+              ...prev.schoolBuses,
+              [busId]: phoneNumbers
+            }
+          }));
+        }
+      } catch (err) {
+        console.error('Error fetching school parents:', err);
+        showError('Failed to load school parents');
+      }
+    }
+  };
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -47,17 +242,22 @@ const SchoolSMSCreatePage: React.FC = () => {
       return;
     }
 
+    // Validate instituteId before submitting
+    if (!instituteId || isNaN(Number(instituteId)) || Number(instituteId) <= 0) {
+      setError('Invalid institute ID. Please navigate from a valid school page.');
+      return;
+    }
+
     try {
       setLoading(true);
       setError(null);
 
-      const smsData: SchoolSMSFormData = {
+      const smsData: Omit<SchoolSMSFormData, 'institute'> = {
         message: formData.message.trim(),
-        institute: parseInt(instituteId || '0'),
         phone_numbers: phoneNumbers
       };
 
-      const result = await schoolService.createSchoolSMS(smsData);
+      const result = await schoolService.createSchoolSMS(Number(instituteId), smsData);
       
       if (result.success) {
         showSuccess(`SMS sent successfully to ${phoneNumbers.length} recipient(s)`);
@@ -98,20 +298,93 @@ const SchoolSMSCreatePage: React.FC = () => {
               </p>
             </div>
 
+            {/* Phone Book Selection */}
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-3">
+                Phone Book
+              </label>
+              {loadingData ? (
+                <div className="flex justify-center py-4">
+                  <Spinner size="sm" />
+                </div>
+              ) : phoneBooks.length === 0 ? (
+                <p className="text-sm text-gray-500">No phone books available for this institute.</p>
+              ) : (
+                <div className="flex flex-wrap gap-2">
+                  {phoneBooks.map((phoneBook) => {
+                    const isSelected = selectedPhoneBooks.has(phoneBook.id);
+                    return (
+                      <button
+                        key={phoneBook.id}
+                        type="button"
+                        onClick={() => handlePhoneBookToggle(phoneBook.id)}
+                        className={`px-4 py-2 rounded-md text-sm font-medium transition-colors ${
+                          isSelected
+                            ? 'bg-blue-600 text-white hover:bg-blue-700'
+                            : 'bg-gray-100 text-gray-700 hover:bg-gray-200 border border-gray-300'
+                        }`}
+                      >
+                        {phoneBook.name}
+                        {phoneBook.numbers_count && (
+                          <span className="ml-2 text-xs opacity-75">
+                            ({phoneBook.numbers_count})
+                          </span>
+                        )}
+                      </button>
+                    );
+                  })}
+                </div>
+              )}
+            </div>
+
+            {/* School Bus Selection */}
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-3">
+                School Bus
+              </label>
+              {loadingData ? (
+                <div className="flex justify-center py-4">
+                  <Spinner size="sm" />
+                </div>
+              ) : schoolBuses.length === 0 ? (
+                <p className="text-sm text-gray-500">No school buses available for this institute.</p>
+              ) : (
+                <div className="flex flex-wrap gap-2">
+                  {schoolBuses.map((bus) => {
+                    const isSelected = selectedSchoolBuses.has(bus.id);
+                    return (
+                      <button
+                        key={bus.id}
+                        type="button"
+                        onClick={() => handleSchoolBusToggle(bus.id)}
+                        className={`px-4 py-2 rounded-md text-sm font-medium transition-colors ${
+                          isSelected
+                            ? 'bg-blue-600 text-white hover:bg-blue-700'
+                            : 'bg-gray-100 text-gray-700 hover:bg-gray-200 border border-gray-300'
+                        }`}
+                      >
+                        {bus.bus_name} ({bus.bus_vehicle_no})
+                      </button>
+                    );
+                  })}
+                </div>
+              )}
+            </div>
+
             {/* Phone Numbers Field */}
             <div>
               <label className="block text-sm font-medium text-gray-700 mb-2">
                 Phone Numbers <span className="text-red-500">*</span>
               </label>
-              <Input
-                type="text"
-                placeholder="Enter phone numbers separated by commas (e.g., 1234567890, 9876543210)"
+              <TextArea
+                placeholder="Enter phone numbers separated by commas (e.g., 1234567890, 9876543210) or select from Phone Book/School Bus above"
                 value={formData.phoneNumbers}
-                onChange={(value) => setFormData(prev => ({ ...prev, phoneNumbers: value }))}
+                onChange={handlePhoneNumbersChange}
+                rows={6}
                 required
               />
               <p className="text-sm text-gray-500 mt-1">
-                Enter multiple phone numbers separated by commas. SMS will be sent to each number.
+                Enter multiple phone numbers separated by commas, or select Phone Books and School Buses above to auto-fill. SMS will be sent to each number.
               </p>
             </div>
 

@@ -21,6 +21,7 @@ const SettingsPage: React.FC = () => {
     vat_percent: 0,
     call_price: 0,
     sms_price: 0,
+    sms_character_price: 160,
     parent_price: 0,
   });
 
@@ -42,6 +43,7 @@ const SettingsPage: React.FC = () => {
           vat_percent: result.data.vat_percent,
           call_price: result.data.call_price,
           sms_price: result.data.sms_price,
+          sms_character_price: result.data.sms_character_price || 160,
           parent_price: result.data.parent_price,
         });
       } else {
@@ -55,7 +57,10 @@ const SettingsPage: React.FC = () => {
   };
 
   const handleInputChange = (field: string, value: string) => {
-    const numValue = parseFloat(value) || 0;
+    // For sms_character_price, use parseInt since it's an integer field
+    const numValue = field === 'sms_character_price' 
+      ? parseInt(value, 10) || 160 
+      : parseFloat(value) || 0;
     setFormData(prev => ({
       ...prev,
       [field]: numValue
@@ -194,6 +199,24 @@ const SettingsPage: React.FC = () => {
                   onChange={(value) => handleInputChange('sms_price', value)}
                   required
                 />
+              </div>
+
+              <div>
+                <label htmlFor="sms_character_price" style={{ display: 'block', marginBottom: '0.5rem', fontWeight: 500 }}>
+                  SMS Character Price (chars)
+                </label>
+                <Input
+                  id="sms_character_price"
+                  type="number"
+                  step="1"
+                  min="1"
+                  value={formData.sms_character_price.toString()}
+                  onChange={(value) => handleInputChange('sms_character_price', value)}
+                  required
+                />
+                <p style={{ fontSize: '0.875rem', color: '#666', marginTop: '0.5rem' }}>
+                  Number of characters per SMS part. Messages exceeding this limit will be split into multiple SMS parts.
+                </p>
               </div>
 
               <div>

@@ -334,9 +334,9 @@ class SchoolService {
     }
   }
 
-  async createSchoolSMS(data: SchoolSMSFormData): Promise<{ success: boolean; data?: SchoolSMS; error?: string }> {
+  async createSchoolSMS(instituteId: number, data: Omit<SchoolSMSFormData, 'institute'>): Promise<{ success: boolean; data?: SchoolSMS; error?: string }> {
     try {
-      const response = await apiClient.post(`/api/school/school-sms/create/`, data);
+      const response = await apiClient.post(`/api/school/school-sms/create/${instituteId}/`, data);
       
       if (response.data.success) {
         return { success: true, data: response.data.data };
