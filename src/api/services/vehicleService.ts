@@ -372,7 +372,7 @@ class VehicleService {
       
       // Extract filename from Content-Disposition header or use default
       const contentDisposition = response.headers['content-disposition'];
-      let filename = 'vehicles_export.xlsx';
+      let filename = 'GiftSample.xlsx';
       if (contentDisposition) {
         const filenameMatch = contentDisposition.match(/filename="?(.+)"?/i);
         if (filenameMatch) {

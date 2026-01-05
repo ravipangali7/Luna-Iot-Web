@@ -235,6 +235,67 @@ class PhoneBookService {
       return { success: false, error: getErrorMessage(error) };
     }
   }
+
+  async uploadPhoneBookNumbers(phoneBookId: number, file: File): Promise<{ success: boolean; data?: any; error?: string }> {
+    try {
+      const formData = new FormData();
+      formData.append('file', file);
+      
+      const response = await apiClient.post(`/api/phone-call/phone-books/${phoneBookId}/numbers/upload-excel/`, formData, {
+        headers: {
+          'Content-Type': 'multipart/form-data',
+        },
+        timeout: 120000 // 2 minutes for file upload
+      });
+      
+      if (response.data.success) {
+        return { success: true, data: response.data.data };
+      } else {
+        return { success: false, error: response.data.message || 'Failed to upload phone book numbers' };
+      }
+    } catch (error) {
+      console.error('Upload phone book numbers error:', error);
+      return { success: false, error: getErrorMessage(error) };
+    }
+  }
+
+  async downloadPhoneBookTemplate(phoneBookId: number): Promise<{ success: boolean; error?: string }> {
+    try {
+      const response = await apiClient.get(`/api/phone-call/phone-books/${phoneBookId}/numbers/download-template/`, {
+        responseType: 'blob',
+        timeout: 30000
+      });
+
+      // Create blob URL and trigger download
+      const blob = new Blob([response.data], {
+        type: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet'
+      });
+      const url = window.URL.createObjectURL(blob);
+      const link = document.createElement('a');
+      link.href = url;
+      
+      // Extract filename from Content-Disposition header or use default
+      const contentDisposition = response.headers['content-disposition'];
+      let filename = 'phone_book_template.xlsx';
+      if (contentDisposition) {
+        const filenameMatch = contentDisposition.match(/filename="?(.+)"?/i);
+        if (filenameMatch) {
+          filename = filenameMatch[1];
+        }
+      }
+      
+      link.setAttribute('download', filename);
+      document.body.appendChild(link);
+      link.click();
+      link.remove();
+      window.URL.revokeObjectURL(url);
+
+      return { success: true };
+    } catch (error) {
+      console.error('Download phone book template error:', error);
+      return { success: false, error: getErrorMessage(error) };
+    }
+  }
 }
 
 export const phoneBookService = new PhoneBookService();

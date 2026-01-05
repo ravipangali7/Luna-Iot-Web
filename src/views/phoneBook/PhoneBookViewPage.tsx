@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useCallback } from 'react';
+import React, { useState, useEffect, useCallback, useRef } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { phoneBookService } from '../../api/services/phoneBookService';
 import { confirmDelete, showSuccess, showError } from '../../utils/sweetAlert';
@@ -20,6 +20,8 @@ import TableCell from '../../components/ui/tables/TableCell';
 import Badge from '../../components/ui/common/Badge';
 import Spinner from '../../components/ui/common/Spinner';
 import Alert from '../../components/ui/common/Alert';
+import FileUploadIcon from '@mui/icons-material/FileUpload';
+import FileDownloadIcon from '@mui/icons-material/FileDownload';
 import type { PhoneBook, PhoneBookNumber } from '../../types/phoneBook';
 
 const PhoneBookViewPage: React.FC = () => {
@@ -29,6 +31,9 @@ const PhoneBookViewPage: React.FC = () => {
   const [numbers, setNumbers] = useState<PhoneBookNumber[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const [uploading, setUploading] = useState(false);
+  const [selectedFile, setSelectedFile] = useState<File | null>(null);
+  const fileInputRef = useRef<HTMLInputElement>(null);
 
   const loadPhoneBook = useCallback(async () => {
     if (!id) return;
@@ -128,6 +133,69 @@ const PhoneBookViewPage: React.FC = () => {
     }
   };
 
+  const handleDownloadTemplate = async () => {
+    if (!id) return;
+    
+    try {
+      const result = await phoneBookService.downloadPhoneBookTemplate(Number(id));
+      if (result.success) {
+        showSuccess('Template Downloaded', 'Phone book template has been downloaded successfully.');
+      } else {
+        showError('Failed to Download Template', result.error || 'Failed to download template');
+      }
+    } catch (err) {
+      showError('Error', 'An unexpected error occurred: ' + err);
+    }
+  };
+
+  const handleFileSelect = (event: React.ChangeEvent<HTMLInputElement>) => {
+    const file = event.target.files?.[0];
+    if (file) {
+      // Validate file type
+      const fileName = file.name.toLowerCase();
+      if (!fileName.endsWith('.csv') && !fileName.endsWith('.xlsx') && !fileName.endsWith('.xls')) {
+        showError('Invalid File Type', 'Please select a CSV or Excel file (.csv, .xlsx, .xls)');
+        return;
+      }
+      
+      // Validate file size (max 10MB)
+      if (file.size > 10 * 1024 * 1024) {
+        showError('File Too Large', 'File size must be less than 10MB');
+        return;
+      }
+      
+      setSelectedFile(file);
+    }
+  };
+
+  const handleUpload = async () => {
+    if (!id || !selectedFile) return;
+    
+    try {
+      setUploading(true);
+      const result = await phoneBookService.uploadPhoneBookNumbers(Number(id), selectedFile);
+      
+      if (result.success && result.data) {
+        const { successful, failed, total_rows } = result.data;
+        showSuccess(
+          'Import Completed',
+          `Successfully imported ${successful} out of ${total_rows} contacts. ${failed} failed.`
+        );
+        setSelectedFile(null);
+        if (fileInputRef.current) {
+          fileInputRef.current.value = '';
+        }
+        loadPhoneBook();
+      } else {
+        showError('Import Failed', result.error || 'Failed to import phone book numbers');
+      }
+    } catch (err) {
+      showError('Error', 'An unexpected error occurred: ' + err);
+    } finally {
+      setUploading(false);
+    }
+  };
+
   const formatDate = (dateString: string) => {
     return new Date(dateString).toLocaleDateString('en-US', {
       year: 'numeric',
@@ -207,9 +275,68 @@ const PhoneBookViewPage: React.FC = () => {
           <CardBody>
             <div className="flex justify-between items-center mb-4">
               <h2 className="text-lg font-semibold text-gray-900">Contacts</h2>
-              <Button onClick={handleAddNumber} variant="primary" size="sm">
-                Add Contact
-              </Button>
+              <div className="flex gap-2">
+                <Button onClick={handleAddNumber} variant="primary" size="sm">
+                  Add Contact
+                </Button>
+              </div>
+            </div>
+
+            {/* Excel Upload Section */}
+            <div className="mb-6 p-4 bg-gray-50 rounded-lg border border-gray-200">
+              <h3 className="text-md font-semibold text-gray-900 mb-3">Bulk Import Contacts</h3>
+              <div className="flex flex-col sm:flex-row gap-3 items-start sm:items-center">
+                <Button
+                  onClick={handleDownloadTemplate}
+                  variant="secondary"
+                  size="sm"
+                  className="flex items-center gap-2"
+                >
+                  <FileDownloadIcon className="w-4 h-4" />
+                  Download Template
+                </Button>
+                <div className="flex-1 flex flex-col sm:flex-row gap-2 items-start sm:items-center">
+                  <input
+                    ref={fileInputRef}
+                    type="file"
+                    accept=".csv,.xlsx,.xls"
+                    onChange={handleFileSelect}
+                    className="hidden"
+                    id="file-upload"
+                  />
+                  <label
+                    htmlFor="file-upload"
+                    className="px-4 py-2 bg-white border border-gray-300 rounded-md cursor-pointer hover:bg-gray-50 text-sm font-medium text-gray-700"
+                  >
+                    <FileUploadIcon className="w-4 h-4 inline mr-2" />
+                    {selectedFile ? selectedFile.name : 'Select Excel File'}
+                  </label>
+                  {selectedFile && (
+                    <Button
+                      onClick={handleUpload}
+                      variant="primary"
+                      size="sm"
+                      disabled={uploading}
+                      className="flex items-center gap-2"
+                    >
+                      {uploading ? (
+                        <>
+                          <Spinner size="sm" />
+                          Uploading...
+                        </>
+                      ) : (
+                        <>
+                          <FileUploadIcon className="w-4 h-4" />
+                          Upload
+                        </>
+                      )}
+                    </Button>
+                  )}
+                </div>
+              </div>
+              <p className="text-xs text-gray-500 mt-2">
+                Upload a CSV or Excel file (.csv, .xlsx, .xls) with columns: Name, Phone. Maximum file size: 10MB.
+              </p>
             </div>
             
             {numbers.length === 0 ? (
