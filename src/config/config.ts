@@ -2,14 +2,10 @@ import { GOOGLE_MAPS_CONFIG } from "./maps";
 
 // API Configuration
 export const API_CONFIG = {
-    // Node.js backend (old)
-    // BASE_URL: 'http://38.54.71.218:7070',
-    // SOCKET_URL: 'http://38.54.71.218:7070',
-    
-    // Python backend (new function-based APIs)
-    BASE_URL: 'https://py.mylunago.com',  // Local Python Django backend
-    // BASE_URL: 'http://38.54.71.218:7171/',  // Local Python Django backend
-    SOCKET_URL: 'https://www.system.mylunago.com',
+    BASE_URL: 'http://82.180.145.220:7171',  
+    SOCKET_URL: 'http://82.180.145.220:6060',
+    // BASE_URL: 'http://38.54.71.218:7171/',  
+    // SOCKET_URL: 'https://www.system.mylunago.com',
     
   } as const;
   
