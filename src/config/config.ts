@@ -3,7 +3,7 @@ import { GOOGLE_MAPS_CONFIG } from "./maps";
 // API Configuration
 export const API_CONFIG = {
     BASE_URL: 'https://python.mylunago.com',  
-    SOCKET_URL: 'http://82.180.145.220:6060',
+    SOCKET_URL: 'https://node.mylunago.com',
     // BASE_URL: 'http://38.54.71.218:7171/',  
     // SOCKET_URL: 'https://www.system.mylunago.com',
     
