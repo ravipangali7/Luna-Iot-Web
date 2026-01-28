@@ -72,19 +72,34 @@ class VehicleMarkerOverlay {
       div.style.justifyContent = 'center';
       div.style.filter = 'drop-shadow(0 2px 8px rgba(0,0,0,0.4))';
       div.style.zIndex = '1000';
+      div.style.border = 'none';
+      div.style.overflow = 'visible';
+      div.style.boxSizing = 'border-box';
 
       const innerDiv = document.createElement('div');
       innerDiv.style.width = '100%';
       innerDiv.style.height = '100%';
+      innerDiv.style.minWidth = '60px';
+      innerDiv.style.minHeight = '60px';
       innerDiv.style.transition = 'transform 0.3s ease';
       innerDiv.style.transformOrigin = 'center';
+      innerDiv.style.display = 'flex';
+      innerDiv.style.alignItems = 'center';
+      innerDiv.style.justifyContent = 'center';
 
       const img = document.createElement('img');
-      img.style.width = '100%';
-      img.style.height = '100%';
+      img.style.width = '60px';
+      img.style.height = '60px';
+      img.style.minWidth = '60px';
+      img.style.minHeight = '60px';
+      img.style.display = 'block';
+      img.style.border = 'none';
       img.style.objectFit = 'contain';
       img.onerror = () => {
         if (self.innerDiv) {
+          self.innerDiv.style.display = 'flex';
+          self.innerDiv.style.alignItems = 'center';
+          self.innerDiv.style.justifyContent = 'center';
           self.innerDiv.style.backgroundColor = self.fallbackColor;
           self.innerDiv.style.borderRadius = '50%';
           self.innerDiv.style.border = '3px solid white';
@@ -147,15 +162,22 @@ class VehicleMarkerOverlay {
 
   setIcon(url: string) {
     if (this.img) {
-      this.img.src = url;
-      this.img.style.display = '';
+      const resolvedUrl =
+        typeof window !== 'undefined' && url.startsWith('/')
+          ? window.location.origin + (import.meta.env.BASE_URL || '/').replace(/\/$/, '') + url
+          : url;
+      this.img.src = resolvedUrl;
+      this.img.style.display = 'block';
       this.img.alt = 'vehicle';
       if (this.innerDiv) {
+        this.innerDiv.style.display = 'flex';
+        this.innerDiv.style.alignItems = 'center';
+        this.innerDiv.style.justifyContent = 'center';
+        this.innerDiv.style.width = '100%';
+        this.innerDiv.style.height = '100%';
         this.innerDiv.style.backgroundColor = '';
         this.innerDiv.style.borderRadius = '';
         this.innerDiv.style.border = '';
-        this.innerDiv.style.width = '';
-        this.innerDiv.style.height = '';
         this.innerDiv.style.fontSize = '';
         this.innerDiv.style.fontWeight = '';
         this.innerDiv.style.color = '';
