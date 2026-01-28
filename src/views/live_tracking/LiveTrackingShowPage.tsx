@@ -41,6 +41,12 @@ interface LocationData {
   updatedAt: string;
 }
 
+function getAbsoluteIconUrl(path: string): string {
+  if (typeof window === 'undefined' || !path.startsWith('/')) return path;
+  const base = (import.meta.env.BASE_URL || '/').replace(/\/$/, '');
+  return window.location.origin + base + path;
+}
+
 // Map-bound vehicle marker overlay: stays at LatLng and moves with the map
 class VehicleMarkerOverlay {
   private position: any = null;
@@ -120,8 +126,9 @@ class VehicleMarkerOverlay {
       self.img = img;
 
       const panes = (this as any).getPanes?.();
-      if (panes?.overlayMouseTarget) {
-        panes.overlayMouseTarget.appendChild(div);
+      const pane = panes?.markerLayer || panes?.overlayMouseTarget;
+      if (pane) {
+        pane.appendChild(div);
       }
     };
     this.overlay.draw = function (this: any) {
@@ -189,6 +196,24 @@ class VehicleMarkerOverlay {
   setFallback(color: string, letter: string) {
     this.fallbackColor = color;
     this.fallbackLetter = letter;
+  }
+
+  showFallback() {
+    if (this.innerDiv) {
+      this.innerDiv.style.display = 'flex';
+      this.innerDiv.style.alignItems = 'center';
+      this.innerDiv.style.justifyContent = 'center';
+      this.innerDiv.style.backgroundColor = this.fallbackColor;
+      this.innerDiv.style.borderRadius = '50%';
+      this.innerDiv.style.border = '3px solid white';
+      this.innerDiv.style.width = '40px';
+      this.innerDiv.style.height = '40px';
+      this.innerDiv.style.fontSize = '12px';
+      this.innerDiv.style.fontWeight = 'bold';
+      this.innerDiv.style.color = 'white';
+      this.innerDiv.textContent = this.fallbackLetter;
+    }
+    if (this.img) this.img.style.display = 'none';
   }
 }
 
@@ -850,13 +875,17 @@ const LiveTrackingShowPage: React.FC<LiveTrackingShowPageProps> = ({ imei: propI
     const latLng = new window.google.maps.LatLng(currentLocation.latitude, currentLocation.longitude);
     overlay.setPosition(latLng);
     overlay.setRotation(mapRotation);
+    overlay.setFallback(VehicleUtils.getStateColor(vehicleState), vehicle.vehicleNo.charAt(0));
     const imagePath = VehicleUtils.getImagePath(
       vehicle.vehicleType || 'car',
       vehicleState,
       VehicleImageState.LIVE
     );
-    overlay.setIcon(imagePath);
-    overlay.setFallback(VehicleUtils.getStateColor(vehicleState), vehicle.vehicleNo.charAt(0));
+    const absoluteUrl = getAbsoluteIconUrl(imagePath);
+    const preloadImg = new Image();
+    preloadImg.onload = () => overlay.setIcon(absoluteUrl);
+    preloadImg.onerror = () => overlay.showFallback();
+    preloadImg.src = absoluteUrl;
     vehicleMarkerOverlayRef.current = overlay;
   }, [mapLoaded, currentLocation, vehicle]);
 
@@ -867,13 +896,17 @@ const LiveTrackingShowPage: React.FC<LiveTrackingShowPageProps> = ({ imei: propI
     const latLng = new window.google.maps.LatLng(currentLocation.latitude, currentLocation.longitude);
     overlay.setPosition(latLng);
     overlay.setRotation(mapRotation);
+    overlay.setFallback(VehicleUtils.getStateColor(vehicleState), vehicle.vehicleNo.charAt(0));
     const imagePath = VehicleUtils.getImagePath(
       vehicle.vehicleType || 'car',
       vehicleState,
       VehicleImageState.LIVE
     );
-    overlay.setIcon(imagePath);
-    overlay.setFallback(VehicleUtils.getStateColor(vehicleState), vehicle.vehicleNo.charAt(0));
+    const absoluteUrl = getAbsoluteIconUrl(imagePath);
+    const preloadImg = new Image();
+    preloadImg.onload = () => overlay.setIcon(absoluteUrl);
+    preloadImg.onerror = () => overlay.showFallback();
+    preloadImg.src = absoluteUrl;
   }, [currentLocation, mapRotation, vehicleState, vehicle]);
 
   // Stop tracking when component unmounts
