@@ -43,20 +43,19 @@ interface LocationData {
 
 // Map-bound vehicle marker overlay: stays at LatLng and moves with the map
 class VehicleMarkerOverlay {
-  private position: google.maps.LatLng | null = null;
+  private position: any = null;
   private rotation = 0;
-  private iconUrl = '';
   private fallbackColor = '#F5F5F5';
   private fallbackLetter = '';
   private div: HTMLDivElement | null = null;
   private innerDiv: HTMLDivElement | null = null;
   private img: HTMLImageElement | null = null;
-  private overlay: google.maps.OverlayView;
+  private overlay: any;
 
   constructor() {
     const self = this;
     this.overlay = new (window.google?.maps?.OverlayView as any)();
-    this.overlay.onAdd = function (this: google.maps.OverlayView) {
+    this.overlay.onAdd = function (this: any) {
       const div = document.createElement('div');
       div.style.position = 'absolute';
       div.style.width = '60px';
@@ -107,7 +106,7 @@ class VehicleMarkerOverlay {
         panes.overlayMouseTarget.appendChild(div);
       }
     };
-    this.overlay.draw = function (this: google.maps.OverlayView) {
+    this.overlay.draw = function (this: any) {
       if (!self.position || !self.div) return;
       const projection = this.getProjection?.();
       if (!projection) return;
@@ -129,11 +128,11 @@ class VehicleMarkerOverlay {
     };
   }
 
-  setMap(map: google.maps.Map | null) {
+  setMap(map: any) {
     this.overlay.setMap(map);
   }
 
-  setPosition(latLng: google.maps.LatLng | null) {
+  setPosition(latLng: any) {
     this.position = latLng;
     if (this.overlay.getMap()) (this.overlay as any).draw();
   }
@@ -144,7 +143,6 @@ class VehicleMarkerOverlay {
   }
 
   setIcon(url: string) {
-    this.iconUrl = url;
     if (this.img) {
       this.img.src = url;
       this.img.style.display = '';
