@@ -15,6 +15,10 @@ export const apiClient = axios.create({
 // Request interceptor to add auth headers
 apiClient.interceptors.request.use(
   (config) => {
+    // When sending FormData, omit Content-Type so the browser sets multipart/form-data with boundary
+    if (config.data instanceof FormData && config.headers) {
+      delete config.headers['Content-Type'];
+    }
     // Skip auth headers for public endpoints
     const publicEndpoints = [
       '/api/alert-system/alert-radar/token/',
