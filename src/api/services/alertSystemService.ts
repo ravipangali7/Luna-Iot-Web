@@ -304,6 +304,16 @@ export const alertGeofenceService = {
 
   delete: async (id: number): Promise<void> => {
     await apiClient.delete(`/api/alert-system/alert-geofence/${id}/delete/`);
+  },
+
+  importBoundary: async (file: File): Promise<{ boundary: GeoJSONGeometry }> => {
+    const formData = new FormData();
+    formData.append('file', file);
+    const response = await apiClient.post<AlertSystemApiResponse<{ boundary: GeoJSONGeometry }>>(
+      '/api/alert-system/alert-geofence/import-boundary/',
+      formData
+    );
+    return response.data.data;
   }
 };
 

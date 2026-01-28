@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useCallback } from 'react';
+import React, { useState, useEffect, useCallback, useRef } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { useAlertSystemAccess } from '../../../hooks/useAlertSystemAccess';
 import { alertGeofenceService, alertTypeService } from '../../../api/services/alertSystemService';
@@ -11,6 +11,13 @@ import GeofenceMap from '../../../components/maps/GeofenceMap';
 import Spinner from '../../../components/ui/common/Spinner';
 import Alert from '../../../components/ui/common/Alert';
 import { showSuccess, showError } from '../../../utils/sweetAlert';
+
+function getFirstExteriorRing(boundary: GeoJSONGeometry | null): number[][] | undefined {
+  if (!boundary) return undefined;
+  if (boundary.type === 'Polygon') return boundary.coordinates[0];
+  if (boundary.type === 'MultiPolygon') return boundary.coordinates[0]?.[0];
+  return undefined;
+}
 
 // GeoJSON type definitions
 interface GeoJSONPolygon {
@@ -53,6 +60,10 @@ const GeofenceCreatePage: React.FC = () => {
     alert_type_ids: []
   });
   const [validationErrors, setValidationErrors] = useState<Record<string, string>>({});
+  const [importFile, setImportFile] = useState<File | null>(null);
+  const [importLoading, setImportLoading] = useState(false);
+  const [importError, setImportError] = useState<string | null>(null);
+  const fileInputRef = useRef<HTMLInputElement>(null);
 
   // Check access
   useEffect(() => {
@@ -169,6 +180,33 @@ const GeofenceCreatePage: React.FC = () => {
     navigate(`/alert-system/${instituteId}`);
   };
 
+  const handleImportFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    setImportFile(file || null);
+    setImportError(null);
+  };
+
+  const handleImportProcess = async () => {
+    if (!importFile) return;
+    try {
+      setImportLoading(true);
+      setImportError(null);
+      const { boundary } = await alertGeofenceService.importBoundary(importFile);
+      handleBoundaryChange(boundary);
+      showSuccess('Boundary imported. You can edit it on the map or save.');
+      setImportFile(null);
+      if (fileInputRef.current) fileInputRef.current.value = '';
+    } catch (err: unknown) {
+      const msg = (err as any)?.response?.data?.message || 'Failed to import boundary.';
+      setImportError(msg);
+      showError(msg);
+    } finally {
+      setImportLoading(false);
+    }
+  };
+
+  const firstRing = getFirstExteriorRing(formData.boundary);
+
   if (loading) {
     return (
       <Container>
@@ -258,6 +296,38 @@ const GeofenceCreatePage: React.FC = () => {
               <Card>
                 <div className="p-6">
                   <h2 className="text-lg font-semibold text-gray-900 mb-4">Geofence Boundary</h2>
+
+                  <div className="mb-4 p-4 border border-gray-200 rounded-lg bg-gray-50">
+                    <p className="text-sm font-medium text-gray-700 mb-2">Import from file</p>
+                    <p className="text-xs text-gray-500 mb-3">Upload .kmz, .kml, or .zip (shapefile) to load boundary</p>
+                    <div className="flex flex-wrap items-center gap-2">
+                      <input
+                        ref={fileInputRef}
+                        type="file"
+                        accept=".kmz,.kml,.zip"
+                        onChange={handleImportFileChange}
+                        className="text-sm text-gray-600 file:mr-2 file:py-1.5 file:px-3 file:rounded file:border-0 file:text-sm file:font-medium file:bg-primary file:text-white hover:file:bg-primary/90"
+                      />
+                      <Button
+                        type="button"
+                        variant="secondary"
+                        size="sm"
+                        onClick={handleImportProcess}
+                        disabled={!importFile || importLoading}
+                        icon={importLoading ? <Spinner size="sm" /> : undefined}
+                      >
+                        {importLoading ? 'Processing...' : 'Upload and use boundary'}
+                      </Button>
+                    </div>
+                    {importFile && !importLoading && (
+                      <p className="text-sm text-gray-600 mt-2">Selected: {importFile.name}</p>
+                    )}
+                    {importError && (
+                      <Alert variant="danger" className="mt-2">
+                        {importError}
+                      </Alert>
+                    )}
+                  </div>
                   
                   {validationErrors.boundary && (
                     <Alert variant="danger" className="mb-4">
@@ -266,6 +336,7 @@ const GeofenceCreatePage: React.FC = () => {
                   )}
 
                   <GeofenceMap
+                    fitToBounds={!!formData.boundary}
                     center={{ lat: 28.3949, lng: 84.1240 }} // Nepal center
                     zoom={7} // Show whole Nepal
                     boundary={formData.boundary}
@@ -281,19 +352,17 @@ const GeofenceCreatePage: React.FC = () => {
                 <div className="p-6">
                   <h3 className="text-lg font-semibold text-gray-900 mb-4">Polygon Coordinates</h3>
                   
-                  {formData.boundary ? (
+                  {firstRing ? (
                     <div className="space-y-2">
                       <div className="text-sm text-gray-600 mb-3">
-                        Total points: {formData.boundary.coordinates[0]?.length || 0}
+                        Total points: {firstRing.length}
                       </div>
                       <div className="max-h-48 overflow-y-auto border border-gray-200 rounded-md p-3 bg-gray-50">
-                        {formData.boundary.coordinates[0]?.map((coord, index) => (
+                        {firstRing.map((coord, index) => (
                           <div key={index} className="text-sm font-mono text-gray-700 py-1">
                             Point {index + 1}: {(coord[1] as number).toFixed(6)}, {(coord[0] as number).toFixed(6)}
                           </div>
-                        )) || (
-                          <div className="text-sm text-gray-500">No coordinates available</div>
-                        )}
+                        ))}
                       </div>
                     </div>
                   ) : (
