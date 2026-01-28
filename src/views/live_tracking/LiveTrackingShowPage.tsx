@@ -54,7 +54,10 @@ class VehicleMarkerOverlay {
 
   constructor() {
     const self = this;
-    this.overlay = new (window.google?.maps?.OverlayView as any)();
+    const g = typeof window !== 'undefined' ? window.google : undefined;
+    const OverlayViewClass = g && g.maps && (g.maps as any).OverlayView;
+    if (!OverlayViewClass) throw new Error('Google Maps OverlayView not available');
+    this.overlay = new OverlayViewClass();
     this.overlay.onAdd = function (this: any) {
       const div = document.createElement('div');
       div.style.position = 'absolute';
