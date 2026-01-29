@@ -662,8 +662,8 @@ const AlertHistoryIndexPage: React.FC = () => {
                 </div>
               </div>
               
-              {/* Image Section - Show for non-app sources */}
-              {selectedAlert.source !== 'app' && selectedAlert.image && (
+              {/* Image Section - Show for all sources with image */}
+              {selectedAlert.image && (
                 <div className="mb-4">
                   <img
                     src={`${API_CONFIG.BASE_URL}${selectedAlert.image}`}
