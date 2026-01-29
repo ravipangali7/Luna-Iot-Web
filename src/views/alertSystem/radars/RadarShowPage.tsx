@@ -754,8 +754,8 @@ const RadarShowPage: React.FC = () => {
                     {Number(currentAlert.latitude).toFixed(6)}, {Number(currentAlert.longitude).toFixed(6)}
                   </div>
 
-                  {/* Image for non-app */}
-                  {currentAlert.source !== 'app' && currentAlert.image && (
+                  {/* Image Section - Show for all sources with image */}
+                  {currentAlert.image && (
                     <div className="mb-4">
                       <img
                         src={`${API_CONFIG.BASE_URL}${currentAlert.image}`}
