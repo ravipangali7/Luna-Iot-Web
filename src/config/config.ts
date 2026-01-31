@@ -36,3 +36,8 @@ export const API_CONFIG = {
   export const MAPS_CONFIG = {
     GOOGLE_MAPS_API_KEY: GOOGLE_MAPS_CONFIG.apiKey
   } as const;
+
+  // Dashcam Configuration
+  export const DASHCAM_CONFIG = {
+    WS_URL: 'wss://python.mylunago.com',  // WebSocket for live streaming
+  } as const;

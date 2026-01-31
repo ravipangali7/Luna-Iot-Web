@@ -269,6 +269,7 @@ const DeviceEditPage: React.FC = () => {
                       { value: '', label: 'Select protocol' },
                       { value: 'GT06', label: 'GT06' },
                       { value: 'FMB003', label: 'FMB003' },
+                      { value: 'JT808_JT1078', label: 'JT808/JT1078' },
                     ]}
                   />
                 </div>
@@ -286,6 +287,7 @@ const DeviceEditPage: React.FC = () => {
                       { value: '', label: 'Select model' },
                       { value: 'EC08', label: 'EC08' },
                       { value: 'VL149', label: 'VL149' },
+                      { value: 'T98_BSJ', label: 'T98/BSJ' },
                     ]}
                   />
                 </div>
@@ -304,6 +306,7 @@ const DeviceEditPage: React.FC = () => {
                       { value: 'gps', label: 'GPS' },
                       { value: 'buzzer', label: 'Buzzer' },
                       { value: 'sos', label: 'SOS' },
+                      { value: 'dashcam', label: 'Dashcam' },
                     ]}
                   />
                 </div>

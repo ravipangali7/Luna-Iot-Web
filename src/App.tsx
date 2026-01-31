@@ -13,6 +13,8 @@ import { DeviceCreatePage, DeviceEditPage } from './views/devices';
 import GpsDeviceIndexPage from './views/devices/GpsDeviceIndexPage';
 import BuzzerDeviceIndexPage from './views/devices/BuzzerDeviceIndexPage';
 import SosDeviceIndexPage from './views/devices/SosDeviceIndexPage';
+import DashcamDeviceIndexPage from './views/devices/DashcamDeviceIndexPage';
+import DashcamLiveStreamPage from './views/devices/DashcamLiveStreamPage';
 import { VehicleIndexPage, VehicleCreatePage, VehicleEditPage } from './views/vehicles';
 import { VehicleAccessIndexPage, VehicleAccessCreatePage, VehicleAccessEditPage, VehicleAccessManagePage } from './views/vehicleAccess';
 import { RechargeIndexPage, RechargeCreatePage } from './views/recharges';
@@ -201,6 +203,16 @@ const AppRoutes: React.FC = () => {
         <Route path="devices/sos" element={
           <RoleBasedRoute allowedRoles={[ROLES.SUPER_ADMIN, ROLES.DEALER]}>
             <SosDeviceIndexPage />
+          </RoleBasedRoute>
+        } />
+        <Route path="devices/dashcam" element={
+          <RoleBasedRoute allowedRoles={[ROLES.SUPER_ADMIN, ROLES.DEALER]}>
+            <DashcamDeviceIndexPage />
+          </RoleBasedRoute>
+        } />
+        <Route path="device/dashcam/:imei/live" element={
+          <RoleBasedRoute allowedRoles={[ROLES.SUPER_ADMIN, ROLES.DEALER]}>
+            <DashcamLiveStreamPage />
           </RoleBasedRoute>
         } />
         <Route path="devices/create" element={

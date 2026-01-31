@@ -311,6 +311,31 @@ class DeviceService {
     }
   }
 
+  async getDashcamDevicesPaginated(page: number = 1, query?: string): Promise<{ 
+    success: boolean; 
+    data?: { devices: Device[]; pagination: { current_page: number; total_pages: number; total_items: number; has_next: boolean; has_previous: boolean } }; 
+    error?: string 
+  }> {
+    try {
+      const url = query 
+        ? `/api/device/device/dashcam/paginated?page=${page}&q=${encodeURIComponent(query)}`
+        : `/api/device/device/dashcam/paginated?page=${page}`;
+      
+      const response = await apiClient.get(url, {
+        timeout: 120000 // 2 minutes for large responses
+      });
+      
+      if (response.data.success) {
+        return { success: true, data: response.data.data };
+      } else {
+        return { success: false, error: response.data.message || 'Failed to fetch Dashcam devices' };
+      }
+    } catch (error) {
+      console.error('Get Dashcam devices error:', error);
+      return { success: false, error: getErrorMessage(error) };
+    }
+  }
+
 }
 
 export const deviceService = new DeviceService();
