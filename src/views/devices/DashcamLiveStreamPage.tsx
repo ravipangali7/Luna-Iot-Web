@@ -26,6 +26,8 @@ const DashcamLiveStreamPage: React.FC = () => {
   const rearStream = useDashcamStream();
   
   const containerRef = useRef<HTMLDivElement>(null);
+  // Track if initial mount has completed to prevent duplicate startStream calls
+  const hasInitializedRef = useRef(false);
   
   // Start stream when component mounts
   useEffect(() => {
@@ -42,16 +44,21 @@ const DashcamLiveStreamPage: React.FC = () => {
       currentStream.startStream({ phone: imei, channel: activeChannel, streamType: streamQuality });
     }
     
+    // Mark as initialized after first render
+    hasInitializedRef.current = true;
+    
     // Cleanup on unmount
     return () => {
       frontStream.stopStream();
       rearStream.stopStream();
+      hasInitializedRef.current = false;
     };
   }, [imei]); // Only run on mount/unmount
   
-  // Handle view mode changes
+  // Handle view mode changes - ONLY after initial mount
   useEffect(() => {
-    if (!imei) return;
+    // Skip on initial mount - the first useEffect handles that
+    if (!hasInitializedRef.current || !imei) return;
     
     if (viewMode === 'dual' || viewMode === 'pip') {
       // Ensure both streams are running

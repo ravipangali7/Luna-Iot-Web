@@ -32,6 +32,11 @@ export function useDashcamStream(): UseDashcamStreamReturn {
   const queueRef = useRef<ArrayBuffer[]>([]);
   const currentConfigRef = useRef<StreamConfig | null>(null);
   
+  // New refs for initialization lock and codec tracking
+  const isInitializingRef = useRef(false);
+  const currentCodecRef = useRef<string | null>(null);
+  const pendingInitDataRef = useRef<ArrayBuffer | null>(null);
+  
   const [state, setState] = useState<StreamState>({
     isConnected: false,
     isStreaming: false,
@@ -70,14 +75,19 @@ export function useDashcamStream(): UseDashcamStreamReturn {
     }
   }, []);
 
-  const initMediaSource = useCallback((codec: string) => {
-    const video = videoRef.current;
-    if (!video) {
-      console.error('[useDashcamStream] Video element not found');
-      return;
+  // Clean up MediaSource and related resources
+  const cleanupMediaSource = useCallback(() => {
+    // Remove updateend listener from source buffer
+    if (sourceBufferRef.current) {
+      try {
+        sourceBufferRef.current.removeEventListener('updateend', processQueue);
+      } catch (e) {
+        // Ignore
+      }
+      sourceBufferRef.current = null;
     }
-
-    // Clean up existing MediaSource
+    
+    // End and cleanup MediaSource
     if (mediaSourceRef.current) {
       try {
         if (mediaSourceRef.current.readyState === 'open') {
@@ -86,21 +96,82 @@ export function useDashcamStream(): UseDashcamStreamReturn {
       } catch (e) {
         console.warn('[useDashcamStream] Error ending previous stream:', e);
       }
+      mediaSourceRef.current = null;
     }
+    
+    // Revoke object URL if video has one
+    if (videoRef.current && videoRef.current.src) {
+      try {
+        URL.revokeObjectURL(videoRef.current.src);
+      } catch (e) {
+        // Ignore
+      }
+      videoRef.current.src = '';
+    }
+  }, [processQueue]);
+
+  const initMediaSource = useCallback((codec: string, initData: ArrayBuffer) => {
+    const video = videoRef.current;
+    if (!video) {
+      console.error('[useDashcamStream] Video element not found');
+      return;
+    }
+
+    // Guard against duplicate initialization
+    if (isInitializingRef.current) {
+      console.log('[useDashcamStream] Already initializing, storing data for later');
+      pendingInitDataRef.current = initData;
+      return;
+    }
+
+    // Skip if same codec and SourceBuffer exists and MediaSource is open
+    if (currentCodecRef.current === codec && 
+        sourceBufferRef.current && 
+        mediaSourceRef.current?.readyState === 'open') {
+      console.log('[useDashcamStream] Same codec, reusing existing MediaSource');
+      // Just queue the init data
+      queueRef.current.push(initData);
+      processQueue();
+      return;
+    }
+
+    console.log('[useDashcamStream] Initializing MediaSource with codec:', codec);
+    isInitializingRef.current = true;
+    currentCodecRef.current = codec;
+    pendingInitDataRef.current = initData;
+
+    // Clean up existing MediaSource
+    cleanupMediaSource();
+    
+    // Clear the queue for fresh start
+    queueRef.current = [];
 
     const mediaSource = new MediaSource();
     mediaSourceRef.current = mediaSource;
     
-    video.src = URL.createObjectURL(mediaSource);
-    
-    mediaSource.addEventListener('sourceopen', () => {
+    const handleSourceOpen = () => {
       console.log('[useDashcamStream] MediaSource opened');
+      
+      // Verify this is still the current MediaSource (guard against race condition)
+      if (mediaSourceRef.current !== mediaSource) {
+        console.warn('[useDashcamStream] MediaSource changed, skipping setup');
+        isInitializingRef.current = false;
+        return;
+      }
+      
+      // Verify MediaSource is in the correct state
+      if (mediaSource.readyState !== 'open') {
+        console.warn('[useDashcamStream] MediaSource not open, state:', mediaSource.readyState);
+        isInitializingRef.current = false;
+        return;
+      }
       
       try {
         const mimeType = `video/mp4; codecs="${codec}"`;
         if (!MediaSource.isTypeSupported(mimeType)) {
           console.error(`[useDashcamStream] Codec not supported: ${mimeType}`);
           setState(prev => ({ ...prev, error: `Codec not supported: ${codec}` }));
+          isInitializingRef.current = false;
           return;
         }
         
@@ -109,23 +180,40 @@ export function useDashcamStream(): UseDashcamStreamReturn {
         
         sourceBuffer.addEventListener('updateend', processQueue);
         
-        setState(prev => ({ ...prev, codec, isStreaming: true }));
+        // Queue the pending init data
+        if (pendingInitDataRef.current) {
+          queueRef.current.push(pendingInitDataRef.current);
+          pendingInitDataRef.current = null;
+          processQueue();
+        }
+        
+        setState(prev => ({ ...prev, codec, isStreaming: true, error: null }));
         console.log(`[useDashcamStream] SourceBuffer created with codec: ${codec}`);
       } catch (error) {
         console.error('[useDashcamStream] Error creating SourceBuffer:', error);
         setState(prev => ({ ...prev, error: String(error) }));
+      } finally {
+        isInitializingRef.current = false;
       }
-    });
+    };
 
-    mediaSource.addEventListener('sourceended', () => {
+    const handleSourceEnded = () => {
       console.log('[useDashcamStream] MediaSource ended');
-    });
+    };
 
-    mediaSource.addEventListener('error', (e) => {
+    const handleSourceError = (e: Event) => {
       console.error('[useDashcamStream] MediaSource error:', e);
       setState(prev => ({ ...prev, error: 'MediaSource error' }));
-    });
-  }, [processQueue]);
+      isInitializingRef.current = false;
+    };
+
+    // Use { once: true } to automatically remove the listener after it fires
+    mediaSource.addEventListener('sourceopen', handleSourceOpen, { once: true });
+    mediaSource.addEventListener('sourceended', handleSourceEnded);
+    mediaSource.addEventListener('error', handleSourceError);
+    
+    video.src = URL.createObjectURL(mediaSource);
+  }, [processQueue, cleanupMediaSource]);
 
   const connectWebSocket = useCallback(() => {
     if (wsRef.current?.readyState === WebSocket.OPEN) {
@@ -157,21 +245,23 @@ export function useDashcamStream(): UseDashcamStreamReturn {
         switch (message.type) {
           case 'init_segment':
             console.log('[useDashcamStream] Received init segment, codec:', message.codec);
-            if (message.codec) {
-              initMediaSource(message.codec);
-              // Append init segment after MediaSource is ready
-              setTimeout(() => {
-                const data = base64ToArrayBuffer(message.data);
-                queueRef.current.push(data);
-                processQueue();
-              }, 100);
+            if (message.codec && message.data) {
+              const initData = base64ToArrayBuffer(message.data);
+              initMediaSource(message.codec, initData);
             }
             break;
             
           case 'video':
-            const videoData = base64ToArrayBuffer(message.data);
-            queueRef.current.push(videoData);
-            processQueue();
+            // Only process video if we have a valid SourceBuffer
+            if (sourceBufferRef.current && mediaSourceRef.current?.readyState === 'open') {
+              const videoData = base64ToArrayBuffer(message.data);
+              queueRef.current.push(videoData);
+              processQueue();
+            } else if (isInitializingRef.current) {
+              // Queue data while initializing
+              const videoData = base64ToArrayBuffer(message.data);
+              queueRef.current.push(videoData);
+            }
             break;
             
           case 'error':
@@ -234,31 +324,19 @@ export function useDashcamStream(): UseDashcamStreamReturn {
       }));
     }
     
-    // Clean up
+    // Reset initialization state
+    isInitializingRef.current = false;
+    currentCodecRef.current = null;
+    pendingInitDataRef.current = null;
+    
+    // Clean up queue
     queueRef.current = [];
     
-    if (sourceBufferRef.current) {
-      sourceBufferRef.current.removeEventListener('updateend', processQueue);
-      sourceBufferRef.current = null;
-    }
-    
-    if (mediaSourceRef.current) {
-      try {
-        if (mediaSourceRef.current.readyState === 'open') {
-          mediaSourceRef.current.endOfStream();
-        }
-      } catch (e) {
-        console.warn('[useDashcamStream] Error ending stream:', e);
-      }
-      mediaSourceRef.current = null;
-    }
-    
-    if (videoRef.current) {
-      videoRef.current.src = '';
-    }
+    // Clean up MediaSource
+    cleanupMediaSource();
     
     setState(prev => ({ ...prev, isStreaming: false, codec: null }));
-  }, [processQueue]);
+  }, [cleanupMediaSource]);
 
   const reconnect = useCallback(() => {
     stopStream();
