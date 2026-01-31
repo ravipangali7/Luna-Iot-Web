@@ -156,7 +156,7 @@ const DeviceEditPage: React.FC = () => {
       // Reset serial_number when switching away from dashcam
       setFormData(prev => ({
         ...prev,
-        [field]: value,
+        type: value as string,
         serial_number: ''
       }));
     } else {

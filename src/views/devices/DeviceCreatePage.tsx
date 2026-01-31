@@ -119,7 +119,7 @@ const DeviceCreatePage: React.FC = () => {
       // Reset to defaults when switching away from dashcam
       setFormData(prev => ({
         ...prev,
-        [field]: value,
+        type: value as string,
         serial_number: '',
         protocol: 'GT06',
         model: 'EC08'
