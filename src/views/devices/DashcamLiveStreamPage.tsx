@@ -6,7 +6,6 @@ import CardHeader from '../../components/ui/cards/CardHeader';
 import CardBody from '../../components/ui/cards/CardBody';
 import Button from '../../components/ui/buttons/Button';
 import Badge from '../../components/ui/common/Badge';
-import Spinner from '../../components/ui/common/Spinner';
 import Alert from '../../components/ui/common/Alert';
 import { useDashcamStream } from '../../hooks/useDashcamStream';
 import DashcamVideoPlayer from '../../components/video/DashcamVideoPlayer';

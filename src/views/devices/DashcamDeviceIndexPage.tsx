@@ -30,7 +30,7 @@ import RoleBasedWidget from '../../components/role-based/RoleBasedWidget';
 import { ROLES } from '../../utils/roleUtils';
 import RefreshIcon from '@mui/icons-material/Refresh';
 import VideocamIcon from '@mui/icons-material/Videocam';
-import apiClient from '../../api/apiClient';
+import { apiClient } from '../../api/apiClient';
 
 const DashcamDeviceIndexPage: React.FC = () => {
   const navigate = useNavigate();

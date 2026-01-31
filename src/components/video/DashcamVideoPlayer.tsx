@@ -1,4 +1,4 @@
-import React, { useEffect, forwardRef } from 'react';
+import { useEffect, forwardRef } from 'react';
 import Spinner from '../ui/common/Spinner';
 
 interface DashcamVideoPlayerProps {
