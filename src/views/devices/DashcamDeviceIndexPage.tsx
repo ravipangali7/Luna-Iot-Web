@@ -290,7 +290,7 @@ const DashcamDeviceIndexPage: React.FC = () => {
       
       if (!confirmed) return;
 
-      const response = await apiClient.post('/tcp-service/dashcam/command/', {
+      const response = await apiClient.post('/api/tcp-service/dashcam/command/', {
         imei: device.imei,
         action: 'server_point'
       });
@@ -315,7 +315,7 @@ const DashcamDeviceIndexPage: React.FC = () => {
       
       if (!confirmed) return;
 
-      const response = await apiClient.post('/tcp-service/dashcam/command/', {
+      const response = await apiClient.post('/api/tcp-service/dashcam/command/', {
         imei: device.imei,
         action: 'reset'
       });
