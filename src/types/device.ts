@@ -56,6 +56,7 @@ export interface Device {
   id: number;
   imei: string;
   phone: string;
+  serial_number: string | null;
   sim: string;
   protocol: string;
   iccid: string | null;
@@ -90,6 +91,7 @@ export interface Device {
 export interface DeviceFormData {
   imei: string;
   phone: string;
+  serial_number?: string;
   sim: string;
   protocol: string;
   iccid: string;

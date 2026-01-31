@@ -21,6 +21,7 @@ const DeviceCreatePage: React.FC = () => {
   const [formData, setFormData] = useState<DeviceFormData>({
     imei: '',
     phone: '',
+    serial_number: '',
     sim: 'NTC',
     protocol: 'GT06',
     iccid: '',
@@ -67,6 +68,15 @@ const DeviceCreatePage: React.FC = () => {
       newErrors.phone = 'Phone number must be 10 digits starting with 9';
     }
 
+    // Serial number validation (required for dashcam)
+    if (formData.type === 'dashcam') {
+      if (!formData.serial_number) {
+        newErrors.serial_number = 'Serial number is required for dashcam devices';
+      } else if (!/^\d{8,20}$/.test(formData.serial_number)) {
+        newErrors.serial_number = 'Serial number must be 8-20 digits';
+      }
+    }
+
     // SIM validation
     if (!formData.sim) {
       newErrors.sim = 'SIM provider is required';
@@ -97,7 +107,27 @@ const DeviceCreatePage: React.FC = () => {
   };
 
   const handleInputChange = (field: keyof DeviceFormData, value: string | number | null) => {
-    setFormData(prev => ({ ...prev, [field]: value }));
+    // Auto-select protocol and model when type is dashcam
+    if (field === 'type' && value === 'dashcam') {
+      setFormData(prev => ({
+        ...prev,
+        [field]: value,
+        protocol: 'JT808_JT1078',
+        model: 'T98_BSJ'
+      }));
+    } else if (field === 'type' && value !== 'dashcam') {
+      // Reset to defaults when switching away from dashcam
+      setFormData(prev => ({
+        ...prev,
+        [field]: value,
+        serial_number: '',
+        protocol: 'GT06',
+        model: 'EC08'
+      }));
+    } else {
+      setFormData(prev => ({ ...prev, [field]: value }));
+    }
+    
     // Clear error when user starts typing
     if (errors[field]) {
       setErrors(prev => ({ ...prev, [field]: undefined }));
@@ -254,6 +284,26 @@ const DeviceCreatePage: React.FC = () => {
                     ]}
                   />
                 </div>
+
+                {/* Serial Number - Only shown for dashcam type */}
+                {formData.type === 'dashcam' && (
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-1">
+                      Serial Number <span className="text-red-500">*</span>
+                    </label>
+                    <Input
+                      type="text"
+                      placeholder="Enter device serial number (8-20 digits)"
+                      value={formData.serial_number || ''}
+                      onChange={(value) => handleInputChange('serial_number', value)}
+                      error={errors.serial_number}
+                      required
+                    />
+                    <p className="text-xs text-gray-500 mt-1">
+                      Serial number is required for dashcam devices. This is used for JT808 protocol identification.
+                    </p>
+                  </div>
+                )}
 
                 <div>
                   <label className="block text-sm font-medium text-gray-700 mb-1">
