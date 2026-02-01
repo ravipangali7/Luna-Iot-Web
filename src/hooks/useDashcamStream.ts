@@ -77,12 +77,16 @@ export function useDashcamStream(): UseDashcamStreamReturn {
 
   // Clean up MediaSource and related resources
   const cleanupMediaSource = useCallback((forceEnd: boolean = false) => {
-    // Remove updateend listener from source buffer
+    // Abort and remove listeners from source buffer
     if (sourceBufferRef.current) {
       try {
+        // Abort any pending operations before cleanup
+        if (!sourceBufferRef.current.updating) {
+          sourceBufferRef.current.abort();
+        }
         sourceBufferRef.current.removeEventListener('updateend', processQueue);
       } catch (e) {
-        // Ignore
+        // Ignore - SourceBuffer may already be detached
       }
       sourceBufferRef.current = null;
     }
@@ -178,9 +182,14 @@ export function useDashcamStream(): UseDashcamStreamReturn {
         }
         
         const sourceBuffer = mediaSource.addSourceBuffer(mimeType);
+        sourceBuffer.mode = 'segments';  // Required for fMP4 live streaming
         sourceBufferRef.current = sourceBuffer;
         
         sourceBuffer.addEventListener('updateend', processQueue);
+        sourceBuffer.addEventListener('error', (e) => {
+          console.error('[useDashcamStream] SourceBuffer error:', e);
+          setState(prev => ({ ...prev, error: 'SourceBuffer error - stream may be corrupted' }));
+        });
         
         // Queue the pending init data
         if (pendingInitDataRef.current) {
