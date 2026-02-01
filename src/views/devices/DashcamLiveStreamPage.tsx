@@ -27,11 +27,17 @@ const DashcamLiveStreamPage: React.FC = () => {
   
   const containerRef = useRef<HTMLDivElement>(null);
   // Track if initial mount has completed to prevent duplicate startStream calls
+  // hasInitializedRef: set to true after first effect runs
+  // isFirstRenderCycleRef: stays true until after all effects in the first render complete
   const hasInitializedRef = useRef(false);
+  const isFirstRenderCycleRef = useRef(true);
   
   // Start stream when component mounts
   useEffect(() => {
     if (!imei) return;
+    
+    // Mark as initialized immediately (before starting streams)
+    hasInitializedRef.current = true;
     
     // Start the active camera stream
     if (viewMode === 'dual' || viewMode === 'pip') {
@@ -44,21 +50,27 @@ const DashcamLiveStreamPage: React.FC = () => {
       currentStream.startStream({ phone: imei, channel: activeChannel, streamType: streamQuality });
     }
     
-    // Mark as initialized after first render
-    hasInitializedRef.current = true;
+    // After all effects in this render cycle complete, clear the first render flag
+    // This ensures the second useEffect doesn't run during initial mount
+    const timeoutId = setTimeout(() => {
+      isFirstRenderCycleRef.current = false;
+    }, 0);
     
     // Cleanup on unmount
     return () => {
+      clearTimeout(timeoutId);
       frontStream.stopStream();
       rearStream.stopStream();
       hasInitializedRef.current = false;
+      isFirstRenderCycleRef.current = true;
     };
   }, [imei]); // Only run on mount/unmount
   
-  // Handle view mode changes - ONLY after initial mount
+  // Handle view mode changes - ONLY after initial mount is fully complete
   useEffect(() => {
-    // Skip on initial mount - the first useEffect handles that
-    if (!hasInitializedRef.current || !imei) return;
+    // Skip during initial mount cycle - the first useEffect handles that
+    // Both conditions must pass: initialized AND not in first render cycle
+    if (!hasInitializedRef.current || isFirstRenderCycleRef.current || !imei) return;
     
     if (viewMode === 'dual' || viewMode === 'pip') {
       // Ensure both streams are running
