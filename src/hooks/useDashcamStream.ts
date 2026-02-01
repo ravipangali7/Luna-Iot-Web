@@ -241,26 +241,33 @@ export function useDashcamStream(): UseDashcamStreamReturn {
     ws.onmessage = (event) => {
       try {
         const message = JSON.parse(event.data);
+        const config = currentConfigRef.current;
         
         switch (message.type) {
           case 'init_segment':
-            console.log('[useDashcamStream] Received init segment, codec:', message.codec);
-            if (message.codec && message.data) {
-              const initData = base64ToArrayBuffer(message.data);
-              initMediaSource(message.codec, initData);
+            // Only process if channel matches this hook's configured channel
+            if (config && message.channel === config.channel) {
+              console.log('[useDashcamStream] Received init segment, codec:', message.codec, 'channel:', message.channel);
+              if (message.codec && message.data) {
+                const initData = base64ToArrayBuffer(message.data);
+                initMediaSource(message.codec, initData);
+              }
             }
             break;
             
           case 'video':
-            // Only process video if we have a valid SourceBuffer
-            if (sourceBufferRef.current && mediaSourceRef.current?.readyState === 'open') {
-              const videoData = base64ToArrayBuffer(message.data);
-              queueRef.current.push(videoData);
-              processQueue();
-            } else if (isInitializingRef.current) {
-              // Queue data while initializing
-              const videoData = base64ToArrayBuffer(message.data);
-              queueRef.current.push(videoData);
+            // Only process if channel matches this hook's configured channel
+            if (config && message.channel === config.channel) {
+              // Only process video if we have a valid SourceBuffer
+              if (sourceBufferRef.current && mediaSourceRef.current?.readyState === 'open') {
+                const videoData = base64ToArrayBuffer(message.data);
+                queueRef.current.push(videoData);
+                processQueue();
+              } else if (isInitializingRef.current) {
+                // Queue data while initializing
+                const videoData = base64ToArrayBuffer(message.data);
+                queueRef.current.push(videoData);
+              }
             }
             break;
             
