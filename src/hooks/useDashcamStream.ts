@@ -76,7 +76,7 @@ export function useDashcamStream(): UseDashcamStreamReturn {
   }, []);
 
   // Clean up MediaSource and related resources
-  const cleanupMediaSource = useCallback(() => {
+  const cleanupMediaSource = useCallback((forceEnd: boolean = false) => {
     // Remove updateend listener from source buffer
     if (sourceBufferRef.current) {
       try {
@@ -90,7 +90,9 @@ export function useDashcamStream(): UseDashcamStreamReturn {
     // End and cleanup MediaSource
     if (mediaSourceRef.current) {
       try {
-        if (mediaSourceRef.current.readyState === 'open') {
+        // Only call endOfStream() if not currently initializing a new MediaSource
+        // OR if explicitly forced (e.g., during stopStream)
+        if (mediaSourceRef.current.readyState === 'open' && (forceEnd || !isInitializingRef.current)) {
           mediaSourceRef.current.endOfStream();
         }
       } catch (e) {
@@ -119,19 +121,19 @@ export function useDashcamStream(): UseDashcamStreamReturn {
 
     // Guard against duplicate initialization
     if (isInitializingRef.current) {
-      console.log('[useDashcamStream] Already initializing, storing data for later');
-      pendingInitDataRef.current = initData;
+      console.log('[useDashcamStream] Already initializing, ignoring duplicate init segment');
+      // Don't store - we're already initializing with an init segment
       return;
     }
 
-    // Skip if same codec and SourceBuffer exists and MediaSource is open
+    // Skip entirely if we already have a working MediaSource with the same codec
+    // This handles duplicate init segments from multiple WebSocket connections
     if (currentCodecRef.current === codec && 
         sourceBufferRef.current && 
+        !sourceBufferRef.current.updating &&
         mediaSourceRef.current?.readyState === 'open') {
-      console.log('[useDashcamStream] Same codec, reusing existing MediaSource');
-      // Just queue the init data
-      queueRef.current.push(initData);
-      processQueue();
+      console.log('[useDashcamStream] Same codec with valid MediaSource, ignoring duplicate init segment');
+      // Don't reinitialize - the existing MediaSource is working fine
       return;
     }
 
@@ -339,8 +341,8 @@ export function useDashcamStream(): UseDashcamStreamReturn {
     // Clean up queue
     queueRef.current = [];
     
-    // Clean up MediaSource
-    cleanupMediaSource();
+    // Clean up MediaSource - force end since user explicitly stopped
+    cleanupMediaSource(true);
     
     setState(prev => ({ ...prev, isStreaming: false, codec: null }));
   }, [cleanupMediaSource]);

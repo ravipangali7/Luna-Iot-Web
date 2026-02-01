@@ -1,4 +1,4 @@
-import { useEffect, forwardRef } from 'react';
+import { useEffect, forwardRef, useCallback } from 'react';
 import Spinner from '../ui/common/Spinner';
 
 interface DashcamVideoPlayerProps {
@@ -12,15 +12,36 @@ interface DashcamVideoPlayerProps {
 
 const DashcamVideoPlayer = forwardRef<HTMLVideoElement, DashcamVideoPlayerProps>(
   ({ isLoading, error, onFullscreen, onPiP, label, className = '' }, ref) => {
-    // Handle autoplay when stream starts
-    useEffect(() => {
-      const video = ref && 'current' in ref ? ref.current : null;
-      if (video) {
+    // Handle play via canplay event to avoid conflicts with autoPlay attribute
+    // This properly waits for the MediaSource to be ready before attempting play
+    const handleCanPlay = useCallback((video: HTMLVideoElement) => {
+      // Only attempt play if video is paused and has enough data
+      if (video.paused && video.readyState >= 2) {
         video.play().catch((e) => {
-          console.log('[DashcamVideoPlayer] Autoplay failed:', e);
+          // AbortError is expected when source changes during play - ignore it
+          if (e.name !== 'AbortError') {
+            console.warn('[DashcamVideoPlayer] Play failed:', e);
+          }
         });
       }
-    }, [ref]);
+    }, []);
+
+    useEffect(() => {
+      const video = ref && 'current' in ref ? ref.current : null;
+      if (!video) return;
+
+      const onCanPlay = () => handleCanPlay(video);
+      video.addEventListener('canplay', onCanPlay);
+      
+      // Also try to play if video is already ready (in case canplay already fired)
+      if (video.readyState >= 2) {
+        handleCanPlay(video);
+      }
+
+      return () => {
+        video.removeEventListener('canplay', onCanPlay);
+      };
+    }, [ref, handleCanPlay]);
 
     return (
       <div className={`relative bg-black rounded-lg overflow-hidden ${className}`}>
