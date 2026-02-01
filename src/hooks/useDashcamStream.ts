@@ -245,23 +245,19 @@ export function useDashcamStream(): UseDashcamStreamReturn {
         
         switch (message.type) {
           case 'init_segment':
-            console.log('[useDashcamStream] Received init segment, codec:', message.codec, 'msg_channel:', message.channel, 'config_channel:', config?.channel);
             // Only process if channel matches this hook's configured channel
-            // Use == for loose comparison in case types differ (string vs number)
-            if (config && message.channel == config.channel) {
+            if (config && message.channel === config.channel) {
+              console.log('[useDashcamStream] Received init segment, codec:', message.codec, 'channel:', message.channel);
               if (message.codec && message.data) {
                 const initData = base64ToArrayBuffer(message.data);
                 initMediaSource(message.codec, initData);
               }
-            } else {
-              console.log('[useDashcamStream] Skipping init_segment - channel mismatch or no config');
             }
             break;
             
           case 'video':
             // Only process if channel matches this hook's configured channel
-            // Use == for loose comparison in case types differ (string vs number)
-            if (config && message.channel == config.channel) {
+            if (config && message.channel === config.channel) {
               // Only process video if we have a valid SourceBuffer
               if (sourceBufferRef.current && mediaSourceRef.current?.readyState === 'open') {
                 const videoData = base64ToArrayBuffer(message.data);
